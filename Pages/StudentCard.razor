@@ -14,23 +14,10 @@ else
 {
     <div class="sc-fullscreen">
 
-        @* ── Top bar ──────────────────────────────────────────────────────── *@
-        <div class="sc-topbar">
-            <div style="flex:1;min-width:0;overflow:hidden">
-                <div style="font-size:18px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">
-                    @_profile.Name
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-                    @foreach (var topCat in _profile.LicenseCategories)
-                    {
-                        <span style="font-size:11px;padding:1px 8px;border-radius:10px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.35)">
-                            @topCat
-                        </span>
-                    }
-                </div>
-            </div>
+        @* ── Minimal back bar ─────────────────────────────────────────────── *@
+        <div style="background:#00695C;display:flex;align-items:center;flex-shrink:0;padding:2px 8px">
             <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
-                           Style="color:rgba(255,255,255,0.85);flex-shrink:0"
+                           Style="color:white"
                            Href="/kalender" />
         </div>
 

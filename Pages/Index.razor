@@ -61,62 +61,58 @@
     <MudDrawerContainer>
         <MudStack Spacing="3" Class="px-4 pt-2 pb-4">
 
-            @* ── Personal – Grupp 1 ──────────────────────────────────── *@
+            @* ── Personal – Grupp 1 & 2 ──────────────────────────────── *@
             <div>
                 <MudText Typo="Typo.caption"
-                         Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">
-                    Grupp 1
+                         Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px">
+                    Personal
                 </MudText>
-                <MudSelect T="int"
-                           MultiSelection="true"
-                           SelectedValues="_selectedGroup1Ids"
-                           SelectedValuesChanged="@OnGroup1TeachersChanged"
-                           Variant="Variant.Outlined"
-                           AnchorOrigin="Origin.BottomLeft"
-                           AdornmentIcon="@Icons.Material.Filled.Person"
-                           Adornment="Adornment.Start"
-                           Dense="true"
-                           MultiSelectionTextFunc="@(s => PreviewText(s))">
-                    @foreach (var t in BookingService.Teachers.Where(t => t.Group == 1))
-                    {
-                        <MudSelectItem T="int" Value="@t.Id" Text="@t.Name">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudAvatar Style="@($"background-color:{t.Color};color:white;width:18px;height:18px;font-size:8px")"
-                                           Size="Size.Small">@t.Initials</MudAvatar>
-                                <span>@t.Name</span>
-                            </MudStack>
-                        </MudSelectItem>
-                    }
-                </MudSelect>
-            </div>
 
-            @* ── Personal – Grupp 2 ──────────────────────────────────── *@
-            <div>
-                <MudText Typo="Typo.caption"
-                         Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">
-                    Grupp 2
-                </MudText>
-                <MudSelect T="int"
-                           MultiSelection="true"
-                           SelectedValues="_selectedGroup2Ids"
-                           SelectedValuesChanged="@OnGroup2TeachersChanged"
-                           Variant="Variant.Outlined"
-                           AnchorOrigin="Origin.BottomLeft"
-                           AdornmentIcon="@Icons.Material.Filled.Person"
-                           Adornment="Adornment.Start"
-                           Dense="true"
-                           MultiSelectionTextFunc="@(s => PreviewText(s))">
-                    @foreach (var t in BookingService.Teachers.Where(t => t.Group == 2))
-                    {
-                        <MudSelectItem T="int" Value="@t.Id" Text="@t.Name">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudAvatar Style="@($"background-color:{t.Color};color:white;width:18px;height:18px;font-size:8px")"
-                                           Size="Size.Small">@t.Initials</MudAvatar>
-                                <span>@t.Name</span>
-                            </MudStack>
-                        </MudSelectItem>
-                    }
-                </MudSelect>
+                @foreach (var grp in new[] { 1, 2 })
+                {
+                    var groupTeachers = BookingService.Teachers.Where(t => t.Group == grp).ToList();
+                    var allSel        = groupTeachers.All(t  => _selectedTeacherIds.Contains(t.Id));
+                    var anySel        = groupTeachers.Any(t  => _selectedTeacherIds.Contains(t.Id));
+                    var g             = grp;
+
+                    <div style="margin-bottom:10px">
+
+                        @* Grupphuvud med "välj alla"-kryssruta *@
+                        <div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #e0e0e0;margin-bottom:4px;cursor:pointer"
+                             @onclick="() => ToggleGroupAll(g)">
+                            <MudCheckBox T="bool"
+                                         Value="@allSel"
+                                         Indeterminate="@(anySel && !allSel)"
+                                         Color="Color.Primary"
+                                         Dense="true"
+                                         StopClickPropagation="true"
+                                         ValueChanged="@(_ => ToggleGroupAll(g))" />
+                            <span style="font-size:13px;font-weight:700;color:#333;user-select:none">Grupp @g</span>
+                        </div>
+
+                        @* Enskilda lärare *@
+                        <div style="margin-left:8px">
+                            @foreach (var teacher in groupTeachers)
+                            {
+                                var tc    = teacher;
+                                var isSel = _selectedTeacherIds.Contains(tc.Id);
+                                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer"
+                                     @onclick="() => ToggleTeacherInDrawer(tc.Id)">
+                                    <MudCheckBox T="bool"
+                                                 Value="@isSel"
+                                                 Color="Color.Primary"
+                                                 Dense="true"
+                                                 StopClickPropagation="true"
+                                                 ValueChanged="@(_ => ToggleTeacherInDrawer(tc.Id))" />
+                                    <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:9px;flex-shrink:0")"
+                                               Size="Size.Small">@tc.Initials</MudAvatar>
+                                    <span style="font-size:13px;user-select:none">@tc.Name</span>
+                                </div>
+                            }
+                        </div>
+
+                    </div>
+                }
             </div>
 
             @* ── Resurser ─────────────────────────────────────────────── *@
@@ -477,23 +473,33 @@
         StateHasChanged();
     }
 
-    // ── Dropdown change handlers (filter drawer) ──────────────────────────────
+    // ── Checkbox handlers (filter drawer) ────────────────────────────────────
 
-    private void OnGroup1TeachersChanged(IEnumerable<int> selected)
+    private void ToggleTeacherInDrawer(int id)
     {
-        _selectedGroup1Ids  = selected.ToList();
-        _selectedTeacherIds = _selectedGroup1Ids.Concat(_selectedGroup2Ids).ToList();
+        var sel = _selectedTeacherIds.ToHashSet();
+        if (sel.Contains(id)) sel.Remove(id);
+        else sel.Add(id);
+        _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
-            t.IsSelected = _selectedTeacherIds.Contains(t.Id);
+            t.IsSelected = sel.Contains(t.Id);
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
-    private void OnGroup2TeachersChanged(IEnumerable<int> selected)
+    private void ToggleGroupAll(int group)
     {
-        _selectedGroup2Ids  = selected.ToList();
-        _selectedTeacherIds = _selectedGroup1Ids.Concat(_selectedGroup2Ids).ToList();
+        var groupIds    = BookingService.Teachers.Where(t => t.Group == group).Select(t => t.Id).ToHashSet();
+        var sel         = _selectedTeacherIds.ToHashSet();
+        bool allChosen  = groupIds.All(id => sel.Contains(id));
+        if (allChosen)
+            foreach (var id in groupIds) sel.Remove(id);
+        else
+            foreach (var id in groupIds) sel.Add(id);
+        _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
-            t.IsSelected = _selectedTeacherIds.Contains(t.Id);
+            t.IsSelected = sel.Contains(t.Id);
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
