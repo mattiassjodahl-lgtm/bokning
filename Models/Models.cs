@@ -76,12 +76,23 @@ public class TrainingStep
 
 public class StudentProfile
 {
-    public int    Id         { get; set; }
-    public string Name       { get; set; } = "";
-    public string Email      { get; set; } = "";
-    public string Phone      { get; set; } = "";
+    public int    Id          { get; set; }
+    public string Name        { get; set; } = "";
+    /// <summary>Tilltalsnamn / preferred first name</summary>
+    public string NickName    { get; set; } = "";
+    public string Email       { get; set; } = "";
+    /// <summary>Mobilnummer</summary>
+    public string Phone       { get; set; } = "";
+    public string Address     { get; set; } = "";
+    public int    Age         { get; set; }
+    /// <summary>"Man", "Kvinna" or "Annat"</summary>
+    public string Gender      { get; set; } = "";
+    public bool   SmsReminder { get; set; } = true;
+    public DateTime CreatedAt   { get; set; }
+    /// <summary>Source system, e.g. "Optimapro webb"</summary>
+    public string CreatedFrom { get; set; } = "";
     /// <summary>URL to avatar/photo</summary>
-    public string PhotoUrl   { get; set; } = "";
+    public string PhotoUrl    { get; set; } = "";
     /// <summary>All active license categories, e.g. ["B", "AM"]</summary>
     public List<string> LicenseCategories { get; set; } = new();
     /// <summary>Practical driving steps keyed by license category.</summary>

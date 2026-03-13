@@ -25,16 +25,19 @@ else
                         @* ── 3-column Översikt layout ─────────────────────────────── *@
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;width:100%">
 
-                            @* ── Kolumn 1: Foto + Kontaktuppgifter ───────────────── *@
+                            @* ── Kolumn 1: Elevinfo ──────────────────────────────── *@
                             <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
 
+                                @* Kort-rubrik *@
+                                <div style="font-size:10px;font-weight:700;color:#9e9e9e;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">Elevinfo</div>
+
                                 @* Foto + namn + behörighetschips *@
-                                <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-                                    <MudAvatar Style="width:64px;height:64px;font-size:1.5rem;border:3px solid #e8e8e8;flex-shrink:0">
+                                <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+                                    <MudAvatar Style="width:56px;height:56px;font-size:1.4rem;border:3px solid #e8e8e8;flex-shrink:0">
                                         <MudImage Src="@_profile.PhotoUrl" Alt="Foto" />
                                     </MudAvatar>
                                     <div>
-                                        <div style="font-size:17px;font-weight:700;color:#1a1a1a;line-height:1.2;margin-bottom:6px">@_profile.Name</div>
+                                        <div style="font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.2;margin-bottom:5px">@_profile.Name</div>
                                         <div style="display:flex;flex-wrap:wrap;gap:4px">
                                             @foreach (var lc in _profile.LicenseCategories)
                                             {
@@ -44,22 +47,64 @@ else
                                     </div>
                                 </div>
 
-                                @* Kontaktfält *@
-                                <div style="border-top:1px solid #f0f0f0;padding-top:16px;display:flex;flex-direction:column;gap:14px">
+                                @* Infofält *@
+                                <div style="display:flex;flex-direction:column;gap:11px;border-top:1px solid #f0f0f0;padding-top:14px">
 
                                     <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Email" Style="font-size:17px;color:#bdbdbd;margin-top:2px;flex-shrink:0" />
+                                        <MudIcon Icon="@Icons.Material.Filled.Badge" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
                                         <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em">E-post</div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Tilltalsnamn</div>
+                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.NickName</div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Cake" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Ålder &amp; kön</div>
+                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Age år · @_profile.Gender</div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Home" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Adress</div>
+                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Address</div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">E-post</div>
                                             <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px;font-weight:700">@_profile.Email</MudLink>
                                         </div>
                                     </div>
 
                                     <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Phone" Style="font-size:17px;color:#bdbdbd;margin-top:2px;flex-shrink:0" />
+                                        <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
                                         <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em">Telefon</div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Mobil</div>
                                             <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px;font-weight:700">@_profile.Phone</MudLink>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Sms" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">SMS-påminnelse</div>
+                                            <div style="font-size:13px;font-weight:700;color:@(_profile.SmsReminder ? "#2e7d32" : "#c62828")">
+                                                @(_profile.SmsReminder ? "Ja" : "Nej")
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Skapad</div>
+                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.CreatedAt.ToString("d MMM yyyy") · @_profile.CreatedFrom</div>
                                         </div>
                                     </div>
 
