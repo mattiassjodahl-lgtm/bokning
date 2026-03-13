@@ -1,0 +1,141 @@
+html, body {
+    font-family: 'Roboto', sans-serif;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* ── Full-screen student card layout ─────────────────────────────────────── */
+.sc-fullscreen {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.sc-topbar {
+    background: #00695C;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    border-bottom: 2px solid rgba(0,0,0,0.12);
+}
+
+.sc-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sc-sidebar-left {
+    width: 230px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid #E0E0E0;
+    background: #FAFAFA;
+}
+
+.sc-center {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+}
+
+.sc-sidebar-right {
+    width: 200px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-left: 1px solid #E0E0E0;
+    background: #FAFAFA;
+}
+
+/* ── Översikt tab 3-column grid ─────────────────────────────────────────── */
+.ov-grid {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.ov-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.ov-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #757575;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #E0E0E0;
+}
+
+.ov-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 12px;
+}
+
+.ov-info-label { font-size: 10px; color: #9E9E9E; }
+.ov-info-value { font-size: 13px; color: #212121; }
+
+@media (max-width: 768px) {
+    .ov-grid { flex-direction: column; }
+}
+
+/* Hide right sidebar on smaller screens */
+@media (max-width: 1100px) {
+    .sc-sidebar-right { display: none; }
+}
+
+/* Stack to single column on mobile */
+@media (max-width: 768px) {
+    .sc-fullscreen { height: auto; overflow: visible; }
+    .sc-body { flex-direction: column; overflow: visible; }
+    .sc-sidebar-left {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #E0E0E0;
+    }
+    .sc-center { overflow-y: visible; }
+}
+
+/* ── Compact slider used in Utbildning tab ───────────────────────────────── */
+.sc-slider .mud-slider-thumb {
+    width: 16px !important;
+    height: 16px !important;
+}
+.sc-slider input[type=range]::-webkit-slider-thumb {
+    width: 16px !important;
+    height: 16px !important;
+}
+.sc-slider input[type=range]::-moz-range-thumb {
+    width: 16px !important;
+    height: 16px !important;
+}

@@ -1,0 +1,186 @@
+@inject BookingService BookingService
+@inject IDialogService DialogService
+
+@*
+    Month view – teacher-row (timeline) layout.
+    Rows    = active teachers (full name in a sticky left cell).
+    Content = all events for that teacher in the period, laid out horizontally
+              in chronological order as compact event cards.
+    Single horizontal scroll container.
+*@
+
+<div class="cal-mv-tl-wrapper">
+  <div class="cal-mv-tl-inner">
+
+    @foreach (var t in ActiveTeachers)
+    {
+        var teacher = t;
+        var events  = GetEventsForTeacher(teacher.Id);
+
+        <div class="cal-mv-tl-row">
+
+            @* ── Sticky teacher name cell ──────────────────────────────── *@
+            <div class="cal-mv-tl-teacher"
+                 style="border-left: 4px solid @teacher.Color; background: @teacher.LightColor">
+                @if (!Filter.HideTeacherAvatars)
+                {
+                    <div class="cal-event-avatar"
+                         style="background-color:@teacher.Color;
+                                position:static; width:28px; height:28px;
+                                font-size:10px; flex-shrink:0">
+                        @teacher.Initials
+                    </div>
+                }
+                <span class="cal-mv-tl-teacher-name">@teacher.Name</span>
+            </div>
+
+            @* ── Events as horizontal strip ─────────────────────────────── *@
+            <div class="cal-mv-tl-events">
+
+                @if (events.Count == 0)
+                {
+                    <span class="cal-mv-tl-empty">Inga tider denna period</span>
+                }
+
+                @foreach (var evt in events)
+                {
+                    var e  = evt;
+                    var lt = evt.LessonTypeId.HasValue
+                                 ? BookingService.GetLessonType(evt.LessonTypeId.Value)
+                                 : null;
+
+                    <div class="cal-mv-tl-event @(evt.IsBooked ? "" : "cal-mv-tl-event-free")"
+                         style="background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
+                                border-top-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                         title="@(evt.IsBooked
+                                     ? $"{evt.StudentName} – {lt?.Name}"
+                                     : $"Ledig: {lt?.Name ?? "okänd typ"}")"
+                         @onclick="@(() => OnEventClick(e))">
+
+                        <span class="cal-mv-tl-date">
+                            @evt.StartTime.ToString("ddd d/M", _sv)
+                        </span>
+                        <span class="cal-mv-tl-time">
+                            @evt.StartTime.ToString("HH:mm")–@evt.EndTime.ToString("HH:mm")
+                        </span>
+                        @if (evt.IsBooked && lt is { MaxStudents: > 1 })
+                        {
+                            var booked = evt.AllStudentNames.Count();
+                            var pct    = (double)booked / lt.MaxStudents;
+                            var badgeColor = pct >= 0.9 ? "#f44336" : pct >= 0.5 ? "#ff9800" : "#4caf50";
+                            <span class="cal-mv-tl-label">@lt.Name</span>
+                            <span class="cal-capacity-badge" style="background-color:@badgeColor">
+                                @booked/@lt.MaxStudents
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="cal-mv-tl-label @(evt.IsBooked ? "" : "cal-mv-tl-label-free")">
+                                @(evt.IsBooked ? evt.StudentName : (lt?.Name ?? "Ledig"))
+                            </span>
+                        }
+                    </div>
+                }
+
+            </div>
+        </div>
+    }
+
+  </div>
+</div>
+
+@code {
+    [Parameter] public DateTime       CurrentMonth     { get; set; } = DateTime.Today;
+    [Parameter] public CalendarFilter Filter           { get; set; } = new();
+    [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    private readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    // ── Active teachers (respects filter selection) ───────────────────────────
+
+    private List<Teacher> ActiveTeachers =>
+        Filter.SelectedTeacherIds.Count > 0
+            ? BookingService.Teachers.Where(t => Filter.SelectedTeacherIds.Contains(t.Id)).ToList()
+            : BookingService.Teachers.Where(t => t.IsSelected).ToList();
+
+    // ── Days to display (start from today in current month) ───────────────────
+
+    private List<DateTime> DisplayDays
+    {
+        get
+        {
+            var firstOfMonth = new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1);
+            var lastOfMonth  = firstOfMonth.AddMonths(1).AddDays(-1);
+
+            // Start from today when viewing the current month, else from the 1st
+            var startDay = (CurrentMonth.Year == DateTime.Today.Year &&
+                            CurrentMonth.Month == DateTime.Today.Month)
+                ? DateTime.Today
+                : firstOfMonth;
+
+            var days = Enumerable
+                .Range(0, (int)(lastOfMonth - startDay).TotalDays + 1)
+                .Select(i => startDay.AddDays(i));
+
+            if (Filter.HideWeekends)
+                days = days.Where(d => d.DayOfWeek != DayOfWeek.Saturday
+                                    && d.DayOfWeek != DayOfWeek.Sunday);
+            return days.ToList();
+        }
+    }
+
+    // ── Event cache – fetch once per day ─────────────────────────────────────
+
+    private Dictionary<DateTime, List<CalendarEvent>> _dayCache = new();
+
+    protected override void OnParametersSet() => _dayCache.Clear();
+
+    private List<CalendarEvent> GetEventsForDay(DateTime day)
+    {
+        if (!_dayCache.TryGetValue(day.Date, out var list))
+        {
+            list = BookingService.GetEventsForDay(day, Filter).ToList();
+            _dayCache[day.Date] = list;
+        }
+        return list;
+    }
+
+    /// Returns all events for a teacher across all display days, in time order.
+    private List<CalendarEvent> GetEventsForTeacher(int teacherId)
+        => DisplayDays
+            .SelectMany(day => GetEventsForDay(day))
+            .Where(e => e.TeacherId == teacherId)
+            .OrderBy(e => e.StartTime)
+            .ToList();
+
+    // ── Click handlers ────────────────────────────────────────────────────────
+
+    private async Task OnEventClick(CalendarEvent evt)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.ExistingEvent, evt }
+        };
+        var dialog = await DialogService.ShowAsync<BookingDialog>("", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            if (result.Data?.ToString() == "book_existing")
+            {
+                var bookParams = new DialogParameters<BookingDialog>
+                {
+                    { x => x.PreselectedTeacherId,    evt.TeacherId    },
+                    { x => x.PreselectedStart,        evt.StartTime    },
+                    { x => x.PreselectedLessonTypeId, evt.LessonTypeId },
+                };
+                var bookDialog = await DialogService.ShowAsync<BookingDialog>("Boka lektion", bookParams,
+                    new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
+                await bookDialog.Result;
+            }
+            _dayCache.Clear();
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+}

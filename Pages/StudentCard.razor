@@ -1,0 +1,844 @@
+@page "/elevkort/{StudentName}"
+@inject BookingService BookingService
+@inject IDialogService DialogService
+
+<PageTitle>Elevkort – @StudentName</PageTitle>
+
+@if (_profile == null)
+{
+    <div style="padding:32px">
+        <MudAlert Severity="Severity.Warning">Eleven hittades inte.</MudAlert>
+    </div>
+}
+else
+{
+    <div class="sc-fullscreen">
+
+        @* ── Top bar ──────────────────────────────────────────────────────── *@
+        <div class="sc-topbar">
+            <div style="flex:1;min-width:0;overflow:hidden">
+                <div style="font-size:18px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2">
+                    @_profile.Name
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+                    @foreach (var topCat in _profile.LicenseCategories)
+                    {
+                        <span style="font-size:11px;padding:1px 8px;border-radius:10px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.35)">
+                            @topCat
+                        </span>
+                    }
+                </div>
+            </div>
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                           Style="color:rgba(255,255,255,0.85);flex-shrink:0"
+                           Href="/kalender" />
+        </div>
+
+        @* ── Tabs full-width ──────────────────────────────────────────────── *@
+        <div style="flex:1;overflow-y:auto">
+                <MudTabs Elevation="2" Rounded="false" ApplyEffectsToContainer="true"
+                         PanelClass="pa-4" Color="Color.Primary">
+
+                    @* ── Tab 1: Översikt ───────────────────────────────────── *@
+                    <MudTabPanel Text="Översikt" Icon="@Icons.Material.Filled.Person">
+
+                        @* ── 3-column Översikt layout ─────────────────────────────── *@
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:start">
+
+                            @* ── Kolumn 1: Kontaktuppgifter ──────────────────────── *@
+                            <div>
+                                @* Profilfoto *@
+                                <div style="margin-bottom:16px">
+                                    <MudAvatar Style="width:80px;height:80px;font-size:2rem;border:3px solid #E0E0E0">
+                                        <MudImage Src="@_profile.PhotoUrl" Alt="Foto" />
+                                    </MudAvatar>
+                                </div>
+
+                                <div class="ov-section-title">Kontaktuppgifter</div>
+
+                                <div class="ov-info-row">
+                                    <span class="ov-info-label">Namn</span>
+                                    <span class="ov-info-value" style="font-weight:500">@_profile.Name</span>
+                                </div>
+
+                                <div class="ov-info-row">
+                                    <span class="ov-info-label">E-post</span>
+                                    <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px">@_profile.Email</MudLink>
+                                </div>
+
+                                <div class="ov-info-row">
+                                    <span class="ov-info-label">Telefon</span>
+                                    <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px">@_profile.Phone</MudLink>
+                                </div>
+
+                                <div class="ov-info-row">
+                                    <span class="ov-info-label">Körkortsbehörighet</span>
+                                    <span class="ov-info-value">@string.Join(", ", _profile.LicenseCategories)</span>
+                                </div>
+                            </div>
+
+                            @* ── Kolumn 2: Status praktik & teori ────────────────── *@
+                            <div>
+                                <div class="ov-section-title">Status per behörighet</div>
+
+                                @foreach (var cat in _profile.LicenseCategories)
+                                {
+                                    var lcat      = cat;
+                                    var pSteps    = _profile.TrainingStepsByCategory.TryGetValue(cat, out var ps) ? ps : new();
+                                    var tSteps    = _profile.TheoryStepsByCategory.TryGetValue(cat, out var ts)   ? ts : new();
+                                    var pAssessed = pSteps.Count(s => s.Score > 0);
+                                    var pApproved = pSteps.Count(s => s.Score >= 4);
+                                    var pPct      = pSteps.Count > 0 ? (int)Math.Round(pAssessed / (double)pSteps.Count * 100) : 0;
+                                    var tAssessed = tSteps.Count(s => s.Score > 0);
+                                    var tApproved = tSteps.Count(s => s.Score >= 4);
+                                    var tPct      = tSteps.Count > 0 ? (int)Math.Round(tAssessed / (double)tSteps.Count * 100) : 0;
+                                    var areaExpanded = _theoryDetailsExpanded.Contains(lcat);
+
+                                    <div style="margin-bottom:18px">
+                                        @if (_profile.LicenseCategories.Count > 1)
+                                        {
+                                            <div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:8px;display:flex;align-items:center;gap:4px">
+                                                <MudIcon Icon="@Icons.Material.Filled.DriveEta" Style="font-size:14px" />
+                                                Behörighet @cat
+                                            </div>
+                                        }
+
+                                        @* Praktik *@
+                                        <div style="margin-bottom:10px">
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                                <span style="font-size:12px;font-weight:500;color:#424242;display:flex;align-items:center;gap:4px">
+                                                    <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Style="font-size:13px;color:#4caf50" />
+                                                    Praktik
+                                                </span>
+                                                <span style="font-size:11px;color:#757575">@pAssessed/@(pSteps.Count) bedömda · @pApproved godkända</span>
+                                                <span style="font-size:13px;font-weight:700;color:#4caf50;min-width:38px;text-align:right">@pPct %</span>
+                                            </div>
+                                            <MudProgressLinear Value="@pPct" Color="Color.Success" Rounded="true" Size="Size.Small" />
+                                        </div>
+
+                                        @* Teori *@
+                                        <div>
+                                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                                <span style="font-size:12px;font-weight:500;color:#424242;display:flex;align-items:center;gap:4px">
+                                                    <MudIcon Icon="@Icons.Material.Filled.MenuBook" Style="font-size:13px;color:#0097A7" />
+                                                    Teori
+                                                </span>
+                                                <span style="font-size:11px;color:#757575">@tAssessed/@(tSteps.Count) genomgångna · @tApproved godkända</span>
+                                                <span style="font-size:13px;font-weight:700;color:#0097A7;min-width:38px;text-align:right">@tPct %</span>
+                                            </div>
+                                            <MudProgressLinear Value="@tPct" Color="Color.Secondary" Rounded="true" Size="Size.Small" />
+
+                                            @* Theory area breakdown *@
+                                            @if (_profile.TheoryAreaProgress.Count > 0)
+                                            {
+                                                <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                                                    <span style="font-size:11px;color:#1565C0;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                                                          @onclick="() => ToggleTheoryDetails(lcat)">
+                                                        @if (areaExpanded)
+                                                        {
+                                                            <MudIcon Icon="@Icons.Material.Filled.ExpandLess" Style="font-size:14px" />
+                                                            <span>Dölj detaljer</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Style="font-size:14px" />
+                                                            <span>Läs mer</span>
+                                                        }
+                                                    </span>
+                                                </div>
+
+                                                @if (areaExpanded)
+                                                {
+                                                    <div style="margin-top:6px;padding:10px 12px;background:#FAFAFA;border:1px solid #E8E8E8;border-radius:8px">
+                                                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                                                            <div style="width:2px;height:10px;background:#1565C0;border-radius:1px;flex-shrink:0"></div>
+                                                            <span style="font-size:10px;color:#757575">= 75 % (målnivå)</span>
+                                                        </div>
+                                                        @foreach (var area in _profile.TheoryAreaProgress)
+                                                        {
+                                                            var pctColor = AreaBarColor(area.Percentage);
+                                                            <div style="margin-bottom:7px">
+                                                                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+                                                                    <span style="font-size:11px;color:#424242;font-weight:500">@area.Name</span>
+                                                                    <span style="font-size:11px;font-weight:700;color:@pctColor;margin-left:8px;white-space:nowrap">@area.Percentage %</span>
+                                                                </div>
+                                                                <div style="position:relative">
+                                                                    <div style="height:6px;background:#E0E0E0;border-radius:4px;overflow:hidden">
+                                                                        <div style="width:@(area.Percentage)%;height:100%;background:@pctColor;border-radius:4px"></div>
+                                                                    </div>
+                                                                    <div style="position:absolute;top:-2px;left:75%;transform:translateX(-50%);width:2px;height:10px;background:#1565C0;border-radius:1px;pointer-events:none"></div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            @* ── Kolumn 3: tom (reserverad) ──────────────────────── *@
+                            <div>
+                                @* Reserverad för framtida innehåll *@
+                            </div>
+
+                        </div>
+
+                    </MudTabPanel>
+
+                    @* ── Tab 2: Praktik ───────────────────────────────────────── *@
+                    <MudTabPanel Text="Praktik" Icon="@Icons.Material.Filled.DirectionsCar">
+
+                        @* Category switcher – only shown when student has multiple *@
+                        @if (_profile.LicenseCategories.Count > 1)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-4">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="white-space:nowrap">
+                                    Behörighet:
+                                </MudText>
+                                @foreach (var cat in _profile.LicenseCategories)
+                                {
+                                    var c = cat;
+                                    <MudButton Variant="@(_activeCategory == c ? Variant.Filled : Variant.Outlined)"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               Style="min-width:52px"
+                                               OnClick="() => _activeCategory = c">
+                                        @c
+                                    </MudButton>
+                                }
+                            </MudStack>
+                        }
+
+                        @* Step list *@
+                        <MudExpansionPanels MultiExpansion="true" Elevation="0">
+                            @foreach (var step in ActiveSteps)
+                            {
+                                var s = step; // capture for lambda
+                                <MudExpansionPanel>
+                                    <TitleContent>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center"
+                                                  Spacing="2" Style="width:100%">
+                                            @* Step number badge *@
+                                            <MudAvatar Size="Size.Small"
+                                                       Style="@StepBadgeStyle(s)"
+                                                       Class="flex-shrink-0">
+                                                @s.Number
+                                            </MudAvatar>
+
+                                            <MudText Style="flex:1;font-weight:500">@s.Name</MudText>
+
+                                            @* Score indicator *@
+                                            @if (s.Score == 0)
+                                            {
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Variant="Variant.Outlined"
+                                                         Color="Color.Default">Ej bedömd</MudChip>
+                                            }
+                                            else
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        var fi = i;
+                                                        <MudIcon Icon="@Icons.Material.Filled.Circle"
+                                                                 Size="Size.Small"
+                                                                 Style="@(fi <= s.Score ? $"color:{ScoreColor(s.Score)};font-size:10px" : "color:#e0e0e0;font-size:10px")" />
+                                                    }
+                                                </MudStack>
+                                            }
+                                        </MudStack>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <MudStack Spacing="3" Class="pt-2 pb-1">
+
+                                            @* Slider *@
+                                            <div>
+                                                <MudStack Row="true" AlignItems="AlignItems.Center"
+                                                          Justify="Justify.SpaceBetween" Class="mb-1">
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                        Bedömning
+                                                    </MudText>
+                                                    <MudText Typo="Typo.body2" Style="@($"color:{ScoreColor(s.Score)};font-weight:600")">
+                                                        @ScoreLabel(s.Score)
+                                                    </MudText>
+                                                </MudStack>
+                                                <div class="sc-slider">
+                                                    <MudSlider T="int"
+                                                               Value="@s.Score"
+                                                               ValueChanged="@(v => { s.Score = v; StateHasChanged(); })"
+                                                               Min="0" Max="5" Step="1"
+                                                               Color="@SliderColor(s.Score)"
+                                                               TickMarks="true"
+                                                               TickMarkLabels="@_sliderLabels"
+                                                               Immediate="true"
+                                                               Class="mb-4" />
+                                                </div>
+                                            </div>
+
+                                            @* Comment *@
+                                            <MudTextField T="string"
+                                                          Label="Kommentar"
+                                                          Value="@s.Comment"
+                                                          ValueChanged="@(v => { s.Comment = v; StateHasChanged(); })"
+                                                          Lines="2"
+                                                          Variant="Variant.Outlined"
+                                                          Adornment="Adornment.Start"
+                                                          AdornmentIcon="@Icons.Material.Filled.Comment"
+                                                          AdornmentColor="Color.Secondary" />
+                                        </MudStack>
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            }
+                        </MudExpansionPanels>
+                    </MudTabPanel>
+
+                    @* ── Tab 3: Teori ─────────────────────────────────────────── *@
+                    <MudTabPanel Text="Teori" Icon="@Icons.Material.Filled.MenuBook">
+
+                        @* Category switcher *@
+                        @if (_profile.LicenseCategories.Count > 1)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-4">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="white-space:nowrap">
+                                    Behörighet:
+                                </MudText>
+                                @foreach (var cat in _profile.LicenseCategories)
+                                {
+                                    var c = cat;
+                                    <MudButton Variant="@(_activeTheoryCategory == c ? Variant.Filled : Variant.Outlined)"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               Style="min-width:52px"
+                                               OnClick="() => _activeTheoryCategory = c">
+                                        @c
+                                    </MudButton>
+                                }
+                            </MudStack>
+                        }
+
+                        @* Theory step list *@
+                        <MudExpansionPanels MultiExpansion="true" Elevation="0">
+                            @foreach (var step in ActiveTheorySteps)
+                            {
+                                var s = step;
+                                <MudExpansionPanel>
+                                    <TitleContent>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center"
+                                                  Spacing="2" Style="width:100%">
+                                            <MudAvatar Size="Size.Small"
+                                                       Style="@StepBadgeStyle(s)"
+                                                       Class="flex-shrink-0">
+                                                @s.Number
+                                            </MudAvatar>
+                                            <MudText Style="flex:1;font-weight:500">@s.Name</MudText>
+                                            @if (s.Score == 0)
+                                            {
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Variant="Variant.Outlined"
+                                                         Color="Color.Default">Ej genomgånget</MudChip>
+                                            }
+                                            else
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        var fi = i;
+                                                        <MudIcon Icon="@Icons.Material.Filled.Circle"
+                                                                 Size="Size.Small"
+                                                                 Style="@(fi <= s.Score ? $"color:{ScoreColor(s.Score)};font-size:10px" : "color:#e0e0e0;font-size:10px")" />
+                                                    }
+                                                </MudStack>
+                                            }
+                                        </MudStack>
+                                    </TitleContent>
+                                    <ChildContent>
+                                        <MudStack Spacing="3" Class="pt-2 pb-1">
+                                            <div>
+                                                <MudStack Row="true" AlignItems="AlignItems.Center"
+                                                          Justify="Justify.SpaceBetween" Class="mb-1">
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Bedömning</MudText>
+                                                    <MudText Typo="Typo.body2" Style="@($"color:{ScoreColor(s.Score)};font-weight:600")">
+                                                        @ScoreLabel(s.Score)
+                                                    </MudText>
+                                                </MudStack>
+                                                <div class="sc-slider">
+                                                    <MudSlider T="int"
+                                                               Value="@s.Score"
+                                                               ValueChanged="@(v => { s.Score = v; StateHasChanged(); })"
+                                                               Min="0" Max="5" Step="1"
+                                                               Color="@SliderColor(s.Score)"
+                                                               TickMarks="true"
+                                                               TickMarkLabels="@_sliderLabels"
+                                                               Immediate="true"
+                                                               Class="mb-4" />
+                                                </div>
+                                            </div>
+                                            <MudTextField T="string"
+                                                          Label="Kommentar"
+                                                          Value="@s.Comment"
+                                                          ValueChanged="@(v => { s.Comment = v; StateHasChanged(); })"
+                                                          Lines="2"
+                                                          Variant="Variant.Outlined"
+                                                          Adornment="Adornment.Start"
+                                                          AdornmentIcon="@Icons.Material.Filled.Comment"
+                                                          AdornmentColor="Color.Secondary" />
+                                        </MudStack>
+                                    </ChildContent>
+                                </MudExpansionPanel>
+                            }
+                        </MudExpansionPanels>
+                    </MudTabPanel>
+
+                    @* ── Tab 4: Utbildning ────────────────────────────────────── *@
+                    <MudTabPanel Text="Utbildning" Icon="@Icons.Material.Filled.School">
+                    @{
+                        var studentName   = _profile.Name;
+                        var allEvents     = BookingService.GetEventsForStudent(studentName).ToList();
+                        var now           = DateTime.Now;
+                        var futureEvents  = allEvents.Where(e => e.EndTime >= now).OrderBy(e => e.StartTime).ToList();
+                        var pastEvents    = allEvents.Where(e => e.EndTime  < now).OrderByDescending(e => e.StartTime).ToList();
+                        var eduPlan       = _profile.EduPlan;
+                    }
+
+                        @* ── Framtida timmar ────────────────────────────────────────── *@
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:11px;font-weight:700;color:#757575;text-transform:uppercase;letter-spacing:.06em;padding:6px 0 6px 2px;border-bottom:2px solid #E0E0E0;margin-bottom:6px">
+                                Framtida timmar
+                                <span style="font-weight:400;margin-left:6px">(@futureEvents.Count)</span>
+                            </div>
+                            @if (futureEvents.Count == 0)
+                            {
+                                <div style="padding:12px 4px;color:#9E9E9E;font-size:13px">Inga kommande lektioner.</div>
+                            }
+                            @foreach (var evtF in futureEvents)
+                            {
+                                var evF        = evtF;
+                                var isExpF     = _expandedLessonIds.Contains(evF.Id);
+                                var teacherF   = BookingService.GetTeacher(evF.TeacherId);
+                                var ltF        = evF.LessonTypeId.HasValue ? BookingService.GetLessonType(evF.LessonTypeId.Value) : null;
+                                var resourcesF = BookingService.GetResourcesById(evF.ResourceIds);
+                                var mGroupsF   = eduPlan != null ? GroupMomentsBySection(evF, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                <div style="border:1px solid #E0E0E0;border-radius:8px;margin-bottom:8px;overflow:hidden">
+                                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#FAFAFA;cursor:pointer;user-select:none"
+                                         @onclick="() => ToggleLessonExpand(evF.Id)">
+                                        <div style="min-width:90px;flex-shrink:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121">@evF.StartTime.ToString("d MMM", _sv)</div>
+                                            <div style="font-size:11px;color:#9E9E9E">@evF.StartTime.ToString("HH:mm")–@evF.EndTime.ToString("HH:mm")</div>
+                                        </div>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@(ltF?.Name ?? "Lektion")</div>
+                                            <div style="font-size:11px;color:#757575">
+                                                @(teacherF?.Name ?? "")
+                                                @if (resourcesF.Count > 0) { <span style="margin-left:4px">· @string.Join(", ", resourcesF.Select(r => r.Name))</span> }
+                                            </div>
+                                        </div>
+                                        <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">
+                                            @if (evF.LinkedMoments.Count == 0) { <span style="font-size:11px;color:#BDBDBD;font-style:italic">Inga moment</span> }
+                                            @foreach (var mF in evF.LinkedMoments) { <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mF.Score);color:white;white-space:nowrap">@mF.Title</span> }
+                                        </div>
+                                        <MudIcon Icon="@(isExpF ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
+                                    </div>
+                                    @if (isExpF)
+                                    {
+                                        <div style="padding:12px 14px;border-top:1px solid #E8E8E8;background:white">
+                                            @if (mGroupsF.Count == 0)
+                                            {
+                                                <div style="color:#BDBDBD;font-size:13px;margin-bottom:12px">Inga moment kopplade till denna lektion.</div>
+                                            }
+                                            @foreach (var grpF in mGroupsF)
+                                            {
+                                                <div style="margin-bottom:12px">
+                                                    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                                                        @if (!string.IsNullOrEmpty(grpF.Item1.Mark)) { <span style="margin-right:4px">@grpF.Item1.Mark</span> }
+                                                        @grpF.Item1.Title
+                                                    </div>
+                                                    @foreach (var moF in grpF.Item2)
+                                                    {
+                                                        var moFc = moF;
+                                                        var ckF  = $"{evF.Id}_{moFc.GlobalId}";
+                                                        <div style="border:1px solid #F0F0F0;border-radius:6px;padding:8px 10px;margin-bottom:6px;background:#FAFAFA">
+                                                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                                                <div style="flex:1;font-size:13px;font-weight:500">@moFc.Title</div>
+                                                                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moFc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moFc.Score)</span>
+                                                            </div>
+                                                            <div class="sc-slider" style="margin:0 4px">
+                                                                <MudSlider T="int" Value="@moFc.Score" ValueChanged="@(v => { moFc.Score = v; StateHasChanged(); })" Min="0" Max="5" Step="1" Color="@SliderColor(moFc.Score)" TickMarks="true" TickMarkLabels="@_sliderLabels" Immediate="true" Class="mb-3" />
+                                                            </div>
+                                                            <div style="display:flex;align-items:center;gap:6px;margin-top:-4px">
+                                                                <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ckF)">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:13px" />
+                                                                    @(IsCommentOpen(ckF) ? "Dölj kommentar" : (string.IsNullOrEmpty(moFc.Comment) ? "Lägg till kommentar" : "Visa kommentar"))
+                                                                </span>
+                                                                @if (!string.IsNullOrEmpty(moFc.Comment) && !IsCommentOpen(ckF)) { <span style="font-size:11px;color:#9E9E9E;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">@moFc.Comment</span> }
+                                                            </div>
+                                                            @if (IsCommentOpen(ckF)) { <div style="margin-top:8px"><MudTextField T="string" Value="@moFc.Comment" ValueChanged="@(v => { moFc.Comment = v; StateHasChanged(); })" Label="Kommentar" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" /></div> }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (eduPlan != null)
+                                            {
+                                                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evF))">Lägg till utbildningsmoment</MudButton>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @* ── Tidigare timmar ────────────────────────────────────────── *@
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:11px;font-weight:700;color:#757575;text-transform:uppercase;letter-spacing:.06em;padding:6px 0 6px 2px;border-bottom:2px solid #E0E0E0;margin-bottom:6px">
+                                Tidigare timmar
+                                <span style="font-weight:400;margin-left:6px">(@pastEvents.Count)</span>
+                            </div>
+                            @if (pastEvents.Count == 0)
+                            {
+                                <div style="padding:12px 4px;color:#9E9E9E;font-size:13px">Inga tidigare lektioner.</div>
+                            }
+                            @foreach (var evtP in pastEvents)
+                            {
+                                var evP        = evtP;
+                                var isExpP     = _expandedLessonIds.Contains(evP.Id);
+                                var teacherP   = BookingService.GetTeacher(evP.TeacherId);
+                                var ltP        = evP.LessonTypeId.HasValue ? BookingService.GetLessonType(evP.LessonTypeId.Value) : null;
+                                var resourcesP = BookingService.GetResourcesById(evP.ResourceIds);
+                                var mGroupsP   = eduPlan != null ? GroupMomentsBySection(evP, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                <div style="border:1px solid #E0E0E0;border-radius:8px;margin-bottom:8px;overflow:hidden">
+                                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#FAFAFA;cursor:pointer;user-select:none"
+                                         @onclick="() => ToggleLessonExpand(evP.Id)">
+                                        <div style="min-width:90px;flex-shrink:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121">@evP.StartTime.ToString("d MMM", _sv)</div>
+                                            <div style="font-size:11px;color:#9E9E9E">@evP.StartTime.ToString("HH:mm")–@evP.EndTime.ToString("HH:mm")</div>
+                                        </div>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@(ltP?.Name ?? "Lektion")</div>
+                                            <div style="font-size:11px;color:#757575">
+                                                @(teacherP?.Name ?? "")
+                                                @if (resourcesP.Count > 0) { <span style="margin-left:4px">· @string.Join(", ", resourcesP.Select(r => r.Name))</span> }
+                                            </div>
+                                        </div>
+                                        <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">
+                                            @if (evP.LinkedMoments.Count == 0) { <span style="font-size:11px;color:#BDBDBD;font-style:italic">Inga moment</span> }
+                                            @foreach (var mP in evP.LinkedMoments) { <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mP.Score);color:white;white-space:nowrap">@mP.Title</span> }
+                                        </div>
+                                        <MudIcon Icon="@(isExpP ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
+                                    </div>
+                                    @if (isExpP)
+                                    {
+                                        <div style="padding:12px 14px;border-top:1px solid #E8E8E8;background:white">
+                                            @if (mGroupsP.Count == 0)
+                                            {
+                                                <div style="color:#BDBDBD;font-size:13px;margin-bottom:12px">Inga moment kopplade till denna lektion.</div>
+                                            }
+                                            @foreach (var grpP in mGroupsP)
+                                            {
+                                                <div style="margin-bottom:12px">
+                                                    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                                                        @if (!string.IsNullOrEmpty(grpP.Item1.Mark)) { <span style="margin-right:4px">@grpP.Item1.Mark</span> }
+                                                        @grpP.Item1.Title
+                                                    </div>
+                                                    @foreach (var moP in grpP.Item2)
+                                                    {
+                                                        var moPc = moP;
+                                                        var ckP  = $"{evP.Id}_{moPc.GlobalId}";
+                                                        <div style="border:1px solid #F0F0F0;border-radius:6px;padding:8px 10px;margin-bottom:6px;background:#FAFAFA">
+                                                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                                                <div style="flex:1;font-size:13px;font-weight:500">@moPc.Title</div>
+                                                                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moPc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moPc.Score)</span>
+                                                            </div>
+                                                            <div class="sc-slider" style="margin:0 4px">
+                                                                <MudSlider T="int" Value="@moPc.Score" ValueChanged="@(v => { moPc.Score = v; StateHasChanged(); })" Min="0" Max="5" Step="1" Color="@SliderColor(moPc.Score)" TickMarks="true" TickMarkLabels="@_sliderLabels" Immediate="true" Class="mb-3" />
+                                                            </div>
+                                                            <div style="display:flex;align-items:center;gap:6px;margin-top:-4px">
+                                                                <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ckP)">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:13px" />
+                                                                    @(IsCommentOpen(ckP) ? "Dölj kommentar" : (string.IsNullOrEmpty(moPc.Comment) ? "Lägg till kommentar" : "Visa kommentar"))
+                                                                </span>
+                                                                @if (!string.IsNullOrEmpty(moPc.Comment) && !IsCommentOpen(ckP)) { <span style="font-size:11px;color:#9E9E9E;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">@moPc.Comment</span> }
+                                                            </div>
+                                                            @if (IsCommentOpen(ckP)) { <div style="margin-top:8px"><MudTextField T="string" Value="@moPc.Comment" ValueChanged="@(v => { moPc.Comment = v; StateHasChanged(); })" Label="Kommentar" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" /></div> }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (eduPlan != null)
+                                            {
+                                                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evP))">Lägg till utbildningsmoment</MudButton>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                    </MudTabPanel>
+
+                    @* ── Tab 5: Utbildningsplan ────────────────────────────────── *@
+                    @if (_profile.EduPlan != null)
+                    {
+                        var plan = _profile.EduPlan;
+                        var donePct = plan.TotalItems > 0
+                            ? (int)Math.Round(plan.DoneItems / (double)plan.TotalItems * 100) : 0;
+
+                        <MudTabPanel Text="Utbildningsplan" Icon="@Icons.Material.Filled.Checklist">
+
+                            @* Progress summary *@
+                            <MudStack Spacing="1" Class="mb-4">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @plan.DoneItems av @plan.TotalItems moment avklarade
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight:600">@donePct %</MudText>
+                                </MudStack>
+                                <MudProgressLinear Value="@donePct" Color="Color.Primary"
+                                                  Rounded="true" Size="Size.Medium" />
+                            </MudStack>
+
+                            @* Sections *@
+                            @foreach (var section in plan.Sections)
+                            {
+                                var sec = section;
+                                var secDone = sec.Items.Count(i => i.Done);
+                                var secTotal = sec.Items.Count;
+                                var allDone = secDone == secTotal;
+
+                                <MudPaper Outlined="true" Class="mb-3" Style="border-radius:8px;overflow:hidden">
+
+                                    @* Section header *@
+                                    <div style="background:@(allDone ? "#E8F5E9" : "#F5F5F5");
+                                               padding:10px 16px;
+                                               border-bottom:1px solid #E0E0E0;
+                                               display:flex; align-items:center; gap:10px">
+                                        @if (allDone)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                                                     Style="color:#4caf50;font-size:18px;flex-shrink:0" />
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Outlined.RadioButtonUnchecked"
+                                                     Style="color:#9E9E9E;font-size:18px;flex-shrink:0" />
+                                        }
+                                        <MudText Style="flex:1;font-weight:600;font-size:14px">
+                                            @if (!string.IsNullOrEmpty(sec.Mark))
+                                            {
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Color="Color.Primary"
+                                                         Variant="Variant.Filled"
+                                                         Style="height:20px;font-size:10px;font-weight:700;margin-right:4px;padding:0 6px">
+                                                    @sec.Mark
+                                                </MudChip>
+                                            }
+                                            @sec.Title
+                                        </MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary"
+                                                 Style="white-space:nowrap">
+                                            @secDone/@secTotal
+                                        </MudText>
+                                    </div>
+
+                                    @* Items *@
+                                    <div style="padding:4px 0">
+                                        @foreach (var item in sec.Items)
+                                        {
+                                            var it = item;
+                                            <div style="display:flex; align-items:flex-start; gap:4px;
+                                                        padding:6px 16px;
+                                                        border-bottom:1px solid #F5F5F5;
+                                                        background:@(it.Done ? "#FAFFF9" : "white")">
+                                                @* Checkbox handles its own click — no div onclick to avoid double-toggle *@
+                                                <MudCheckBox T="bool"
+                                                             Value="@it.Done"
+                                                             ValueChanged="@(v => { it.Done = v; StateHasChanged(); })"
+                                                             Color="Color.Success"
+                                                             Dense="true"
+                                                             Style="flex-shrink:0" />
+                                                @* Clicking the text also toggles, giving a large touch target *@
+                                                <span style="flex:1; font-size:13px; line-height:1.4; cursor:pointer;
+                                                             padding-top:6px;
+                                                             @(it.Done ? "color:#9E9E9E;text-decoration:line-through" : "color:#212121")"
+                                                      @onclick="() => { it.Done = !it.Done; StateHasChanged(); }">
+                                                    @it.Title
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                </MudPaper>
+                            }
+
+                        </MudTabPanel>
+                    }
+
+                </MudTabs>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string StudentName { get; set; } = "";
+
+    private StudentProfile? _profile;
+    private string _activeCategory       = "";
+    private string _activeTheoryCategory = "";
+
+    // Which license categories have the theory-area detail panel expanded
+    private HashSet<string> _theoryDetailsExpanded = new();
+
+    // Utbildning tab state
+    private HashSet<int>    _expandedLessonIds = new();
+    private HashSet<string> _openCommentIds    = new();
+    private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    private void ToggleTheoryDetails(string cat)
+    {
+        if (!_theoryDetailsExpanded.Add(cat))
+            _theoryDetailsExpanded.Remove(cat);
+        StateHasChanged();
+    }
+
+    // Labels shown under each tick mark: position 0 = "–", positions 1-5 = score
+    private static readonly string[] _sliderLabels = ["–", "1", "2", "3", "4", "5"];
+
+    private List<TrainingStep> ActiveSteps =>
+        _profile?.TrainingStepsByCategory.TryGetValue(_activeCategory, out var s) == true
+            ? s : new();
+
+    private List<TrainingStep> ActiveTheorySteps =>
+        _profile?.TheoryStepsByCategory.TryGetValue(_activeTheoryCategory, out var s) == true
+            ? s : new();
+
+    protected override void OnParametersSet()
+    {
+        var decoded = Uri.UnescapeDataString(StudentName);
+        _profile = BookingService.GetStudentProfile(decoded);
+        var first = _profile.LicenseCategories.FirstOrDefault() ?? "";
+        _activeCategory       = first;
+        _activeTheoryCategory = first;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static string ScoreColor(int score) => score switch
+    {
+        0         => "#9e9e9e",
+        1 or 2    => "#f44336",
+        3         => "#ff9800",
+        4         => "#8bc34a",
+        5         => "#4caf50",
+        _         => "#9e9e9e"
+    };
+
+    private static string ScoreLabel(int score) => score switch
+    {
+        0 => "Ej bedömd",
+        1 => "1 – Ej godkänd",
+        2 => "2 – Under förväntan",
+        3 => "3 – Godtagbar",
+        4 => "4 – Godkänd",
+        5 => "5 – Mycket bra",
+        _ => ""
+    };
+
+    private static Color SliderColor(int score) => score switch
+    {
+        0         => Color.Default,
+        1 or 2    => Color.Error,
+        3         => Color.Warning,
+        4 or 5    => Color.Success,
+        _         => Color.Default
+    };
+
+    /// <summary>Color for a theory area progress bar based on completion percentage.</summary>
+    private static string AreaBarColor(int pct) => pct switch
+    {
+        < 50 => "#f44336",   // red
+        < 75 => "#ff9800",   // orange
+        < 90 => "#8bc34a",   // light green
+        _    => "#4caf50",   // green
+    };
+
+    private static string StepBadgeStyle(TrainingStep s)
+    {
+        var bg = s.Score switch
+        {
+            0         => "#e0e0e0",
+            1 or 2    => "#f44336",
+            3         => "#ff9800",
+            4 or 5    => "#4caf50",
+            _         => "#e0e0e0"
+        };
+        return $"background-color:{bg};color:{(s.Score == 0 ? "#757575" : "white")};font-size:11px;width:20px;height:20px;min-width:20px";
+    }
+
+    // ── Utbildning tab helpers ─────────────────────────────────────────────────
+
+    private void ToggleLessonExpand(int eventId)
+    {
+        if (!_expandedLessonIds.Add(eventId))
+            _expandedLessonIds.Remove(eventId);
+    }
+
+    private void ToggleComment(string key)
+    {
+        if (!_openCommentIds.Add(key))
+            _openCommentIds.Remove(key);
+    }
+
+    private bool IsCommentOpen(string key) => _openCommentIds.Contains(key);
+
+    private static string MomentStatusColor(int score) => score switch
+    {
+        >= 3 => "#388E3C",
+        > 0  => "#0097A7",
+        _    => "#BDBDBD",
+    };
+
+    private static string MomentStatusLabel(int score) => score switch
+    {
+        0     => "Ej påbörjat",
+        1 or 2 => "Påbörjat",
+        _     => "Godkänd",
+    };
+
+    /// <summary>Group a lesson's LinkedMoments by their parent EduPlanSection.</summary>
+    private static List<(EduPlanSection, List<LessonMoment>)> GroupMomentsBySection(
+        CalendarEvent evt, EduPlan plan)
+    {
+        var result = new List<(EduPlanSection, List<LessonMoment>)>();
+        if (evt.LinkedMoments.Count == 0) return result;
+
+        foreach (var section in plan.Sections)
+        {
+            var inSection = evt.LinkedMoments
+                .Where(m => section.Items.Any(i => i.GlobalId == m.GlobalId))
+                .ToList();
+            if (inSection.Count > 0)
+                result.Add((section, inSection));
+        }
+        return result;
+    }
+
+    private async Task OpenMomentDialog(CalendarEvent evt)
+    {
+        if (_profile == null || _profile.EduPlan == null) return;
+        var plan = _profile.EduPlan;
+
+        var parameters = new DialogParameters<LessonMomentDialog>
+        {
+            { x => x.Plan,            plan                 },
+            { x => x.ExistingMoments, evt.LinkedMoments    },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog  = await DialogService.ShowAsync<LessonMomentDialog>("Utbildningsmoment", parameters, options);
+        var result  = await dialog.Result;
+
+        if (result is { Canceled: false, Data: List<LessonMoment> moments })
+        {
+            evt.LinkedMoments = moments;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,326 @@
+@inject BookingService BookingService
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@* ─────────────────────────────────────────────────────────────────────────── *@
+@* Week / Day view – scrollable time-grid with draggable column widths        *@
+@* ─────────────────────────────────────────────────────────────────────────── *@
+
+<div class="cal-root" @ref="_rootRef">
+
+    @* ── Header row ──────────────────────────────────────────────────────── *@
+    <div class="cal-header-row">
+        <div class="cal-time-gutter"></div>
+        <div class="cal-days-header" style="@HeaderGridStyle">
+            @for (int i = 0; i < DisplayDays.Count; i++)
+            {
+                var day     = DisplayDays[i];
+                var idx     = i;
+                var isToday = day.Date == DateTime.Today;
+
+                <div class="cal-day-header @(isToday ? "cal-today-header" : "")"
+                     data-day-index="@idx"
+                     style="@GetColStyle(idx)">
+                    <div class="cal-day-name">@day.ToString("ddd", _sv)</div>
+                    <div class="cal-day-number @(isToday ? "cal-today-circle" : "")">@day.Day</div>
+                    <div class="cal-resize-handle" title="Dra för att ändra bredd"></div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Scrollable body ─────────────────────────────────────────────────── *@
+    <div class="cal-body">
+
+        <div class="cal-time-gutter cal-time-gutter-body" style="height:@(TotalHeight)px">
+            @for (int h = StartHour; h <= EndHour; h++)
+            {
+                var top = (h - StartHour) * PixelsPerHour;
+                <div class="cal-time-label" style="top:@(top)px">@h:00</div>
+            }
+        </div>
+
+        <div class="cal-days-body" style="@HeaderGridStyle">
+            @for (int i = 0; i < DisplayDays.Count; i++)
+            {
+                var day     = DisplayDays[i];
+                var idx     = i;
+                var isToday = day.Date == DateTime.Today;
+
+                <div class="cal-day-col @(isToday ? "cal-today-col" : "")"
+                     data-day-index="@idx"
+                     style="height:@(TotalHeight)px; @GetColStyle(idx)">
+
+                    @for (int h = StartHour; h <= EndHour; h++)
+                    {
+                        var top = (h - StartHour) * PixelsPerHour;
+                        <div class="cal-gridline-hour" style="top:@(top)px"></div>
+                        @if (h < EndHour)
+                        {
+                            <div class="cal-gridline-half" style="top:@(top + PixelsPerHour / 2)px"></div>
+                        }
+                    }
+
+                    @for (int h = StartHour; h < EndHour; h++)
+                    {
+                        for (int m = 0; m < 60; m += 30)
+                        {
+                            var slotTime = day.Date.AddHours(h).AddMinutes(m);
+                            var slotTop  = (h - StartHour) * PixelsPerHour + m * PixelsPerHour / 60;
+                            <div class="cal-empty-slot"
+                                 style="top:@(slotTop)px; height:@(PixelsPerHour / 2)px"
+                                 @onclick="@(() => OnEmptySlotClick(slotTime))">
+                            </div>
+                        }
+                    }
+
+                    @foreach (var pe in GetPositionedEvents(day))
+                    {
+                        var evt     = pe.Event;
+                        var teacher = BookingService.GetTeacher(evt.TeacherId);
+                        var lt      = evt.LessonTypeId.HasValue
+                                          ? BookingService.GetLessonType(evt.LessonTypeId.Value)
+                                          : null;
+
+                        <div class="cal-event @(evt.IsBooked ? "cal-event-booked" : "cal-event-free")"
+                             style="@pe.PositionStyle;
+                                    background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
+                                    border-left-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                             @onclick="@(() => OnEventClick(evt))"
+                             title="@(evt.IsBooked ? $"{evt.StudentName} – {lt?.Name}" : $"Ledig: {lt?.Name ?? "okänd typ"}")">
+
+                            @if (pe.Height >= 32)
+                            {
+                                <div class="cal-event-time">
+                                    @evt.StartTime.ToString("HH:mm")–@evt.EndTime.ToString("HH:mm")
+                                </div>
+                            }
+                            @if (pe.Height >= 48)
+                            {
+                                @if (evt.IsBooked)
+                                {
+                                    @if (lt is { MaxStudents: > 1 })
+                                    {
+                                        // Group lesson (e.g. Riskutbildning) – show capacity badge
+                                        var booked = evt.AllStudentNames.Count();
+                                        var pct    = (double)booked / lt.MaxStudents;
+                                        var badgeColor = pct >= 0.9 ? "#f44336" : pct >= 0.5 ? "#ff9800" : "#4caf50";
+                                        <div class="cal-event-title">@lt.Name</div>
+                                        <div class="cal-capacity-badge" style="background-color:@badgeColor">
+                                            @booked/@lt.MaxStudents
+                                        </div>
+                                    }
+                                    else if (evt.ExtraStudents.Any())
+                                    {
+                                        <div class="cal-event-title">
+                                            @evt.StudentName
+                                            <span class="cal-event-shared-badge">+@evt.ExtraStudents.Count</span>
+                                        </div>
+                                        @if (pe.Height >= 80)
+                                        {
+                                            @foreach (var s in evt.ExtraStudents)
+                                            {
+                                                <div class="cal-event-sub">@s</div>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="cal-event-title">@evt.StudentName</div>
+                                    }
+                                    @if (lt is not { MaxStudents: > 1 } && lt != null && pe.Height >= 64)
+                                    {
+                                        <div class="cal-event-sub">@lt.Name</div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="cal-event-free-label">@(lt?.Name ?? "Ledig")</div>
+                                }
+                            }
+                            @if (ActiveTeachers.Count > 1)
+                            {
+                                <div class="cal-event-avatar" style="background-color:@teacher?.Color">
+                                    @teacher?.Initials
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<DateTime> DisplayDays     { get; set; } = new();
+    [Parameter] public CalendarFilter Filter           { get; set; } = new();
+    [Parameter] public List<Teacher>  ActiveTeachers  { get; set; } = new();
+    [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    private const int StartHour     = 7;
+    private const int EndHour       = 20;
+    private const int PixelsPerHour = 80;
+    private int TotalHeight => (EndHour - StartHour) * PixelsPerHour;
+
+    // ── Per-column widths set by drag ─────────────────────────────────────────
+
+    private const int MinColWidth = 240; // 3 × 80 px
+    private Dictionary<int, double> _colWidths = new();
+
+    // Always CSS grid – builds "360px 1fr 1fr …" for the default state.
+    // Unresized columns use 1fr so they fill the available space equally
+    // without a hard minimum, preventing horizontal overflow when few days
+    // are shown (e.g. weekends hidden → 5 cols).
+    // JS mirrors this logic during drag so there is no conflict.
+    private string HeaderGridStyle
+    {
+        get
+        {
+            var cols = Enumerable.Range(0, DisplayDays.Count)
+                .Select(i => _colWidths.TryGetValue(i, out var w)
+                    ? $"{w}px"
+                    : "1fr");
+            return $"grid-template-columns: {string.Join(' ', cols)};";
+        }
+    }
+
+    // No per-column inline style needed – grid-template-columns handles it all.
+    private string GetColStyle(int idx) => "";
+
+    // ── JS interop ────────────────────────────────────────────────────────────
+
+    private ElementReference _rootRef;
+    private DotNetObjectReference<WeekView>? _dotnetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotnetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initCalendarResize", _rootRef, _dotnetRef);
+        }
+    }
+
+    /// Called from JS when the user finishes dragging a column edge.
+    [JSInvokable]
+    public void OnColumnResized(int dayIndex, double newWidth)
+    {
+        _colWidths[dayIndex] = newWidth;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotnetRef?.Dispose();
+        await ValueTask.CompletedTask;
+    }
+
+    // ── Event positioning (sweep-line) ────────────────────────────────────────
+
+    private record PositionedEvent(CalendarEvent Event, double Top, double Height, double Left, double Width)
+    {
+        private static readonly System.Globalization.CultureInfo Inv
+            = System.Globalization.CultureInfo.InvariantCulture;
+
+        /// CSS-safe position string — always uses "." as decimal separator.
+        public string PositionStyle =>
+            $"top:{Top.ToString("F1", Inv)}px;" +
+            $"height:{Height.ToString("F1", Inv)}px;" +
+            $"left:{Left.ToString("F3", Inv)}%;" +
+            $"width:{Width.ToString("F3", Inv)}%";
+    }
+
+    private List<PositionedEvent> GetPositionedEvents(DateTime day)
+    {
+        var events = BookingService
+            .GetEventsForDay(day, Filter)
+            .Where(e => e.StartTime.Date == day.Date)
+            .OrderBy(e => e.StartTime)
+            .ToList();
+
+        var columns  = new List<List<CalendarEvent>>();
+        var colIndex = new Dictionary<int, int>();
+
+        foreach (var evt in events)
+        {
+            bool placed = false;
+            for (int c = 0; c < columns.Count; c++)
+            {
+                if (columns[c].All(e => e.EndTime <= evt.StartTime))
+                {
+                    columns[c].Add(evt);
+                    colIndex[evt.Id] = c;
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed)
+            {
+                columns.Add(new List<CalendarEvent> { evt });
+                colIndex[evt.Id] = columns.Count - 1;
+            }
+        }
+
+        var result = new List<PositionedEvent>();
+        foreach (var evt in events)
+        {
+            int    col     = colIndex[evt.Id];
+            int    maxCols = columns.Count(cols =>
+                                 cols.Any(e => e.StartTime < evt.EndTime && e.EndTime > evt.StartTime));
+            double top     = (evt.StartTime.Hour - StartHour + evt.StartTime.Minute / 60.0) * PixelsPerHour;
+            double height  = Math.Max(evt.Duration.TotalHours * PixelsPerHour, 20);
+            double left    = col  * (100.0 / maxCols) + 1;
+            double width   = 100.0 / maxCols - 2;
+
+            result.Add(new(evt, top, height, left, width));
+        }
+        return result;
+    }
+
+    private readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    // ── Click handlers ────────────────────────────────────────────────────────
+
+    private async Task OnEventClick(CalendarEvent evt)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.ExistingEvent, evt }
+        };
+        var dialog = await DialogService.ShowAsync<BookingDialog>("", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            if (result.Data?.ToString() == "book_existing")
+                await OpenNewBookingDialog(evt.TeacherId, evt.StartTime, evt.LessonTypeId);
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnEmptySlotClick(DateTime slotTime)
+        => await OpenNewBookingDialog(ActiveTeachers.FirstOrDefault()?.Id ?? 0, slotTime, null);
+
+    private async Task OpenNewBookingDialog(int teacherId, DateTime startTime, int? lessonTypeId)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.PreselectedTeacherId,  teacherId  },
+            { x => x.PreselectedStart,      startTime  },
+            { x => x.PreselectedLessonTypeId, lessonTypeId },
+        };
+        var dialog = await DialogService.ShowAsync<BookingDialog>("Boka lektion", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+}

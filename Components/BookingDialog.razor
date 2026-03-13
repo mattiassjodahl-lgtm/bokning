@@ -1,0 +1,617 @@
+@inject BookingService BookingService
+
+<MudDialog>
+    <TitleContent>
+        @if (IsViewMode)
+        {
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Event" Class="mr-1" Style="vertical-align:middle" />
+                @(ExistingEvent!.IsBooked ? "Bokad lektion" : "Ledig tid")
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.AddCircle" Class="mr-1" Style="vertical-align:middle" />
+                Boka lektion
+            </MudText>
+        }
+    </TitleContent>
+
+    <DialogContent>
+        @if (IsViewMode && ExistingEvent != null)
+        {
+            @* ── View mode ──────────────────────────────────────────────────── *@
+            <MudStack Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudAvatar Style="@($"background-color:{ViewTeacher?.Color};color:white")" Size="Size.Small">
+                        @ViewTeacher?.Initials
+                    </MudAvatar>
+                    <MudText Typo="Typo.subtitle1">@ViewTeacher?.Name</MudText>
+                </MudStack>
+
+                <MudDivider />
+
+                <MudStack Row="true" Spacing="4">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Datum</MudText>
+                        <MudText>@ExistingEvent.StartTime.ToString("dddd d MMMM", new System.Globalization.CultureInfo("sv-SE"))</MudText>
+                    </div>
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Tid</MudText>
+                        <MudText>@ExistingEvent.StartTime.ToString("HH:mm") – @ExistingEvent.EndTime.ToString("HH:mm")</MudText>
+                    </div>
+                </MudStack>
+
+                @if (ExistingEvent.IsBooked)
+                {
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
+                            @(ExistingEvent.ExtraStudents.Any() ? "Elever" : "Elev")
+                        </MudText>
+                        @foreach (var name in ExistingEvent.AllStudentNames)
+                        {
+                            var n = name; // capture for lambda
+                            <MudStack Row="true" AlignItems="AlignItems.Center"
+                                      Spacing="2" Class="mb-2"
+                                      Style="background:#f5f7fa;border-radius:8px;padding:6px 10px">
+                                <MudIcon Icon="@Icons.Material.Filled.Person"
+                                         Size="Size.Small" Color="Color.Primary" />
+                                <MudText Style="flex:1;font-weight:500">@n</MudText>
+                                <MudButton Href="@($"/elevkort/{Uri.EscapeDataString(n)}")"
+                                           Target="_blank"
+                                           StartIcon="@Icons.Material.Filled.ContactPage"
+                                           Size="Size.Small"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Style="text-transform:none;font-size:12px;padding:2px 10px;min-width:0;height:28px">
+                                    Elevkort
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </div>
+
+                    @if (ViewLessonType != null)
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Lektionstyp</MudText>
+                            <MudChip T="string" Icon="@ViewLessonType.Icon" Size="Size.Small"
+                                     Color="Color.Primary" Variant="Variant.Filled">
+                                @ViewLessonType.Name
+                            </MudChip>
+                        </div>
+                    }
+
+                    @if (ExistingEvent.ResourceIds.Any())
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Resurser</MudText>
+                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                                @foreach (var res in BookingService.GetResourcesById(ExistingEvent.ResourceIds))
+                                {
+                                    <MudChip T="string" Icon="@res.Icon" Size="Size.Small"
+                                             Variant="Variant.Outlined">@res.Name</MudChip>
+                                }
+                            </MudStack>
+                        </div>
+                    }
+
+                    @if (ExistingEvent.PickupLocationId.HasValue)
+                    {
+                        var pickup = BookingService.GetPickupLocation(ExistingEvent.PickupLocationId.Value);
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Upphämtningsplats</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Color="Color.Primary" />
+                                <MudText>@pickup?.Name</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">— @pickup?.Address</MudText>
+                            </MudStack>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(ExistingEvent.Notes))
+                    {
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Anteckningar</MudText>
+                            <MudText>@ExistingEvent.Notes</MudText>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Success" Dense="true">
+                        Ledig tid – klicka <strong>Boka</strong> för att reservera.
+                    </MudAlert>
+                }
+            </MudStack>
+        }
+        else
+        {
+            @* ── Booking form ────────────────────────────────────────────────── *@
+            <MudForm @ref="_form" @bind-IsValid="_isValid">
+                <MudStack Spacing="3">
+
+                    @* Teacher *@
+                    <MudSelect T="int" Label="Lärare"
+                               Value="@_request.TeacherId"
+                               ValueChanged="@OnTeacherChanged"
+                               Required="true" RequiredError="Välj en lärare"
+                               Variant="Variant.Outlined">
+                        @foreach (var t in BookingService.Teachers)
+                        {
+                            <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @* ── First booking row (always visible) ────────────────── *@
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.End">
+                        <MudDatePicker Label="Datum"
+                                       Date="@_rows[0].Date"
+                                       DateChanged="@(d => _rows[0].Date = d)"
+                                       Required="true" RequiredError="Välj datum"
+                                       Variant="Variant.Outlined"
+                                       Culture="@_svCulture"
+                                       Class="flex-1" />
+                        <MudTimePicker Label="Starttid"
+                                       Time="@_rows[0].StartTime"
+                                       TimeChanged="@(t => _rows[0].StartTime = t)"
+                                       Required="true"
+                                       Variant="Variant.Outlined"
+                                       AmPm="false"
+                                       Class="flex-1" />
+                        <MudTimePicker Label="Sluttid"
+                                       Time="@_rows[0].EndTime"
+                                       TimeChanged="@(t => _rows[0].EndTime = t)"
+                                       Required="true"
+                                       Variant="Variant.Outlined"
+                                       AmPm="false"
+                                       Class="flex-1" />
+                    </MudStack>
+
+                    @* ── Boka flera toggle + intervalväljare ────────────────── *@
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+                        <MudSwitch T="bool" Value="_multiBook"
+                                   ValueChanged="@OnMultiBookToggled"
+                                   Color="Color.Primary"
+                                   Label="Boka flera"
+                                   Dense="true" />
+
+                        @* Interval between suggested slots *@
+                        <MudButtonGroup Size="Size.Small" DisableElevation="true" Style="flex-shrink:0">
+                            <MudButton Color="@(_intervalDays == 1 ? Color.Primary : Color.Default)"
+                                       Variant="@(_intervalDays == 1 ? Variant.Filled : Variant.Outlined)"
+                                       StartIcon="@(_intervalDays == 1 ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Circle)"
+                                       OnClick="@(() => SetInterval(1))">Snarast</MudButton>
+                            <MudButton Color="@(_intervalDays == 7 ? Color.Primary : Color.Default)"
+                                       Variant="@(_intervalDays == 7 ? Variant.Filled : Variant.Outlined)"
+                                       StartIcon="@(_intervalDays == 7 ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Circle)"
+                                       OnClick="@(() => SetInterval(7))">Nästa vecka</MudButton>
+                        </MudButtonGroup>
+
+                        @if (_multiBook)
+                        {
+                            <MudSpacer />
+                            <MudButton Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       Variant="Variant.Outlined"
+                                       OnClick="AddRow"
+                                       Disabled="@(_rows.Count >= MaxRows)">
+                                Lägg till fler @(_rows.Count < MaxRows ? $"({_rows.Count}/{MaxRows})" : $"(max {MaxRows})")
+                            </MudButton>
+                        }
+                    </MudStack>
+
+                    @* ── Additional booking rows ────────────────────────────── *@
+                    @if (_multiBook && _rows.Count > 1)
+                    {
+                        @for (int i = 1; i < _rows.Count; i++)
+                        {
+                            var row = _rows[i];
+                            var idx = i;
+                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.End">
+                                <MudDatePicker Date="@row.Date"
+                                               DateChanged="@(d => row.Date = d)"
+                                               Variant="Variant.Outlined"
+                                               Culture="@_svCulture"
+                                               Class="flex-1" />
+                                <MudTimePicker Time="@row.StartTime"
+                                               TimeChanged="@(t => row.StartTime = t)"
+                                               Variant="Variant.Outlined"
+                                               AmPm="false"
+                                               Class="flex-1" />
+                                <MudTimePicker Time="@row.EndTime"
+                                               TimeChanged="@(t => row.EndTime = t)"
+                                               Variant="Variant.Outlined"
+                                               AmPm="false"
+                                               Class="flex-1" />
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               title="Ta bort"
+                                               OnClick="@(() => RemoveRow(idx))" />
+                            </MudStack>
+                        }
+                    }
+
+                    <MudDivider />
+
+                    @* Lesson type *@
+                    <MudSelect T="int" Label="Lektionstyp"
+                               Value="@_request.LessonTypeId"
+                               ValueChanged="@OnLessonTypeChanged"
+                               Required="true" Variant="Variant.Outlined">
+                        @foreach (var lt in BookingService.LessonTypes)
+                        {
+                            <MudSelectItem Value="@lt.Id">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@lt.Icon" Size="Size.Small" Style="font-size:16px" />
+                                    <span>@lt.Name</span>
+                                </MudStack>
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @* Student(s) – single field or dynamic list for shared lessons *@
+                    @if (IsSharedLesson)
+                    {
+                        <div>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Color="Color.Primary" />
+                                <MudText Typo="Typo.subtitle2">Elever</MudText>
+                            </MudStack>
+                            <MudStack Spacing="2">
+                                @* First student (required) *@
+                                <MudAutocomplete T="string"
+                                                 Label="Elev 1"
+                                                 @bind-Value="_request.StudentName"
+                                                 SearchFunc="@SearchStudents"
+                                                 Required="true" RequiredError="Ange minst en elev"
+                                                 Variant="Variant.Outlined"
+                                                 Adornment="Adornment.Start"
+                                                 AdornmentIcon="@Icons.Material.Filled.Person"
+                                                 CoerceText="true" CoerceValue="true"
+                                                 Clearable="true"
+                                                 Placeholder="Sök eller skriv namn…" />
+                                @* Extra students *@
+                                @for (int si = 0; si < _extraStudents.Count; si++)
+                                {
+                                    var sidx = si;
+                                    <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+                                        <MudAutocomplete T="string"
+                                                         Label="@($"Elev {sidx + 2}")"
+                                                         Value="@_extraStudents[sidx]"
+                                                         ValueChanged="@(v => _extraStudents[sidx] = v ?? "")"
+                                                         SearchFunc="@SearchStudents"
+                                                         Variant="Variant.Outlined"
+                                                         Adornment="Adornment.Start"
+                                                         AdornmentIcon="@Icons.Material.Filled.Person"
+                                                         CoerceText="true" CoerceValue="true"
+                                                         Clearable="true"
+                                                         Placeholder="Sök eller skriv namn…"
+                                                         Class="flex-1" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                                       Color="Color.Error" Size="Size.Small"
+                                                       title="Ta bort elev"
+                                                       OnClick="@(() => RemoveExtraStudent(sidx))" />
+                                    </MudStack>
+                                }
+                                <MudButton Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                                           Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           OnClick="AddExtraStudent">
+                                    Lägg till elev
+                                </MudButton>
+                            </MudStack>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudAutocomplete T="string"
+                                         Label="Elevens namn"
+                                         @bind-Value="_request.StudentName"
+                                         SearchFunc="@SearchStudents"
+                                         Required="true" RequiredError="Ange elevens namn"
+                                         Variant="Variant.Outlined"
+                                         Adornment="Adornment.Start"
+                                         AdornmentIcon="@Icons.Material.Filled.Person"
+                                         Clearable="true"
+                                         CoerceText="true"
+                                         CoerceValue="true"
+                                         Placeholder="Sök eller skriv namn…" />
+                    }
+
+                    @* Pickup location *@
+                    <MudSelect T="int?" Label="Upphämtningsplats (valfritt)"
+                               Value="@_request.PickupLocationId"
+                               ValueChanged="@((int? v) => _request.PickupLocationId = v)"
+                               Clearable="true"
+                               Variant="Variant.Outlined"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.Place">
+                        @foreach (var loc in BookingService.PickupLocations)
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)loc.Id)">
+                                @loc.Name
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ml-2">@loc.Address</MudText>
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @* Resources *@
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="mb-1">Resurser (valfritt)</MudText>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                            @foreach (var res in BookingService.Resources)
+                            {
+                                var resId = res.Id;
+                                var isSelected = _request.SelectedResourceIds.Contains(resId);
+                                <MudChip T="string" Icon="@res.Icon"
+                                         Size="Size.Small"
+                                         Color="@(isSelected ? Color.Primary : Color.Default)"
+                                         Variant="@(isSelected ? Variant.Filled : Variant.Outlined)"
+                                         OnClick="@(() => ToggleResource(resId))"
+                                         Disabled="@(!res.IsAvailable)"
+                                         Style="cursor:pointer">
+                                    @res.Name @(!res.IsAvailable ? " (ej tillgänglig)" : "")
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </div>
+
+                    @* Notes *@
+                    <MudTextField Label="Anteckningar (valfritt)"
+                                  @bind-Value="_request.Notes"
+                                  Lines="2" Variant="Variant.Outlined" />
+
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        @if (IsViewMode && ExistingEvent != null)
+        {
+            @if (ExistingEvent.IsBooked)
+            {
+                <MudButton Color="Color.Error" OnClick="OnCancelBooking"
+                           StartIcon="@Icons.Material.Filled.Cancel">
+                    Avboka
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                           OnClick="OnBookExisting"
+                           StartIcon="@Icons.Material.Filled.BookOnline">
+                    Boka denna tid
+                </MudButton>
+            }
+            <MudSpacer />
+            <MudButton OnClick="Close">Stäng</MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Close">Avbryt</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="OnSubmit"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       Disabled="@(!_isValid)">
+                @(_rows.Count > 1 ? $"Spara {_rows.Count} bokningar" : "Spara bokning")
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CalendarEvent? ExistingEvent        { get; set; }
+    [Parameter] public int            PreselectedTeacherId  { get; set; }
+    [Parameter] public DateTime       PreselectedStart      { get; set; }
+    /// When true, auto-fills the first slot with the teacher's next free slot.
+    [Parameter] public bool           FindNextAvailable     { get; set; }
+    /// Pre-selects a lesson type (e.g. from the free slot that was clicked).
+    [Parameter] public int?           PreselectedLessonTypeId { get; set; }
+
+    // ── State ─────────────────────────────────────────────────────────────────
+
+    private class BookingRow
+    {
+        public DateTime? Date      { get; set; }
+        public TimeSpan? StartTime { get; set; }
+        public TimeSpan? EndTime   { get; set; }
+    }
+
+    private const int MaxRows          = 10;
+    private const int SharedLessonTypeId = 8;
+
+    private List<BookingRow> _rows          = new();
+    private List<string>     _extraStudents = new();
+    private bool             _multiBook    = false;
+    private int              _intervalDays  = 1;   // 1 = snarast, 7 = nästa vecka
+    private BookingRequest   _request      = new();
+    private bool             _isValid;
+    private MudForm          _form         = default!;
+    private bool IsViewMode     => ExistingEvent != null;
+    private bool IsSharedLesson => _request.LessonTypeId == SharedLessonTypeId;
+
+
+    private readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
+
+    private Teacher?     ViewTeacher     => ExistingEvent != null ? BookingService.GetTeacher(ExistingEvent.TeacherId) : null;
+    private LessonType?  ViewLessonType  => ExistingEvent?.LessonTypeId.HasValue == true
+                                               ? BookingService.GetLessonType(ExistingEvent.LessonTypeId!.Value)
+                                               : null;
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    protected override void OnInitialized()
+    {
+        if (IsViewMode) return;
+
+        _request.TeacherId    = PreselectedTeacherId > 0
+                                    ? PreselectedTeacherId
+                                    : (BookingService.Teachers.FirstOrDefault()?.Id ?? 1);
+        _request.LessonTypeId = PreselectedLessonTypeId ?? 2;
+
+        var start = PreselectedStart != default ? PreselectedStart : DateTime.Now;
+        _rows.Add(new BookingRow
+        {
+            Date      = start.Date,
+            StartTime = start.TimeOfDay,
+            EndTime   = start.TimeOfDay.Add(TimeSpan.FromHours(1)),
+        });
+
+        if (FindNextAvailable)
+            AutoFillNextSlot();
+    }
+
+    // ── Teacher change ────────────────────────────────────────────────────────
+
+    private void OnTeacherChanged(int teacherId)
+    {
+        _request.TeacherId = teacherId;
+        if (FindNextAvailable)
+            AutoFillNextSlot();
+    }
+
+    private void AutoFillNextSlot()
+    {
+        // Search from today + interval (min 1 day = at least tomorrow)
+        var searchFrom = DateTime.Today.AddDays(_intervalDays);
+        var slot       = BookingService.GetNextAvailableSlot(_request.TeacherId, searchFrom);
+        if (slot == null) return;
+
+        _rows[0].Date      = slot.StartTime.Date;
+        _rows[0].StartTime = slot.StartTime.TimeOfDay;
+        _rows[0].EndTime   = slot.EndTime.TimeOfDay;
+    }
+
+    // ── Multi-booking ─────────────────────────────────────────────────────────
+
+    private void SetInterval(int days)
+    {
+        _intervalDays = days;
+        // Re-fill the first row whenever the interval changes
+        if (FindNextAvailable)
+            AutoFillNextSlot();
+    }
+
+    private void OnMultiBookToggled(bool value)
+    {
+        _multiBook = value;
+        if (!_multiBook)
+            // Remove all extra rows when toggling off
+            while (_rows.Count > 1) _rows.RemoveAt(_rows.Count - 1);
+    }
+
+    private void AddRow()
+    {
+        if (_rows.Count >= MaxRows) return;
+
+        // Search for next free slot starting from last row's date + chosen interval
+        var last       = _rows[^1];
+        var baseDate   = last.Date ?? DateTime.Today;
+        var searchFrom = baseDate.AddDays(_intervalDays).Add(last.StartTime ?? TimeSpan.Zero);
+
+        var slot = BookingService.GetNextAvailableSlot(_request.TeacherId, searchFrom);
+        if (slot != null)
+        {
+            _rows.Add(new BookingRow
+            {
+                Date      = slot.StartTime.Date,
+                StartTime = slot.StartTime.TimeOfDay,
+                EndTime   = slot.EndTime.TimeOfDay,
+            });
+        }
+        else
+        {
+            // No slot found – add a row with the calculated date anyway
+            var fallbackStart = last.StartTime ?? TimeSpan.FromHours(9);
+            _rows.Add(new BookingRow
+            {
+                Date      = baseDate.AddDays(_intervalDays),
+                StartTime = fallbackStart,
+                EndTime   = fallbackStart.Add(TimeSpan.FromHours(1)),
+            });
+        }
+    }
+
+    private void RemoveRow(int index)
+    {
+        if (index > 0 && index < _rows.Count)
+            _rows.RemoveAt(index);
+    }
+
+    // ── Lesson type change ────────────────────────────────────────────────────
+
+    private void OnLessonTypeChanged(int typeId)
+    {
+        _request.LessonTypeId = typeId;
+        if (typeId != SharedLessonTypeId)
+            _extraStudents.Clear();
+    }
+
+    // ── Student search & shared-lesson helpers ────────────────────────────────
+
+    private Task<IEnumerable<string>> SearchStudents(string value, CancellationToken _)
+        => Task.FromResult(BookingService.SearchStudents(value));
+
+    private void AddExtraStudent()    => _extraStudents.Add("");
+    private void RemoveExtraStudent(int idx)
+    {
+        if (idx >= 0 && idx < _extraStudents.Count)
+            _extraStudents.RemoveAt(idx);
+    }
+
+    // ── Resource toggle ───────────────────────────────────────────────────────
+
+    private void ToggleResource(int resourceId)
+    {
+        if (_request.SelectedResourceIds.Contains(resourceId))
+            _request.SelectedResourceIds.Remove(resourceId);
+        else
+            _request.SelectedResourceIds.Add(resourceId);
+    }
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+
+    private async Task OnSubmit()
+    {
+        await _form.Validate();
+        if (!_isValid) return;
+
+        foreach (var row in _rows)
+        {
+            var date = row.Date ?? DateTime.Today;
+            BookingService.AddBooking(new BookingRequest
+            {
+                TeacherId           = _request.TeacherId,
+                StartTime           = date.Add(row.StartTime ?? TimeSpan.Zero),
+                EndTime             = date.Add(row.EndTime   ?? TimeSpan.FromHours(1)),
+                StudentName         = _request.StudentName,
+                ExtraStudents       = IsSharedLesson
+                                          ? _extraStudents.Where(s => !string.IsNullOrWhiteSpace(s)).ToList()
+                                          : new(),
+                LessonTypeId        = _request.LessonTypeId,
+                SelectedResourceIds = _request.SelectedResourceIds.ToList(),
+                Notes               = _request.Notes,
+                PickupLocationId    = _request.PickupLocationId,
+            });
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void OnCancelBooking()
+    {
+        BookingService.CancelBooking(ExistingEvent!.Id);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void OnBookExisting()
+        => MudDialog.Close(DialogResult.Ok("book_existing"));
+
+    private void Close() => MudDialog.Cancel();
+}

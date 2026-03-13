@@ -1,0 +1,23 @@
+## .NET / Blazor
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.swp
+
+## Publish output
+publish/
+out/
+
+## Secrets & local config
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+secrets.json
+.env
+
+## OS
+.DS_Store
+Thumbs.db

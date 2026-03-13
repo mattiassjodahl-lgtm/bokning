@@ -1,0 +1,185 @@
+@inject BookingService BookingService
+@inject IDialogService DialogService
+
+@* ─────────────────────────────────────────────────────────────────────────── *@
+@* Mobile agenda view – horizontal day-strip + vertical event list            *@
+@* ─────────────────────────────────────────────────────────────────────────── *@
+
+<div class="agenda-root">
+
+    @* ── Scrollable day-strip ─────────────────────────────────────────────── *@
+    <div class="agenda-day-strip">
+        @foreach (var day in WeekDays)
+        {
+            var isSelected = day.Date == SelectedDay.Date;
+            var isToday    = day.Date == DateTime.Today;
+            var hasEvents  = BookingService.GetEventsForDay(day, Filter).Any();
+
+            <div class="agenda-day-chip @(isSelected ? "agenda-day-selected" : "") @(isToday ? "agenda-day-today" : "")"
+                 @onclick="@(() => SelectDay(day))">
+                <div class="agenda-chip-name">@day.ToString("ddd", _sv)</div>
+                <div class="agenda-chip-num">@day.Day</div>
+                @if (hasEvents)
+                {
+                    <div class="agenda-chip-dot"></div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ── Day heading ──────────────────────────────────────────────────────── *@
+    <div class="agenda-day-heading">
+        @SelectedDay.ToString("dddd d MMMM", _sv)
+    </div>
+
+    @* ── Event list ───────────────────────────────────────────────────────── *@
+    @{
+        var events = BookingService.GetEventsForDay(SelectedDay, Filter)
+                        .OrderBy(e => e.StartTime)
+                        .ToList();
+    }
+
+    @if (!events.Any())
+    {
+        <div class="agenda-empty">
+            <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Style="font-size:48px; color:#bdbdbd" />
+            <MudText Color="Color.Secondary" Class="mt-2">Inga händelser denna dag</MudText>
+        </div>
+    }
+    else
+    {
+        <div class="agenda-list">
+            @foreach (var evt in events)
+            {
+                var teacher = BookingService.GetTeacher(evt.TeacherId);
+                var lt      = evt.LessonTypeId.HasValue
+                                  ? BookingService.GetLessonType(evt.LessonTypeId.Value)
+                                  : null;
+                var resources = BookingService.GetResourcesById(evt.ResourceIds);
+
+                <div class="agenda-event @(evt.IsBooked ? "agenda-event-booked" : "agenda-event-free")"
+                     style="border-left-color: @(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                     @onclick="@(() => OnEventClick(evt))">
+
+                    @* Time column *@
+                    <div class="agenda-event-time-col">
+                        <div class="agenda-time-start">@evt.StartTime.ToString("HH:mm")</div>
+                        <div class="agenda-time-end">@evt.EndTime.ToString("HH:mm")</div>
+                    </div>
+
+                    @* Content *@
+                    <div class="agenda-event-content">
+                        @* Teacher badge *@
+                        <div class="agenda-teacher-row">
+                            <MudAvatar Style="@($"background-color:{teacher?.Color};color:white;width:20px;height:20px;font-size:9px")"
+                                       Size="Size.Small">
+                                @teacher?.Initials
+                            </MudAvatar>
+                            <span class="agenda-teacher-name">@teacher?.Name</span>
+                            @if (!evt.IsBooked)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success"
+                                         Variant="Variant.Filled" Class="ml-auto agenda-free-chip">
+                                    Ledig
+                                </MudChip>
+                            }
+                        </div>
+
+                        @if (evt.IsBooked)
+                        {
+                            @* Student name *@
+                            <div class="agenda-student">@evt.StudentName</div>
+
+                            @* Lesson type *@
+                            @if (lt != null)
+                            {
+                                <div class="agenda-lessontype">
+                                    <MudIcon Icon="@lt.Icon" Size="Size.Small" Style="font-size:14px; vertical-align:middle; color:#757575" />
+                                    <span>@lt.Name</span>
+                                </div>
+                            }
+
+                            @* Resources *@
+                            @if (resources.Any())
+                            {
+                                <div class="agenda-resources">
+                                    @foreach (var r in resources)
+                                    {
+                                        <span class="agenda-resource-badge">
+                                            <MudIcon Icon="@r.Icon" Size="Size.Small" Style="font-size:12px; vertical-align:middle" />
+                                            @r.Name
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @* ── FAB: new booking ─────────────────────────────────────────────────── *@
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+            Style="position:fixed; bottom:24px; right:24px; z-index:10"
+            OnClick="OpenNewBookingDialog" />
+</div>
+
+@code {
+    [Parameter] public List<DateTime> WeekDays  { get; set; } = new();
+    [Parameter] public DateTime       CurrentDate { get; set; } = DateTime.Today;
+    [Parameter] public CalendarFilter Filter      { get; set; } = new();
+    [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    private DateTime SelectedDay;
+    private readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    protected override void OnParametersSet()
+    {
+        // Sync selected day when week changes
+        if (!WeekDays.Contains(SelectedDay.Date == default ? default : SelectedDay))
+            SelectedDay = WeekDays.FirstOrDefault(d => d.Date == CurrentDate.Date,
+                          WeekDays.FirstOrDefault(d => d.Date == DateTime.Today,
+                          WeekDays.FirstOrDefault()));
+    }
+
+    private void SelectDay(DateTime day) => SelectedDay = day;
+
+    private async Task OnEventClick(CalendarEvent evt)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.ExistingEvent, evt }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true };
+        var dialog  = await DialogService.ShowAsync<BookingDialog>("", parameters, options);
+        var result  = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            if (result.Data?.ToString() == "book_existing")
+                await OpenNewBookingDialogAt(evt.TeacherId, evt.StartTime);
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenNewBookingDialog()
+        => await OpenNewBookingDialogAt(0, SelectedDay.AddHours(9));
+
+    private async Task OpenNewBookingDialogAt(int teacherId, DateTime start)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.PreselectedTeacherId, teacherId },
+            { x => x.PreselectedStart,     start     },
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true };
+        var dialog  = await DialogService.ShowAsync<BookingDialog>("Boka lektion", parameters, options);
+        var result  = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+}
