@@ -36,17 +36,17 @@ else
 
         @* ── Tabs full-width ──────────────────────────────────────────────── *@
         <div style="flex:1;overflow-y:auto">
-                <MudTabs Elevation="2" Rounded="false" ApplyEffectsToContainer="true"
-                         PanelClass="pa-4" Color="Color.Primary">
+                <MudTabs Elevation="2" Rounded="false"
+                         PanelClass="pa-4" Color="Color.Primary" Style="width:100%">
 
                     @* ── Tab 1: Översikt ───────────────────────────────────── *@
                     <MudTabPanel Text="Översikt" Icon="@Icons.Material.Filled.Person">
 
                         @* ── 3-column Översikt layout ─────────────────────────────── *@
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:start">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:start;width:100%">
 
-                            @* ── Kolumn 1: Kontaktuppgifter ──────────────────────── *@
-                            <div>
+                            @* ── Kolumn 1: Foto + Kontaktuppgifter ───────────────── *@
+                            <div style="min-width:0">
                                 @* Profilfoto *@
                                 <div style="margin-bottom:16px">
                                     <MudAvatar Style="width:80px;height:80px;font-size:2rem;border:3px solid #E0E0E0">
@@ -78,7 +78,7 @@ else
                             </div>
 
                             @* ── Kolumn 2: Status praktik & teori ────────────────── *@
-                            <div>
+                            <div style="min-width:0">
                                 <div class="ov-section-title">Status per behörighet</div>
 
                                 @foreach (var cat in _profile.LicenseCategories)
@@ -179,7 +179,7 @@ else
                             </div>
 
                             @* ── Kolumn 3: tom (reserverad) ──────────────────────── *@
-                            <div>
+                            <div style="min-width:0">
                                 @* Reserverad för framtida innehåll *@
                             </div>
 
