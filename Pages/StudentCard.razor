@@ -27,33 +27,42 @@ else
 
                             @* ── Kolumn 1: Foto + Kontaktuppgifter ───────────────── *@
                             <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-                                @* Profilfoto *@
-                                <div style="margin-bottom:16px">
-                                    <MudAvatar Style="width:80px;height:80px;font-size:2rem;border:3px solid #E0E0E0">
+
+                                @* Foto + namn + behörighetschips *@
+                                <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+                                    <MudAvatar Style="width:64px;height:64px;font-size:1.5rem;border:3px solid #e8e8e8;flex-shrink:0">
                                         <MudImage Src="@_profile.PhotoUrl" Alt="Foto" />
                                     </MudAvatar>
+                                    <div>
+                                        <div style="font-size:17px;font-weight:700;color:#1a1a1a;line-height:1.2;margin-bottom:6px">@_profile.Name</div>
+                                        <div style="display:flex;flex-wrap:wrap;gap:4px">
+                                            @foreach (var lc in _profile.LicenseCategories)
+                                            {
+                                                <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#e3f2fd;color:#1565C0;font-weight:600">@lc</span>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div class="ov-section-title">Kontaktuppgifter</div>
+                                @* Kontaktfält *@
+                                <div style="border-top:1px solid #f0f0f0;padding-top:16px;display:flex;flex-direction:column;gap:14px">
 
-                                <div class="ov-info-row">
-                                    <span class="ov-info-label">Namn</span>
-                                    <span class="ov-info-value" style="font-weight:500">@_profile.Name</span>
-                                </div>
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Style="font-size:17px;color:#bdbdbd;margin-top:2px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em">E-post</div>
+                                            <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px;font-weight:700">@_profile.Email</MudLink>
+                                        </div>
+                                    </div>
 
-                                <div class="ov-info-row">
-                                    <span class="ov-info-label">E-post</span>
-                                    <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px">@_profile.Email</MudLink>
-                                </div>
+                                    <div style="display:flex;align-items:flex-start;gap:10px">
+                                        <MudIcon Icon="@Icons.Material.Filled.Phone" Style="font-size:17px;color:#bdbdbd;margin-top:2px;flex-shrink:0" />
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em">Telefon</div>
+                                            <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px;font-weight:700">@_profile.Phone</MudLink>
+                                        </div>
+                                    </div>
 
-                                <div class="ov-info-row">
-                                    <span class="ov-info-label">Telefon</span>
-                                    <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px">@_profile.Phone</MudLink>
-                                </div>
-
-                                <div class="ov-info-row">
-                                    <span class="ov-info-label">Körkortsbehörighet</span>
-                                    <span class="ov-info-value">@string.Join(", ", _profile.LicenseCategories)</span>
                                 </div>
                             </div>
 
