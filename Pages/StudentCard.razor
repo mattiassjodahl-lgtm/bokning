@@ -23,10 +23,10 @@ else
                     <MudTabPanel Text="Översikt" Icon="@Icons.Material.Filled.Person">
 
                         @* ── 3-column Översikt layout ─────────────────────────────── *@
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:start;width:100%">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;width:100%">
 
                             @* ── Kolumn 1: Foto + Kontaktuppgifter ───────────────── *@
-                            <div style="min-width:0">
+                            <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
                                 @* Profilfoto *@
                                 <div style="margin-bottom:16px">
                                     <MudAvatar Style="width:80px;height:80px;font-size:2rem;border:3px solid #E0E0E0">
@@ -58,7 +58,7 @@ else
                             </div>
 
                             @* ── Kolumn 2: Status praktik & teori ────────────────── *@
-                            <div style="min-width:0">
+                            <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
                                 <div class="ov-section-title">Status per behörighet</div>
 
                                 @foreach (var cat in _profile.LicenseCategories)
@@ -159,7 +159,7 @@ else
                             </div>
 
                             @* ── Kolumn 3: tom (reserverad) ──────────────────────── *@
-                            <div style="min-width:0">
+                            <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
                                 @* Reserverad för framtida innehåll *@
                             </div>
 
