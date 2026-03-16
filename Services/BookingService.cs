@@ -585,6 +585,7 @@ public class BookingService
         {
             kv.Value.EduPlan            = MakeEduPlan(doneCounts[(pi++ - 1) % doneCounts.Length]);
             kv.Value.TheoryAreaProgress = MakeTheoryAreas(kv.Key);
+            kv.Value.ContactPersons     = MakeContacts(kv.Key, kv.Value.Name, kv.Value.Age);
         }
 
         GenerateMockEvents();
@@ -692,6 +693,51 @@ public class BookingService
     /// <summary>
     /// Generates seeded-random theory area completion percentages for a student.
     /// The baseline is derived from the student's id so each student gets a
+    /// <summary>Generates seeded-random contact persons for a student.</summary>
+    private static List<ContactPerson> MakeContacts(int id, string studentName, int age)
+    {
+        // Swedish first names for parents/contacts
+        string[] mammaNames = ["Maria","Anna","Eva","Karin","Sara","Lena","Christina","Emma","Sofia","Ingrid"];
+        string[] pappaNames = ["Lars","Erik","Johan","Anders","Per","Karl","Thomas","Stefan","Mikael","Peter"];
+        string[] partnerNames = ["Johanna","Linda","Sandra","Monica","Peter","Marcus","Daniel","Robert"];
+
+        var rng      = new Random(id * 17 + 3);
+        var lastName = studentName.Contains(' ') ? studentName.Split(' ')[^1] : studentName;
+        var contacts = new List<ContactPerson>();
+
+        if (age < 25)
+        {
+            // Younger students: one or two parents
+            contacts.Add(new ContactPerson
+            {
+                Name     = $"{mammaNames[rng.Next(mammaNames.Length)]} {lastName}",
+                Relation = "Mamma",
+                Phone    = $"07{rng.Next(0,4)}-{rng.Next(100,999)} {rng.Next(10,99)} {rng.Next(10,99)}"
+            });
+            if (rng.Next(2) == 0)
+            {
+                contacts.Add(new ContactPerson
+                {
+                    Name     = $"{pappaNames[rng.Next(pappaNames.Length)]} {lastName}",
+                    Relation = "Pappa",
+                    Phone    = $"07{rng.Next(0,4)}-{rng.Next(100,999)} {rng.Next(10,99)} {rng.Next(10,99)}"
+                });
+            }
+        }
+        else
+        {
+            // Older students: partner or sibling
+            bool hasPartner = rng.Next(2) == 0;
+            contacts.Add(new ContactPerson
+            {
+                Name     = $"{partnerNames[rng.Next(partnerNames.Length)]} {lastName}",
+                Relation = hasPartner ? "Partner" : "Syskon",
+                Phone    = $"07{rng.Next(0,4)}-{rng.Next(100,999)} {rng.Next(10,99)} {rng.Next(10,99)}"
+            });
+        }
+        return contacts;
+    }
+
     /// consistent but unique spread across the 26 areas.
     /// </summary>
     private static List<Models.TheoryAreaProgress> MakeTheoryAreas(int studentId)

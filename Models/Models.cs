@@ -103,6 +103,16 @@ public class StudentProfile
     public EduPlan? EduPlan { get; set; }
     /// <summary>Detailed theory area progress (26 areas, 0–100 %).</summary>
     public List<TheoryAreaProgress> TheoryAreaProgress { get; set; } = new();
+    /// <summary>Emergency/guardian contacts for the student.</summary>
+    public List<ContactPerson> ContactPersons { get; set; } = new();
+}
+
+public class ContactPerson
+{
+    public string Name     { get; set; } = "";
+    /// <summary>Relation to student, e.g. "Mamma", "Pappa", "Vårdnadshavare"</summary>
+    public string Relation { get; set; } = "";
+    public string Phone    { get; set; } = "";
 }
 
 // ── Education plan (from JSON structure) ─────────────────────────────────────
