@@ -213,7 +213,10 @@ public class CalendarEvent
 /// </summary>
 public class BookingCalendarItem : CalendarItem
 {
-    public CalendarEvent Event { get; }
+    public CalendarEvent Event { get; } = default!;
+
+    /// <summary>Required by MudCalendar which uses Activator.CreateInstance internally.</summary>
+    public BookingCalendarItem() { }
 
     public BookingCalendarItem(CalendarEvent evt)
     {
