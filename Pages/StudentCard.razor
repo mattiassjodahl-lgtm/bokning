@@ -1,6 +1,4 @@
 @page "/elevkort/{StudentName}"
-@inject BookingService BookingService
-@inject IDialogService DialogService
 
 <PageTitle>Elevkort – @StudentName</PageTitle>
 
@@ -342,7 +340,7 @@ else
                                 var teacherF   = BookingService.GetTeacher(evF.TeacherId);
                                 var ltF        = evF.LessonTypeId.HasValue ? BookingService.GetLessonType(evF.LessonTypeId.Value) : null;
                                 var resourcesF = BookingService.GetResourcesById(evF.ResourceIds);
-                                var mGroupsF   = eduPlan != null ? GroupMomentsBySection(evF, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                var mGroupsF   = eduPlan != null ? GroupMomentsBySection(evF, eduPlan) : EmptyMomentGroups();
                                 <div style="border:1px solid #E0E0E0;border-radius:8px;margin-bottom:8px;overflow:hidden">
                                     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#FAFAFA;cursor:pointer;user-select:none"
                                          @onclick="() => ToggleLessonExpand(evF.Id)">
@@ -374,10 +372,10 @@ else
                                             {
                                                 <div style="margin-bottom:12px">
                                                     <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-                                                        @if (!string.IsNullOrEmpty(grpF.Item1.Mark)) { <span style="margin-right:4px">@grpF.Item1.Mark</span> }
-                                                        @grpF.Item1.Title
+                                                        @if (!string.IsNullOrEmpty(grpF.Section.Mark)) { <span style="margin-right:4px">@grpF.Section.Mark</span> }
+                                                        @grpF.Section.Title
                                                     </div>
-                                                    @foreach (var moF in grpF.Item2)
+                                                    @foreach (var moF in grpF.Moments)
                                                     {
                                                         var moFc = moF;
                                                         var ckF  = $"{evF.Id}_{moFc.GlobalId}";
@@ -405,6 +403,14 @@ else
                                             {
                                                 <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evF))">Lägg till utbildningsmoment</MudButton>
                                             }
+                                            <div style="display:flex;gap:12px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #E8E8E8">
+                                                <MudCheckBox T="bool" Value="@evF.Demonstrated" ValueChanged="@(v => { evF.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evF.Instructed"    ValueChanged="@(v => { evF.Instructed = v; StateHasChanged(); })"    Label="Instruerat"   Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evF.Independent"   ValueChanged="@(v => { evF.Independent = v; StateHasChanged(); })"   Label="Självständigt" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                            </div>
+                                            <div style="margin-top:8px">
+                                                <MudTextField T="string" Value="@evF.LessonComment" ValueChanged="@(v => { evF.LessonComment = v; StateHasChanged(); })" Label="Kommentar för lektionen" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </div>
                                         </div>
                                     }
                                 </div>
@@ -443,7 +449,7 @@ else
                                 var teacherA   = BookingService.GetTeacher(evA.TeacherId);
                                 var ltA        = evA.LessonTypeId.HasValue ? BookingService.GetLessonType(evA.LessonTypeId.Value) : null;
                                 var resourcesA = BookingService.GetResourcesById(evA.ResourceIds);
-                                var mGroupsA   = eduPlan != null ? GroupMomentsBySection(evA, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                var mGroupsA   = eduPlan != null ? GroupMomentsBySection(evA, eduPlan) : EmptyMomentGroups();
                                 var missingComment = evA.LinkedMoments.Any(m => m.Score < 3 && string.IsNullOrWhiteSpace(m.Comment));
                                 var noMoments      = evA.LinkedMoments.Count == 0;
                                 <div style="border:1px solid #FFCC80;border-left:4px solid #FF6D00;border-radius:8px;margin-bottom:8px;overflow:hidden">
@@ -487,10 +493,10 @@ else
                                             {
                                                 <div style="margin-bottom:12px">
                                                     <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-                                                        @if (!string.IsNullOrEmpty(grpA.Item1.Mark)) { <span style="margin-right:4px">@grpA.Item1.Mark</span> }
-                                                        @grpA.Item1.Title
+                                                        @if (!string.IsNullOrEmpty(grpA.Section.Mark)) { <span style="margin-right:4px">@grpA.Section.Mark</span> }
+                                                        @grpA.Section.Title
                                                     </div>
-                                                    @foreach (var moA in grpA.Item2)
+                                                    @foreach (var moA in grpA.Moments)
                                                     {
                                                         var moAc = moA;
                                                         var ckA  = $"{evA.Id}_{moAc.GlobalId}";
@@ -523,6 +529,14 @@ else
                                             {
                                                 <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evA))">Lägg till utbildningsmoment</MudButton>
                                             }
+                                            <div style="display:flex;gap:12px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #FFE0B2">
+                                                <MudCheckBox T="bool" Value="@evA.Demonstrated" ValueChanged="@(v => { evA.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evA.Instructed"    ValueChanged="@(v => { evA.Instructed = v; StateHasChanged(); })"    Label="Instruerat"   Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evA.Independent"   ValueChanged="@(v => { evA.Independent = v; StateHasChanged(); })"   Label="Självständigt" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                            </div>
+                                            <div style="margin-top:8px">
+                                                <MudTextField T="string" Value="@evA.LessonComment" ValueChanged="@(v => { evA.LessonComment = v; StateHasChanged(); })" Label="Kommentar för lektionen" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </div>
                                         </div>
                                     }
                                 </div>
@@ -547,7 +561,7 @@ else
                                 var teacherP   = BookingService.GetTeacher(evP.TeacherId);
                                 var ltP        = evP.LessonTypeId.HasValue ? BookingService.GetLessonType(evP.LessonTypeId.Value) : null;
                                 var resourcesP = BookingService.GetResourcesById(evP.ResourceIds);
-                                var mGroupsP   = eduPlan != null ? GroupMomentsBySection(evP, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                var mGroupsP   = eduPlan != null ? GroupMomentsBySection(evP, eduPlan) : EmptyMomentGroups();
                                 <div style="border:1px solid #E0E0E0;border-radius:8px;margin-bottom:8px;overflow:hidden">
                                     <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#FAFAFA;cursor:pointer;user-select:none"
                                          @onclick="() => ToggleLessonExpand(evP.Id)">
@@ -579,10 +593,10 @@ else
                                             {
                                                 <div style="margin-bottom:12px">
                                                     <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
-                                                        @if (!string.IsNullOrEmpty(grpP.Item1.Mark)) { <span style="margin-right:4px">@grpP.Item1.Mark</span> }
-                                                        @grpP.Item1.Title
+                                                        @if (!string.IsNullOrEmpty(grpP.Section.Mark)) { <span style="margin-right:4px">@grpP.Section.Mark</span> }
+                                                        @grpP.Section.Title
                                                     </div>
-                                                    @foreach (var moP in grpP.Item2)
+                                                    @foreach (var moP in grpP.Moments)
                                                     {
                                                         var moPc = moP;
                                                         var ckP  = $"{evP.Id}_{moPc.GlobalId}";
@@ -610,6 +624,14 @@ else
                                             {
                                                 <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evP))">Lägg till utbildningsmoment</MudButton>
                                             }
+                                            <div style="display:flex;gap:12px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #E8E8E8">
+                                                <MudCheckBox T="bool" Value="@evP.Demonstrated" ValueChanged="@(v => { evP.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evP.Instructed"    ValueChanged="@(v => { evP.Instructed = v; StateHasChanged(); })"    Label="Instruerat"   Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                                <MudCheckBox T="bool" Value="@evP.Independent"   ValueChanged="@(v => { evP.Independent = v; StateHasChanged(); })"   Label="Självständigt" Dense="true" Color="Color.Primary" Size="Size.Small" />
+                                            </div>
+                                            <div style="margin-top:8px">
+                                                <MudTextField T="string" Value="@evP.LessonComment" ValueChanged="@(v => { evP.LessonComment = v; StateHasChanged(); })" Label="Kommentar för lektionen" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                            </div>
                                         </div>
                                     }
                                 </div>
@@ -633,222 +655,3 @@ else
     </div>
 }
 
-@code {
-    [Parameter] public string StudentName { get; set; } = "";
-
-    private StudentProfile? _profile;
-    private string _activeCategory       = "";
-    private string _activeTheoryCategory = "";
-
-    // ── Elevinfo redigering ───────────────────────────────────────────────────
-    private bool   _editMode        = false;
-    private string _editNickName    = "";
-    private string _editEmail       = "";
-    private string _editPhone       = "";
-    private string _editAddress     = "";
-    private int    _editAge;
-    private string _editGender      = "";
-    private bool   _editSmsReminder = true;
-    private List<ContactPerson> _editContacts = new();
-
-    private void StartEdit()
-    {
-        _editNickName    = _profile!.NickName;
-        _editEmail       = _profile.Email;
-        _editPhone       = _profile.Phone;
-        _editAddress     = _profile.Address;
-        _editAge         = _profile.Age;
-        _editGender      = _profile.Gender;
-        _editSmsReminder = _profile.SmsReminder;
-        _editContacts    = _profile.ContactPersons
-                               .Select(c => new ContactPerson { Name=c.Name, Relation=c.Relation, Phone=c.Phone })
-                               .ToList();
-        _editMode = true;
-    }
-
-    private void SaveEdit()
-    {
-        _profile!.NickName    = _editNickName;
-        _profile.Email        = _editEmail;
-        _profile.Phone        = _editPhone;
-        _profile.Address      = _editAddress;
-        _profile.Age          = _editAge;
-        _profile.Gender       = _editGender;
-        _profile.SmsReminder  = _editSmsReminder;
-        _profile.ContactPersons = _editContacts
-                                      .Select(c => new ContactPerson { Name=c.Name, Relation=c.Relation, Phone=c.Phone })
-                                      .ToList();
-        _editMode = false;
-    }
-
-    private void CancelEdit() => _editMode = false;
-
-    private void AddEditContact() =>
-        _editContacts.Add(new ContactPerson { Name="", Relation="", Phone="" });
-
-    // Which license categories have the theory-area detail panel expanded
-    private HashSet<string> _theoryDetailsExpanded = new();
-
-    // Utbildning tab state
-    private HashSet<int>    _expandedLessonIds = new();
-    private HashSet<string> _openCommentIds    = new();
-    private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
-    private bool _showAllFuture  = false;
-    private bool _showAllPast    = false;
-    private const int LessonPreviewCount = 3;
-
-    /// <summary>True if the past event has no moments, or has a non-approved moment (Score &lt; 3) without a comment.</summary>
-    private static bool NeedsAttention(CalendarEvent e) =>
-        e.LinkedMoments.Count == 0 ||
-        e.LinkedMoments.Any(m => m.Score < 3 && string.IsNullOrWhiteSpace(m.Comment));
-
-    private void ToggleTheoryDetails(string cat)
-    {
-        if (!_theoryDetailsExpanded.Add(cat))
-            _theoryDetailsExpanded.Remove(cat);
-        StateHasChanged();
-    }
-
-    // Labels shown under each tick mark: position 0 = "–", positions 1-5 = score
-    private static readonly string[] _sliderLabels = ["–", "1", "2", "3", "4", "5"];
-
-    private List<TrainingStep> ActiveSteps =>
-        _profile?.TrainingStepsByCategory.TryGetValue(_activeCategory, out var s) == true
-            ? s : new();
-
-    private List<TrainingStep> ActiveTheorySteps =>
-        _profile?.TheoryStepsByCategory.TryGetValue(_activeTheoryCategory, out var s) == true
-            ? s : new();
-
-    protected override void OnParametersSet()
-    {
-        var decoded = Uri.UnescapeDataString(StudentName);
-        _profile = BookingService.GetStudentProfile(decoded);
-        var first = _profile.LicenseCategories.FirstOrDefault() ?? "";
-        _activeCategory       = first;
-        _activeTheoryCategory = first;
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static string ScoreColor(int score) => score switch
-    {
-        0         => "#9e9e9e",
-        1 or 2    => "#f44336",
-        3         => "#ff9800",
-        4         => "#8bc34a",
-        5         => "#4caf50",
-        _         => "#9e9e9e"
-    };
-
-    private static string ScoreLabel(int score) => score switch
-    {
-        0 => "Ej bedömd",
-        1 => "1 – Ej godkänd",
-        2 => "2 – Under förväntan",
-        3 => "3 – Godtagbar",
-        4 => "4 – Godkänd",
-        5 => "5 – Mycket bra",
-        _ => ""
-    };
-
-    private static Color SliderColor(int score) => score switch
-    {
-        0         => Color.Default,
-        1 or 2    => Color.Error,
-        3         => Color.Warning,
-        4 or 5    => Color.Success,
-        _         => Color.Default
-    };
-
-    /// <summary>Color for a theory area progress bar based on completion percentage.</summary>
-    private static string AreaBarColor(int pct) => pct switch
-    {
-        < 50 => "#f44336",   // red
-        < 75 => "#ff9800",   // orange
-        < 90 => "#8bc34a",   // light green
-        _    => "#4caf50",   // green
-    };
-
-    private static string StepBadgeStyle(TrainingStep s)
-    {
-        var bg = s.Score switch
-        {
-            0         => "#e0e0e0",
-            1 or 2    => "#f44336",
-            3         => "#ff9800",
-            4 or 5    => "#4caf50",
-            _         => "#e0e0e0"
-        };
-        return $"background-color:{bg};color:{(s.Score == 0 ? "#757575" : "white")};font-size:11px;width:20px;height:20px;min-width:20px";
-    }
-
-    // ── Utbildning tab helpers ─────────────────────────────────────────────────
-
-    private void ToggleLessonExpand(int eventId)
-    {
-        if (!_expandedLessonIds.Add(eventId))
-            _expandedLessonIds.Remove(eventId);
-    }
-
-    private void ToggleComment(string key)
-    {
-        if (!_openCommentIds.Add(key))
-            _openCommentIds.Remove(key);
-    }
-
-    private bool IsCommentOpen(string key) => _openCommentIds.Contains(key);
-
-    private static string MomentStatusColor(int score) => score switch
-    {
-        >= 3 => "#388E3C",
-        > 0  => "#0097A7",
-        _    => "#BDBDBD",
-    };
-
-    private static string MomentStatusLabel(int score) => score switch
-    {
-        0     => "Ej påbörjat",
-        1 or 2 => "Påbörjat",
-        _     => "Godkänd",
-    };
-
-    /// <summary>Group a lesson's LinkedMoments by their parent EduPlanSection.</summary>
-    private static List<(EduPlanSection, List<LessonMoment>)> GroupMomentsBySection(
-        CalendarEvent evt, EduPlan plan)
-    {
-        var result = new List<(EduPlanSection, List<LessonMoment>)>();
-        if (evt.LinkedMoments.Count == 0) return result;
-
-        foreach (var section in plan.Sections)
-        {
-            var inSection = evt.LinkedMoments
-                .Where(m => section.Items.Any(i => i.GlobalId == m.GlobalId))
-                .ToList();
-            if (inSection.Count > 0)
-                result.Add((section, inSection));
-        }
-        return result;
-    }
-
-    private async Task OpenMomentDialog(CalendarEvent evt)
-    {
-        if (_profile == null || _profile.EduPlan == null) return;
-        var plan = _profile.EduPlan;
-
-        var parameters = new DialogParameters<LessonMomentDialog>
-        {
-            { x => x.Plan,            plan                 },
-            { x => x.ExistingMoments, evt.LinkedMoments    },
-        };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
-        var dialog  = await DialogService.ShowAsync<LessonMomentDialog>("Utbildningsmoment", parameters, options);
-        var result  = await dialog.Result;
-
-        if (result is { Canceled: false, Data: List<LessonMoment> moments })
-        {
-            evt.LinkedMoments = moments;
-            StateHasChanged();
-        }
-    }
-}

@@ -129,7 +129,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public EduPlan Plan { get; set; } = new();
     [Parameter] public List<LessonMoment> ExistingMoments { get; set; } = new();
@@ -166,7 +166,7 @@
         }
     }
 
-    private void Cancel()   => MudDialog.Cancel();
+    private void Cancel() => MudDialog.Cancel();
 
     private void Confirm()
     {

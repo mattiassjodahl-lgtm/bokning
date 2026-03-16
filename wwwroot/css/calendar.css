@@ -600,15 +600,15 @@
 /* ── StudentCard slider thumb – larger and fully opaque ─────────────────── */
 
 .sc-slider .mud-slider-input::-webkit-slider-thumb {
-    width:  12px !important;
-    height: 12px !important;
+    width:  14px !important;
+    height: 14px !important;
     opacity: 1   !important;
     border: 2px solid rgba(0,0,0,0.25);
     box-shadow: 0 1px 4px rgba(0,0,0,0.30);
 }
 .sc-slider .mud-slider-input::-moz-range-thumb {
-    width:  12px !important;
-    height: 12px !important;
+    width:  14px !important;
+    height: 14px !important;
     opacity: 1   !important;
     border: 2px solid rgba(0,0,0,0.25);
     box-shadow: 0 1px 4px rgba(0,0,0,0.30);

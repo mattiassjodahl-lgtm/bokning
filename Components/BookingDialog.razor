@@ -404,7 +404,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public CalendarEvent? ExistingEvent        { get; set; }
     [Parameter] public int            PreselectedTeacherId  { get; set; }
