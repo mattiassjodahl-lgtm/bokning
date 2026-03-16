@@ -26,10 +26,19 @@ else
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;width:100%">
 
                             @* ── Kolumn 1: Elevinfo ──────────────────────────────── *@
-                            <div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+                            <div style="min-width:0;background:white;border:1px solid @(_editMode?"#1565C0":"#e8e8e8");border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
 
-                                @* Kort-rubrik *@
-                                <div style="font-size:10px;font-weight:700;color:#9e9e9e;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px">Elevinfo</div>
+                                @* Kort-rubrik + redigera-knapp *@
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                                    <div style="font-size:10px;font-weight:700;color:#9e9e9e;text-transform:uppercase;letter-spacing:.07em">Elevinfo</div>
+                                    @if (!_editMode)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                                                       Size="Size.Small"
+                                                       Style="color:#9e9e9e;margin:-6px -6px -6px 0"
+                                                       OnClick="StartEdit" />
+                                    }
+                                </div>
 
                                 @* Foto + namn + behörighetschips *@
                                 <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
@@ -47,88 +56,152 @@ else
                                     </div>
                                 </div>
 
-                                @* Infofält *@
-                                <div style="display:flex;flex-direction:column;gap:11px;border-top:1px solid #f0f0f0;padding-top:14px">
+                                @* ── LÄSLÄGE ──────────────────────────────────────── *@
+                                @if (!_editMode)
+                                {
+                                    <div style="display:flex;flex-direction:column;gap:11px;border-top:1px solid #f0f0f0;padding-top:14px">
 
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Badge" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Tilltalsnamn</div>
-                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.NickName</div>
-                                        </div>
-                                    </div>
-
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Cake" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Ålder &amp; kön</div>
-                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Age år · @_profile.Gender</div>
-                                        </div>
-                                    </div>
-
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Home" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Adress</div>
-                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Address</div>
-                                        </div>
-                                    </div>
-
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Email" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">E-post</div>
-                                            <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px;font-weight:700">@_profile.Email</MudLink>
-                                        </div>
-                                    </div>
-
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Mobil</div>
-                                            <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px;font-weight:700">@_profile.Phone</MudLink>
-                                        </div>
-                                    </div>
-
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.Sms" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">SMS-påminnelse</div>
-                                            <div style="font-size:13px;font-weight:700;color:@(_profile.SmsReminder ? "#2e7d32" : "#c62828")">
-                                                @(_profile.SmsReminder ? "Ja" : "Nej")
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.Badge" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Tilltalsnamn</div>
+                                                <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.NickName</div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div style="display:flex;align-items:flex-start;gap:10px">
-                                        <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
-                                        <div>
-                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Skapad</div>
-                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.CreatedAt.ToString("d MMM yyyy") · @_profile.CreatedFrom</div>
-                                        </div>
-                                    </div>
-
-                                    @* Kontaktpersoner *@
-                                    @if (_profile.ContactPersons.Count > 0)
-                                    {
                                         <div style="display:flex;align-items:flex-start;gap:10px">
-                                            <MudIcon Icon="@Icons.Material.Filled.PeopleAlt" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <MudIcon Icon="@Icons.Material.Filled.Cake" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
                                             <div>
-                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Kontaktpersoner</div>
-                                                @foreach (var cp in _profile.ContactPersons)
-                                                {
-                                                    <div style="margin-bottom:5px">
-                                                        <div style="font-size:13px;font-weight:700;color:#1a1a1a">@cp.Name</div>
-                                                        <div style="font-size:11px;color:#757575">@cp.Relation ·
-                                                            <MudLink Href="@($"tel:{cp.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:11px">@cp.Phone</MudLink>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Ålder &amp; kön</div>
+                                                <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Age år · @_profile.Gender</div>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.Home" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Adress</div>
+                                                <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.Address</div>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.Email" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">E-post</div>
+                                                <MudLink Href="@($"mailto:{_profile.Email}")" Style="font-size:13px;font-weight:700">@_profile.Email</MudLink>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Mobil</div>
+                                                <MudLink Href="@($"tel:{_profile.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:13px;font-weight:700">@_profile.Phone</MudLink>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.Sms" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">SMS-påminnelse</div>
+                                                <div style="font-size:13px;font-weight:700;color:@(_profile.SmsReminder ? "#2e7d32" : "#c62828")">
+                                                    @(_profile.SmsReminder ? "Ja" : "Nej")
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                            <div>
+                                                <div style="font-size:10px;color:#9e9e9e;margin-bottom:1px;text-transform:uppercase;letter-spacing:.04em">Skapad</div>
+                                                <div style="font-size:13px;font-weight:700;color:#1a1a1a">@_profile.CreatedAt.ToString("d MMM yyyy") · @_profile.CreatedFrom</div>
+                                            </div>
+                                        </div>
+
+                                        @if (_profile.ContactPersons.Count > 0)
+                                        {
+                                            <div style="display:flex;align-items:flex-start;gap:10px">
+                                                <MudIcon Icon="@Icons.Material.Filled.PeopleAlt" Style="font-size:16px;color:#bdbdbd;margin-top:1px;flex-shrink:0" />
+                                                <div>
+                                                    <div style="font-size:10px;color:#9e9e9e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Kontaktpersoner</div>
+                                                    @foreach (var cp in _profile.ContactPersons)
+                                                    {
+                                                        <div style="margin-bottom:5px">
+                                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@cp.Name</div>
+                                                            <div style="font-size:11px;color:#757575">@cp.Relation ·
+                                                                <MudLink Href="@($"tel:{cp.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:11px">@cp.Phone</MudLink>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
+                                    </div>
+                                }
+
+                                @* ── REDIGERINGSLÄGE ──────────────────────────────── *@
+                                else
+                                {
+                                    <div style="display:flex;flex-direction:column;gap:12px;border-top:1px solid #f0f0f0;padding-top:14px">
+
+                                        <MudTextField @bind-Value="_editNickName"  Label="Tilltalsnamn" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        <MudTextField @bind-Value="_editEmail"     Label="E-post"       Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Email" />
+                                        <MudTextField @bind-Value="_editPhone"     Label="Mobil"        Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Telephone" />
+                                        <MudTextField @bind-Value="_editAddress"   Label="Adress"       Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                                        <div style="display:flex;gap:8px">
+                                            <MudTextField @bind-Value="_editAge"   Label="Ålder" Variant="Variant.Outlined" Margin="Margin.Dense" InputType="InputType.Number" Style="flex:1" />
+                                            <MudSelect   @bind-Value="_editGender" Label="Kön"   Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1">
+                                                <MudSelectItem Value="@("Man")">Man</MudSelectItem>
+                                                <MudSelectItem Value="@("Kvinna")">Kvinna</MudSelectItem>
+                                                <MudSelectItem Value="@("Annat")">Annat</MudSelectItem>
+                                            </MudSelect>
+                                        </div>
+
+                                        <MudCheckBox @bind-Value="_editSmsReminder" Label="SMS-påminnelse" Color="Color.Primary" Dense="true" />
+
+                                        @* Kontaktpersoner *@
+                                        <div>
+                                            <div style="font-size:10px;color:#9e9e9e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Kontaktpersoner</div>
+                                            @for (int ci = 0; ci < _editContacts.Count; ci++)
+                                            {
+                                                var idx = ci;
+                                                <div style="border:1px solid #e8e8e8;border-radius:8px;padding:10px;margin-bottom:8px;position:relative">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                                                   Style="position:absolute;top:4px;right:4px;color:#bdbdbd"
+                                                                   OnClick="() => _editContacts.RemoveAt(idx)" />
+                                                    <div style="display:flex;flex-direction:column;gap:6px;padding-right:28px">
+                                                        <MudTextField Value="@_editContacts[idx].Name"
+                                                                      ValueChanged="@((string v) => _editContacts[idx].Name = v)"
+                                                                      Label="Namn" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                                        <div style="display:flex;gap:6px">
+                                                            <MudTextField Value="@_editContacts[idx].Relation"
+                                                                          ValueChanged="@((string v) => _editContacts[idx].Relation = v)"
+                                                                          Label="Relation" Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1" />
+                                                            <MudTextField Value="@_editContacts[idx].Phone"
+                                                                          ValueChanged="@((string v) => _editContacts[idx].Phone = v)"
+                                                                          Label="Telefon" Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1"
+                                                                          InputType="InputType.Telephone" />
                                                         </div>
                                                     </div>
-                                                }
-                                            </div>
+                                                </div>
+                                            }
+                                            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                                       Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary"
+                                                       OnClick="AddEditContact">Lägg till kontaktperson</MudButton>
                                         </div>
-                                    }
 
-                                </div>
+                                        @* Spara / Avbryt *@
+                                        <div style="display:flex;gap:8px;margin-top:4px">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="SaveEdit">Spara</MudButton>
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true" OnClick="CancelEdit">Avbryt</MudButton>
+                                        </div>
+
+                                    </div>
+                                }
+
                             </div>
 
                             @* ── Kolumn 2: Status praktik & teori ────────────────── *@
@@ -437,6 +510,52 @@ else
     private StudentProfile? _profile;
     private string _activeCategory       = "";
     private string _activeTheoryCategory = "";
+
+    // ── Elevinfo redigering ───────────────────────────────────────────────────
+    private bool   _editMode        = false;
+    private string _editNickName    = "";
+    private string _editEmail       = "";
+    private string _editPhone       = "";
+    private string _editAddress     = "";
+    private int    _editAge;
+    private string _editGender      = "";
+    private bool   _editSmsReminder = true;
+    private List<ContactPerson> _editContacts = new();
+
+    private void StartEdit()
+    {
+        _editNickName    = _profile!.NickName;
+        _editEmail       = _profile.Email;
+        _editPhone       = _profile.Phone;
+        _editAddress     = _profile.Address;
+        _editAge         = _profile.Age;
+        _editGender      = _profile.Gender;
+        _editSmsReminder = _profile.SmsReminder;
+        _editContacts    = _profile.ContactPersons
+                               .Select(c => new ContactPerson { Name=c.Name, Relation=c.Relation, Phone=c.Phone })
+                               .ToList();
+        _editMode = true;
+    }
+
+    private void SaveEdit()
+    {
+        _profile!.NickName    = _editNickName;
+        _profile.Email        = _editEmail;
+        _profile.Phone        = _editPhone;
+        _profile.Address      = _editAddress;
+        _profile.Age          = _editAge;
+        _profile.Gender       = _editGender;
+        _profile.SmsReminder  = _editSmsReminder;
+        _profile.ContactPersons = _editContacts
+                                      .Select(c => new ContactPerson { Name=c.Name, Relation=c.Relation, Phone=c.Phone })
+                                      .ToList();
+        _editMode = false;
+    }
+
+    private void CancelEdit() => _editMode = false;
+
+    private void AddEditContact() =>
+        _editContacts.Add(new ContactPerson { Name="", Relation="", Phone="" });
 
     // Which license categories have the theory-area detail panel expanded
     private HashSet<string> _theoryDetailsExpanded = new();
