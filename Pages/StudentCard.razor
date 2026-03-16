@@ -335,7 +335,7 @@ else
                             {
                                 <div style="padding:12px 4px;color:#9E9E9E;font-size:13px">Inga kommande lektioner.</div>
                             }
-                            @foreach (var evtF in futureEvents)
+                            @foreach (var evtF in (_showAllFuture ? futureEvents : futureEvents.Take(LessonPreviewCount)))
                             {
                                 var evF        = evtF;
                                 var isExpF     = _expandedLessonIds.Contains(evF.Id);
@@ -409,7 +409,126 @@ else
                                     }
                                 </div>
                             }
+                            @if (futureEvents.Count > LessonPreviewCount)
+                            {
+                                <div style="text-align:center;padding:4px 0 2px">
+                                    <span style="font-size:12px;color:#1565C0;cursor:pointer;display:inline-flex;align-items:center;gap:3px"
+                                          @onclick="() => { _showAllFuture = !_showAllFuture; }">
+                                        <MudIcon Icon="@(_showAllFuture ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="font-size:15px" />
+                                        @(_showAllFuture ? "Visa färre" : $"Visa fler ({futureEvents.Count - LessonPreviewCount} till)")
+                                    </span>
+                                </div>
+                            }
                         </div>
+
+                        @* ── Behöver åtgärd ──────────────────────────────────────────── *@
+                        @{
+                            var attentionEvents = pastEvents.Where(NeedsAttention).ToList();
+                        }
+                        @if (attentionEvents.Count > 0)
+                        {
+                        <div style="margin-bottom:16px">
+                            <div style="font-size:11px;font-weight:700;color:#E65100;text-transform:uppercase;letter-spacing:.06em;padding:6px 0 6px 2px;border-bottom:2px solid #FFE0B2;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                                <MudIcon Icon="@Icons.Material.Filled.Warning" Style="font-size:14px;color:#E65100" />
+                                Behöver åtgärd
+                                <span style="font-weight:400;color:#BF360C;margin-left:2px">(@attentionEvents.Count)</span>
+                            </div>
+                            <div style="font-size:11px;color:#8D6E63;margin-bottom:8px;padding:0 2px">
+                                Tidigare lektioner som saknar moment eller har ett icke godkänt moment utan kommentar.
+                            </div>
+                            @foreach (var evtA in attentionEvents)
+                            {
+                                var evA        = evtA;
+                                var isExpA     = _expandedLessonIds.Contains(evA.Id);
+                                var teacherA   = BookingService.GetTeacher(evA.TeacherId);
+                                var ltA        = evA.LessonTypeId.HasValue ? BookingService.GetLessonType(evA.LessonTypeId.Value) : null;
+                                var resourcesA = BookingService.GetResourcesById(evA.ResourceIds);
+                                var mGroupsA   = eduPlan != null ? GroupMomentsBySection(evA, eduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+                                var missingComment = evA.LinkedMoments.Any(m => m.Score < 3 && string.IsNullOrWhiteSpace(m.Comment));
+                                var noMoments      = evA.LinkedMoments.Count == 0;
+                                <div style="border:1px solid #FFCC80;border-left:4px solid #FF6D00;border-radius:8px;margin-bottom:8px;overflow:hidden">
+                                    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#FFF8F0;cursor:pointer;user-select:none"
+                                         @onclick="() => ToggleLessonExpand(evA.Id)">
+                                        <div style="min-width:90px;flex-shrink:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121">@evA.StartTime.ToString("d MMM", _sv)</div>
+                                            <div style="font-size:11px;color:#9E9E9E">@evA.StartTime.ToString("HH:mm")–@evA.EndTime.ToString("HH:mm")</div>
+                                        </div>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-size:13px;font-weight:600;color:#212121;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@(ltA?.Name ?? "Lektion")</div>
+                                            <div style="font-size:11px;color:#757575">
+                                                @(teacherA?.Name ?? "")
+                                                @if (resourcesA.Count > 0) { <span style="margin-left:4px">· @string.Join(", ", resourcesA.Select(r => r.Name))</span> }
+                                            </div>
+                                        </div>
+                                        <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">
+                                            @if (noMoments)
+                                            {
+                                                <span style="font-size:11px;padding:1px 7px;border-radius:10px;background:#EF6C00;color:white;white-space:nowrap">Saknar moment</span>
+                                            }
+                                            @foreach (var mA in evA.LinkedMoments)
+                                            {
+                                                var needsCommentA = mA.Score < 3 && string.IsNullOrWhiteSpace(mA.Comment);
+                                                <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mA.Score);color:white;white-space:nowrap;@(needsCommentA ? "outline:2px solid #FF6D00;outline-offset:1px" : "")">@mA.Title</span>
+                                            }
+                                        </div>
+                                        <MudIcon Icon="@(isExpA ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
+                                    </div>
+                                    @if (isExpA)
+                                    {
+                                        <div style="padding:12px 14px;border-top:1px solid #FFE0B2;background:white">
+                                            @if (mGroupsA.Count == 0)
+                                            {
+                                                <div style="color:#EF6C00;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Warning" Style="font-size:15px" />
+                                                    Inga moment kopplade till denna lektion.
+                                                </div>
+                                            }
+                                            @foreach (var grpA in mGroupsA)
+                                            {
+                                                <div style="margin-bottom:12px">
+                                                    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                                                        @if (!string.IsNullOrEmpty(grpA.Item1.Mark)) { <span style="margin-right:4px">@grpA.Item1.Mark</span> }
+                                                        @grpA.Item1.Title
+                                                    </div>
+                                                    @foreach (var moA in grpA.Item2)
+                                                    {
+                                                        var moAc = moA;
+                                                        var ckA  = $"{evA.Id}_{moAc.GlobalId}";
+                                                        var needsComA = moAc.Score < 3 && string.IsNullOrWhiteSpace(moAc.Comment);
+                                                        <div style="border:1px solid @(needsComA ? "#FFCC80" : "#F0F0F0");border-left:@(needsComA ? "3px solid #FF6D00" : "1px solid #F0F0F0");border-radius:6px;padding:8px 10px;margin-bottom:6px;background:@(needsComA ? "#FFFAF5" : "#FAFAFA")">
+                                                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                                                <div style="flex:1;font-size:13px;font-weight:500">@moAc.Title</div>
+                                                                @if (needsComA)
+                                                                {
+                                                                    <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#EF6C00;color:white;white-space:nowrap;flex-shrink:0">Saknar kommentar</span>
+                                                                }
+                                                                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moAc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moAc.Score)</span>
+                                                            </div>
+                                                            <div class="sc-slider" style="margin:0 4px">
+                                                                <MudSlider T="int" Value="@moAc.Score" ValueChanged="@(v => { moAc.Score = v; StateHasChanged(); })" Min="0" Max="5" Step="1" Color="@SliderColor(moAc.Score)" TickMarks="true" TickMarkLabels="@_sliderLabels" Immediate="true" Class="mb-3" />
+                                                            </div>
+                                                            <div style="display:flex;align-items:center;gap:6px;margin-top:-4px">
+                                                                <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ckA)">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:13px" />
+                                                                    @(IsCommentOpen(ckA) ? "Dölj kommentar" : (string.IsNullOrEmpty(moAc.Comment) ? "Lägg till kommentar" : "Visa kommentar"))
+                                                                </span>
+                                                                @if (!string.IsNullOrEmpty(moAc.Comment) && !IsCommentOpen(ckA)) { <span style="font-size:11px;color:#9E9E9E;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">@moAc.Comment</span> }
+                                                            </div>
+                                                            @if (IsCommentOpen(ckA)) { <div style="margin-top:8px"><MudTextField T="string" Value="@moAc.Comment" ValueChanged="@(v => { moAc.Comment = v; StateHasChanged(); })" Label="Kommentar" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" /></div> }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            @if (eduPlan != null)
+                                            {
+                                                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog(evA))">Lägg till utbildningsmoment</MudButton>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        }
 
                         @* ── Tidigare timmar ────────────────────────────────────────── *@
                         <div style="margin-bottom:16px">
@@ -421,7 +540,7 @@ else
                             {
                                 <div style="padding:12px 4px;color:#9E9E9E;font-size:13px">Inga tidigare lektioner.</div>
                             }
-                            @foreach (var evtP in pastEvents)
+                            @foreach (var evtP in (_showAllPast ? pastEvents : pastEvents.Take(LessonPreviewCount)))
                             {
                                 var evP        = evtP;
                                 var isExpP     = _expandedLessonIds.Contains(evP.Id);
@@ -495,6 +614,16 @@ else
                                     }
                                 </div>
                             }
+                            @if (pastEvents.Count > LessonPreviewCount)
+                            {
+                                <div style="text-align:center;padding:4px 0 2px">
+                                    <span style="font-size:12px;color:#1565C0;cursor:pointer;display:inline-flex;align-items:center;gap:3px"
+                                          @onclick="() => { _showAllPast = !_showAllPast; }">
+                                        <MudIcon Icon="@(_showAllPast ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="font-size:15px" />
+                                        @(_showAllPast ? "Visa färre" : $"Visa fler ({pastEvents.Count - LessonPreviewCount} till)")
+                                    </span>
+                                </div>
+                            }
                         </div>
 
                     </MudTabPanel>
@@ -564,6 +693,14 @@ else
     private HashSet<int>    _expandedLessonIds = new();
     private HashSet<string> _openCommentIds    = new();
     private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+    private bool _showAllFuture  = false;
+    private bool _showAllPast    = false;
+    private const int LessonPreviewCount = 3;
+
+    /// <summary>True if the past event has no moments, or has a non-approved moment (Score &lt; 3) without a comment.</summary>
+    private static bool NeedsAttention(CalendarEvent e) =>
+        e.LinkedMoments.Count == 0 ||
+        e.LinkedMoments.Any(m => m.Score < 3 && string.IsNullOrWhiteSpace(m.Comment));
 
     private void ToggleTheoryDetails(string cat)
     {

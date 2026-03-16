@@ -1071,6 +1071,55 @@ public class BookingService
             });
         }
 
+        // Extra past events for Alice – demonstrates "Behöver åtgärd" logic
+        // -35 days: no moments at all → triggers "needs attention"
+        _events.Add(new CalendarEvent
+        {
+            Id           = id++,
+            TeacherId    = 1,
+            StartTime    = today.AddDays(-35).AddHours(9),
+            EndTime      = today.AddDays(-35).AddHours(10),
+            IsBooked     = true,
+            StudentName  = alice,
+            LessonTypeId = 2,
+            ResourceIds  = new List<int> { 2 },
+            LinkedMoments = new List<LessonMoment>(), // intentionally empty
+        });
+        // -42 days: one non-approved (Score=1) moment WITHOUT comment → triggers "needs attention"
+        _events.Add(new CalendarEvent
+        {
+            Id           = id++,
+            TeacherId    = 1,
+            StartTime    = today.AddDays(-42).AddHours(13),
+            EndTime      = today.AddDays(-42).AddHours(14),
+            IsBooked     = true,
+            StudentName  = alice,
+            LessonTypeId = 2,
+            ResourceIds  = new List<int> { 1 },
+            LinkedMoments = new List<LessonMoment>
+            {
+                new() { GlobalId = "7cf5d1af-df56-45af-8cc0-5a8bfdd9d316_2", Title = "5 c acceleration",  Score = 5, Comment = "Utmärkt acceleration." },
+                new() { GlobalId = "7cf5d1af-df56-45af-8cc0-5a8bfdd9d316_3", Title = "5 d hård bromsning", Score = 1, Comment = "" }, // no comment → needs attention
+            },
+        });
+        // -49 days: all moments approved with comments → does NOT trigger "needs attention"
+        _events.Add(new CalendarEvent
+        {
+            Id           = id++,
+            TeacherId    = 2,
+            StartTime    = today.AddDays(-49).AddHours(10),
+            EndTime      = today.AddDays(-49).AddHours(11),
+            IsBooked     = true,
+            StudentName  = alice,
+            LessonTypeId = 2,
+            ResourceIds  = new List<int> { 2 },
+            LinkedMoments = new List<LessonMoment>
+            {
+                new() { GlobalId = "c3bcc539-c96a-4221-b3cd-f27c2926be62",   Title = "6 a mopeden",            Score = 4, Comment = "Bra hantering av korsningar." },
+                new() { GlobalId = "70e51338-26b8-4863-b29b-f205ec886964_0", Title = "6 b passagerare och last", Score = 4, Comment = "" },
+            },
+        });
+
         // One upcoming körlektion for Alice (next week)
         _events.Add(new CalendarEvent
         {
@@ -1082,6 +1131,18 @@ public class BookingService
             StudentName  = alice,
             LessonTypeId = 2,
             ResourceIds  = new List<int> { 1 },
+        });
+        // One more upcoming körlektion for Alice (two weeks out) so "Visa fler" shows on future
+        _events.Add(new CalendarEvent
+        {
+            Id           = id++,
+            TeacherId    = 2,
+            StartTime    = today.AddDays(12).AddHours(14),
+            EndTime      = today.AddDays(12).AddHours(15),
+            IsBooked     = true,
+            StudentName  = alice,
+            LessonTypeId = 2,
+            ResourceIds  = new List<int> { 2 },
         });
 
         // ── Past körlektion events for all other students (Utbildning-demo) ────
