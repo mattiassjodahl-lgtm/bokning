@@ -67,6 +67,9 @@ public partial class StudentCard
     // Which license categories have the theory-area detail panel expanded
     private HashSet<string> _theoryDetailsExpanded = new();
 
+    // Which license categories have the praktik-area detail panel expanded
+    private HashSet<string> _praktikDetailsExpanded = new();
+
     // Utbildning tab state
     private HashSet<int>    _expandedLessonIds = new();
     private HashSet<string> _openCommentIds    = new();
@@ -85,6 +88,113 @@ public partial class StudentCard
         if (!_theoryDetailsExpanded.Add(cat))
             _theoryDetailsExpanded.Remove(cat);
         StateHasChanged();
+    }
+
+    private void TogglePraktikDetails(string cat)
+    {
+        if (!_praktikDetailsExpanded.Add(cat))
+            _praktikDetailsExpanded.Remove(cat);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Returns progress per EduPlan section, aggregated across all lessons.
+    /// For each GlobalId, the highest score across all lessons is used.
+    /// </summary>
+    private List<(string Name, int Approved, int Ok, int InProgress, int NotStarted, int Total)>
+        GetPraktikSectionProgress()
+    {
+        if (_profile?.EduPlan == null) return new();
+
+        var studentName = _profile.Name;
+        var allEvents   = BookingService.GetEventsForStudent(studentName).ToList();
+
+        // For each GlobalId, keep the highest score across all lessons
+        var bestScore = new Dictionary<string, int>();
+        foreach (var evt in allEvents)
+        {
+            foreach (var m in evt.LinkedMoments)
+            {
+                if (!bestScore.TryGetValue(m.GlobalId, out var existing) || m.Score > existing)
+                    bestScore[m.GlobalId] = m.Score;
+            }
+        }
+
+        var result = new List<(string, int, int, int, int, int)>();
+        foreach (var section in _profile.EduPlan.Sections)
+        {
+            int approved = 0, ok = 0, inProgress = 0, notStarted = 0;
+            foreach (var item in section.Items)
+            {
+                var score = bestScore.TryGetValue(item.GlobalId, out var s) ? s : 0;
+                if      (score >= 4) approved++;
+                else if (score == 3) ok++;
+                else if (score >= 1) inProgress++;
+                else                 notStarted++;
+            }
+            if (section.Items.Count > 0)
+                result.Add((section.Title, approved, ok, inProgress, notStarted, section.Items.Count));
+        }
+        return result;
+    }
+
+    /// <summary>Renders a small SVG donut chart for a section's moment progress.</summary>
+    private static Microsoft.AspNetCore.Components.MarkupString PieChartSvg(
+        int approved, int ok, int inProgress, int notStarted, int total)
+    {
+        if (total == 0) return (Microsoft.AspNetCore.Components.MarkupString)"";
+
+        var segments = new[]
+        {
+            (approved,    "#4CAF50"),   // Godkänd
+            (ok,          "#8BC34A"),   // Godtagbar
+            (inProgress,  "#FF9800"),   // Påbörjad
+            (notStarted,  "#E0E0E0"),   // Ej påbörjad
+        };
+
+        const double R  = 38;  // outer radius
+        const double ri = 22;  // inner radius (donut hole)
+        const double cx = 50, cy = 50;
+        const double TWO_PI = Math.PI * 2;
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<svg viewBox='0 0 100 100' width='72' height='72' style='display:block'>");
+
+        double startAngle = -Math.PI / 2; // top
+
+        foreach (var (count, color) in segments)
+        {
+            if (count == 0) continue;
+            double sweep    = count / (double)total * TWO_PI;
+            double endAngle = startAngle + sweep;
+            int    largeArc = sweep > Math.PI ? 1 : 0;
+
+            double ox1 = cx + R  * Math.Cos(startAngle);
+            double oy1 = cy + R  * Math.Sin(startAngle);
+            double ox2 = cx + R  * Math.Cos(endAngle);
+            double oy2 = cy + R  * Math.Sin(endAngle);
+
+            double ix1 = cx + ri * Math.Cos(startAngle);
+            double iy1 = cy + ri * Math.Sin(startAngle);
+            double ix2 = cx + ri * Math.Cos(endAngle);
+            double iy2 = cy + ri * Math.Sin(endAngle);
+
+            sb.Append(
+                $"<path d='M {ox1:F1} {oy1:F1} " +
+                $"A {R} {R} 0 {largeArc} 1 {ox2:F1} {oy2:F1} " +
+                $"L {ix2:F1} {iy2:F1} " +
+                $"A {ri} {ri} 0 {largeArc} 0 {ix1:F1} {iy1:F1} Z' " +
+                $"fill='{color}'/>");
+
+            startAngle = endAngle;
+        }
+
+        // Center percentage label
+        int pct = (int)Math.Round(approved / (double)total * 100);
+        sb.Append($"<text x='50' y='54' text-anchor='middle' font-size='13' font-weight='700' fill='#424242'>{pct}%</text>");
+        sb.Append("</svg>");
+
+        return (Microsoft.AspNetCore.Components.MarkupString)sb.ToString();
     }
 
     // Labels shown under each tick mark: position 0 = "–", positions 1-5 = score

@@ -126,7 +126,7 @@ else
                                                     @foreach (var cp in _profile.ContactPersons)
                                                     {
                                                         <div style="margin-bottom:5px">
-                                                            <div style="font-size:13px;font-weight:700;color:#1a1a1a">@cp.Name</div>
+                                                            <MudLink Href="@($"/elevkort/{Uri.EscapeDataString(cp.Name)}")" Style="font-size:13px;font-weight:700;color:#1565C0;text-decoration:none">@cp.Name</MudLink>
                                                             <div style="font-size:11px;color:#757575">@cp.Relation ·
                                                                 <MudLink Href="@($"tel:{cp.Phone.Replace(" ","").Replace("-","")}")" Style="font-size:11px">@cp.Phone</MudLink>
                                                             </div>
@@ -239,6 +239,66 @@ else
                                                 <span style="font-size:13px;font-weight:700;color:#4caf50;min-width:38px;text-align:right">@pPct %</span>
                                             </div>
                                             <MudProgressLinear Value="@pPct" Color="Color.Success" Rounded="true" Size="Size.Small" />
+
+                                            @* Praktik – Läs mer / cirkeldiagram per huvudområde *@
+                                            @if (_profile.EduPlan != null)
+                                            {
+                                                var pAreaExpanded = _praktikDetailsExpanded.Contains(lcat);
+                                                <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                                                    <span style="font-size:11px;color:#1565C0;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                                                          @onclick="() => TogglePraktikDetails(lcat)">
+                                                        @if (pAreaExpanded)
+                                                        {
+                                                            <MudIcon Icon="@Icons.Material.Filled.ExpandLess" Style="font-size:14px" />
+                                                            <span>Dölj detaljer</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Style="font-size:14px" />
+                                                            <span>Läs mer</span>
+                                                        }
+                                                    </span>
+                                                </div>
+
+                                                @if (pAreaExpanded)
+                                                {
+                                                    var sections = GetPraktikSectionProgress();
+                                                    <div style="margin-top:6px;padding:10px 12px;background:#FAFAFA;border:1px solid #E8E8E8;border-radius:8px">
+                                                        @if (sections.Count == 0)
+                                                        {
+                                                            <div style="font-size:12px;color:#9E9E9E;font-style:italic">Ingen utbildningsdata tillgänglig ännu.</div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:flex-start">
+                                                                @foreach (var sec in sections)
+                                                                {
+                                                                    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;max-width:90px">
+                                                                        @PieChartSvg(sec.Approved, sec.Ok, sec.InProgress, sec.NotStarted, sec.Total)
+                                                                        <div style="font-size:10px;color:#424242;font-weight:500;text-align:center;line-height:1.3">@sec.Name</div>
+                                                                        <div style="font-size:9px;color:#9E9E9E">@sec.Approved/@sec.Total godkända</div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                            @* Legend *@
+                                                            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid #E8E8E8">
+                                                                <span style="font-size:10px;color:#616161;display:flex;align-items:center;gap:3px">
+                                                                    <span style="width:8px;height:8px;border-radius:50%;background:#4CAF50;display:inline-block;flex-shrink:0"></span>Godkänd (4–5)
+                                                                </span>
+                                                                <span style="font-size:10px;color:#616161;display:flex;align-items:center;gap:3px">
+                                                                    <span style="width:8px;height:8px;border-radius:50%;background:#8BC34A;display:inline-block;flex-shrink:0"></span>Godtagbar (3)
+                                                                </span>
+                                                                <span style="font-size:10px;color:#616161;display:flex;align-items:center;gap:3px">
+                                                                    <span style="width:8px;height:8px;border-radius:50%;background:#FF9800;display:inline-block;flex-shrink:0"></span>Påbörjad (1–2)
+                                                                </span>
+                                                                <span style="font-size:10px;color:#616161;display:flex;align-items:center;gap:3px">
+                                                                    <span style="width:8px;height:8px;border-radius:50%;background:#E0E0E0;display:inline-block;flex-shrink:0"></span>Ej påbörjad
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            }
                                         </div>
 
                                         @* Teori *@
@@ -359,6 +419,7 @@ else
                                             @if (evF.LinkedMoments.Count == 0) { <span style="font-size:11px;color:#BDBDBD;font-style:italic">Inga moment</span> }
                                             @foreach (var mF in evF.LinkedMoments) { <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mF.Score);color:white;white-space:nowrap">@mF.Title</span> }
                                         </div>
+                                        @if (!string.IsNullOrEmpty(evF.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#1565C0;flex-shrink:0;margin-top:2px" /> }
                                         <MudIcon Icon="@(isExpF ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
                                     </div>
                                     @if (isExpF)
@@ -477,6 +538,7 @@ else
                                                 <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mA.Score);color:white;white-space:nowrap;@(needsCommentA ? "outline:2px solid #FF6D00;outline-offset:1px" : "")">@mA.Title</span>
                                             }
                                         </div>
+                                        @if (!string.IsNullOrEmpty(evA.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#1565C0;flex-shrink:0;margin-top:2px" /> }
                                         <MudIcon Icon="@(isExpA ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
                                     </div>
                                     @if (isExpA)
@@ -580,6 +642,7 @@ else
                                             @if (evP.LinkedMoments.Count == 0) { <span style="font-size:11px;color:#BDBDBD;font-style:italic">Inga moment</span> }
                                             @foreach (var mP in evP.LinkedMoments) { <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(mP.Score);color:white;white-space:nowrap">@mP.Title</span> }
                                         </div>
+                                        @if (!string.IsNullOrEmpty(evP.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#1565C0;flex-shrink:0;margin-top:2px" /> }
                                         <MudIcon Icon="@(isExpP ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
                                     </div>
                                     @if (isExpP)

@@ -156,6 +156,38 @@ public class BookingService
     // Shared mutable store so progress edits persist in the session
     private readonly Dictionary<int, StudentProfile> _studentProfiles;
 
+    // Named profiles for contacts/relatives who aren't in the main student list
+    private static readonly Dictionary<string, StudentProfile> _namedProfiles =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Maria Bergström"] = new()
+            {
+                Id = 9001, Name = "Maria Bergström", NickName = "Maria", Gender = "Kvinna", Age = 48,
+                Email = "maria.bergstrom@example.com", Phone = "070-234 56 78",
+                Address = "Rådmansgatan 14, 113 57 Stockholm",
+                SmsReminder = false,
+                CreatedAt   = new DateTime(2024, 3, 15), CreatedFrom = "Manuellt",
+                PhotoUrl    = "https://randomuser.me/api/portraits/women/55.jpg",
+                LicenseCategories         = [],
+                TrainingStepsByCategory   = new(),
+                TheoryStepsByCategory     = new(),
+                ContactPersons = new() { new() { Name = "Alice Bergström", Relation = "Dotter", Phone = "070-123 45 67" } }
+            },
+            ["Lars Bergström"] = new()
+            {
+                Id = 9002, Name = "Lars Bergström", NickName = "Lars", Gender = "Man", Age = 51,
+                Email = "lars.bergstrom@example.com", Phone = "073-456 78 90",
+                Address = "Rådmansgatan 14, 113 57 Stockholm",
+                SmsReminder = false,
+                CreatedAt   = new DateTime(2024, 3, 15), CreatedFrom = "Manuellt",
+                PhotoUrl    = "https://randomuser.me/api/portraits/men/60.jpg",
+                LicenseCategories         = [],
+                TrainingStepsByCategory   = new(),
+                TheoryStepsByCategory     = new(),
+                ContactPersons = new() { new() { Name = "Alice Bergström", Relation = "Dotter", Phone = "070-123 45 67" } }
+            },
+        };
+
     /// <summary>Build steps where the first <paramref name="assessed"/> have scores,
     /// using a repeating 3-4-5-4-5 pattern, with optional comment on step index
     /// <paramref name="commentStep"/>.</summary>
@@ -518,6 +550,10 @@ public class BookingService
         if (student != null && _studentProfiles.TryGetValue(student.Id, out var profile))
             return profile;
 
+        // Check named profiles (contacts/relatives not in main student list)
+        if (_namedProfiles.TryGetValue(name, out var namedProfile))
+            return namedProfile;
+
         // Generate a generic profile on the fly and cache it
         var id = student?.Id ?? Math.Abs(name.GetHashCode() % 10000) + 100;
         if (!_studentProfiles.TryGetValue(id, out var generic))
@@ -590,6 +626,13 @@ public class BookingService
             kv.Value.TheoryAreaProgress = MakeTheoryAreas(kv.Key);
             kv.Value.ContactPersons     = MakeContacts(kv.Key, kv.Value.Name, kv.Value.Age);
         }
+
+        // Override Alice Bergström's contacts with specific named parent profiles
+        _studentProfiles[1].ContactPersons = new List<ContactPerson>
+        {
+            new() { Name = "Maria Bergström", Relation = "Mamma", Phone = "070-234 56 78" },
+            new() { Name = "Lars Bergström",  Relation = "Pappa",  Phone = "073-456 78 90" },
+        };
 
         GenerateMockEvents();
     }
