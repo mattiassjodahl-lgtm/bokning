@@ -1,5 +1,4 @@
 using MudBlazor;
-using Heron.MudCalendar;
 
 namespace BookingDemo.Models;
 
@@ -196,32 +195,6 @@ public class CalendarEvent
 
     /// Education plan moments linked to this lesson booking.
     public List<LessonMoment> LinkedMoments { get; set; } = new();
-
-    /// Teaching method checkboxes for this lesson.
-    public bool Demonstrated { get; set; }
-    public bool Instructed   { get; set; }
-    public bool Independent  { get; set; }
-
-    /// Free-text comment on the lesson as a whole (not per moment).
-    public string LessonComment { get; set; } = "";
-}
-
-// ── Calendar item adapter for Heron.MudCalendar ─────────────────────────────
-
-/// <summary>
-/// Wraps a <see cref="CalendarEvent"/> so it can be displayed by MudCalendar.
-/// </summary>
-public class BookingCalendarItem : CalendarItem
-{
-    public CalendarEvent Event { get; }
-
-    public BookingCalendarItem(CalendarEvent evt)
-    {
-        Event = evt;
-        Start = evt.StartTime;
-        End   = evt.EndTime;
-        Text  = evt.IsBooked ? evt.StudentName : "Ledig";
-    }
 }
 
 // ── Lesson moment (education plan item linked to a booking) ───────────────────
@@ -243,10 +216,6 @@ public class LessonMoment
         _     => "Godkänd",
     };
 }
-
-// ── Moment group (avoids nested generics that break Razor parser) ────────────
-
-public record MomentGroup(EduPlanSection Section, List<LessonMoment> Moments);
 
 // ── Booking request (used in dialog) ─────────────────────────────────────────
 

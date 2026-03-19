@@ -609,9 +609,6 @@ public class BookingService
     private List<CalendarEvent> _events = new();
     private int _nextEventId = 1000;
 
-    /// <summary>All calendar events (for MudCalendar binding).</summary>
-    public IReadOnlyList<CalendarEvent> Events => _events;
-
     public BookingService()
     {
         _studentProfiles = BuildProfiles();
