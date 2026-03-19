@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bokning/**" />
+    <Content Remove="bokning/**" />
+    <None Remove="bokning/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MudBlazor" Version="9.0.0" />
     <PackageReference Include="Heron.MudCalendar" Version="4.0.0" />
   </ItemGroup>
