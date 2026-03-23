@@ -1,0 +1,193 @@
+@inject BookingService BookingService
+@inject IDialogService DialogService
+
+@{
+    var isExp     = ExpandedLessonIds.Contains(Evt.Id);
+    var teacher   = BookingService.GetTeacher(Evt.TeacherId);
+    var lt        = Evt.LessonTypeId.HasValue ? BookingService.GetLessonType(Evt.LessonTypeId.Value) : null;
+    var resources = BookingService.GetResourcesById(Evt.ResourceIds);
+    var mGroups   = EduPlan != null ? GroupMomentsBySection(Evt, EduPlan) : new List<(EduPlanSection, List<LessonMoment>)>();
+    var noMoments = Evt.LinkedMoments.Count == 0;
+
+    var borderStyle     = IsAttention ? "border:1px solid #FFCC80;border-left:4px solid #FF6D00" : "border:1px solid #E0E0E0";
+    var headerBg        = IsAttention ? "background:#FFF8F0" : "background:#FAFAFA";
+    var expandBorderTop = IsAttention ? "border-top:1px solid #FFE0B2" : "border-top:1px solid #E8E8E8";
+    var emptyColor      = IsAttention ? "color:#EF6C00" : "color:#BDBDBD";
+}
+
+<div style="@borderStyle;border-radius:8px;margin-bottom:8px;overflow:hidden">
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;@headerBg;cursor:pointer;user-select:none"
+         @onclick="() => ToggleLessonExpand(Evt.Id)">
+        <div style="min-width:90px;flex-shrink:0">
+            <div style="font-size:13px;font-weight:600;color:#212121">@Evt.StartTime.ToString("d MMM", _sv)</div>
+            <div style="font-size:11px;color:#9E9E9E">@Evt.StartTime.ToString("HH:mm")–@Evt.EndTime.ToString("HH:mm")</div>
+        </div>
+        <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:#212121;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@(lt?.Name ?? "Lektion")</div>
+            <div style="font-size:11px;color:#757575">
+                @(teacher?.Name ?? "")
+                @if (resources.Count > 0) { <span style="margin-left:4px">· @string.Join(", ", resources.Select(r => r.Name))</span> }
+            </div>
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start">
+            @if (IsAttention && noMoments)
+            {
+                <span style="font-size:11px;padding:1px 7px;border-radius:10px;background:#EF6C00;color:white;white-space:nowrap">Saknar moment</span>
+            }
+            @if (!IsAttention && Evt.LinkedMoments.Count == 0) { <span style="font-size:11px;color:#BDBDBD;font-style:italic">Inga moment</span> }
+            @foreach (var m in Evt.LinkedMoments)
+            {
+                var needsComment = IsAttention && m.Score < 3 && string.IsNullOrWhiteSpace(m.Comment);
+                <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(m.Score);color:white;white-space:nowrap;@(needsComment ? "outline:2px solid #FF6D00;outline-offset:1px" : "")">@m.Title</span>
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(Evt.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#1565C0;flex-shrink:0;margin-top:2px" /> }
+        <MudIcon Icon="@(isExp ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
+    </div>
+    @if (isExp)
+    {
+        <div style="padding:12px 14px;@expandBorderTop;background:white">
+            @if (mGroups.Count == 0)
+            {
+                <div style="@emptyColor;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+                    @if (IsAttention) { <MudIcon Icon="@Icons.Material.Filled.Warning" Style="font-size:15px" /> }
+                    Inga moment kopplade till denna lektion.
+                </div>
+            }
+            @foreach (var grp in mGroups)
+            {
+                <div style="margin-bottom:12px">
+                    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                        @if (!string.IsNullOrEmpty(grp.Item1.Mark)) { <span style="margin-right:4px">@grp.Item1.Mark</span> }
+                        @grp.Item1.Title
+                    </div>
+                    @foreach (var mo in grp.Item2)
+                    {
+                        var moc = mo;
+                        var ck  = $"{Evt.Id}_{moc.GlobalId}";
+                        var needsCom = IsAttention && moc.Score < 3 && string.IsNullOrWhiteSpace(moc.Comment);
+                        <div style="border:1px solid @(needsCom ? "#FFCC80" : "#F0F0F0");border-left:@(needsCom ? "3px solid #FF6D00" : "1px solid #F0F0F0");border-radius:6px;padding:8px 10px;margin-bottom:6px;background:@(needsCom ? "#FFFAF5" : "#FAFAFA")">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <div style="flex:1;font-size:13px;font-weight:500">@moc.Title</div>
+                                @if (needsCom)
+                                {
+                                    <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#EF6C00;color:white;white-space:nowrap;flex-shrink:0">Saknar kommentar</span>
+                                }
+                                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moc.Score)</span>
+                            </div>
+                            <div class="sc-slider" style="margin:0 4px">
+                                <MudSlider T="int" Value="@moc.Score" ValueChanged="@(v => { moc.Score = v; StateHasChanged(); })" Min="0" Max="5" Step="1" Color="@SliderColor(moc.Score)" TickMarks="true" TickMarkLabels="@_sliderLabels" Immediate="true" Class="mb-3" />
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:-4px">
+                                <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ck)">
+                                    <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:13px" />
+                                    @(IsCommentOpen(ck) ? "Dölj kommentar" : (string.IsNullOrEmpty(moc.Comment) ? "Lägg till kommentar" : "Visa kommentar"))
+                                </span>
+                                @if (!string.IsNullOrEmpty(moc.Comment) && !IsCommentOpen(ck)) { <span style="font-size:11px;color:#9E9E9E;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">@moc.Comment</span> }
+                            </div>
+                            @if (IsCommentOpen(ck)) { <div style="margin-top:8px"><MudTextField T="string" Value="@moc.Comment" ValueChanged="@(v => { moc.Comment = v; StateHasChanged(); })" Label="Kommentar" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" /></div> }
+                        </div>
+                    }
+                </div>
+            }
+            @if (EduPlan != null)
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog())">Lägg till utbildningsmoment</MudButton>
+            }
+            <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                <MudCheckBox T="bool" Value="@Evt.Demonstrated" ValueChanged="@(v => { Evt.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
+                <MudCheckBox T="bool" Value="@Evt.Instructed" ValueChanged="@(v => { Evt.Instructed = v; StateHasChanged(); })" Label="Instruerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
+                <MudCheckBox T="bool" Value="@Evt.Independent" ValueChanged="@(v => { Evt.Independent = v; StateHasChanged(); })" Label="Självständigt" Dense="true" Size="Size.Small" Color="Color.Primary" />
+            </div>
+            <div style="margin-top:8px">
+                <MudTextField T="string" Value="@Evt.LessonComment" ValueChanged="@(v => { Evt.LessonComment = v; StateHasChanged(); })"
+                              Label="Lektionskommentar" Placeholder="Anteckningar för hela lektionen…"
+                              Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.StickyNote2" />
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public CalendarEvent Evt { get; set; } = default!;
+    [Parameter] public EduPlan? EduPlan { get; set; }
+    [Parameter] public bool IsAttention { get; set; }
+    [Parameter] public HashSet<int> ExpandedLessonIds { get; set; } = new();
+    [Parameter] public HashSet<string> OpenCommentIds { get; set; } = new();
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+    private static readonly string[] _sliderLabels = ["–", "1", "2", "3", "4", "5"];
+
+    private void ToggleLessonExpand(int eventId)
+    {
+        if (!ExpandedLessonIds.Add(eventId))
+            ExpandedLessonIds.Remove(eventId);
+    }
+
+    private void ToggleComment(string key)
+    {
+        if (!OpenCommentIds.Add(key))
+            OpenCommentIds.Remove(key);
+    }
+
+    private bool IsCommentOpen(string key) => OpenCommentIds.Contains(key);
+
+    private static string MomentStatusColor(int score) => score switch
+    {
+        >= 3 => "#388E3C",
+        > 0  => "#0097A7",
+        _    => "#BDBDBD",
+    };
+
+    private static string MomentStatusLabel(int score) => score switch
+    {
+        0      => "Ej påbörjat",
+        1 or 2 => "Påbörjat",
+        _      => "Godkänd",
+    };
+
+    private static Color SliderColor(int score) => score switch
+    {
+        0         => Color.Default,
+        1 or 2    => Color.Error,
+        3         => Color.Warning,
+        4 or 5    => Color.Success,
+        _         => Color.Default
+    };
+
+    private static List<(EduPlanSection, List<LessonMoment>)> GroupMomentsBySection(
+        CalendarEvent evt, EduPlan plan)
+    {
+        var result = new List<(EduPlanSection, List<LessonMoment>)>();
+        if (evt.LinkedMoments.Count == 0) return result;
+        foreach (var section in plan.Sections)
+        {
+            var inSection = evt.LinkedMoments
+                .Where(m => section.Items.Any(i => i.GlobalId == m.GlobalId))
+                .ToList();
+            if (inSection.Count > 0)
+                result.Add((section, inSection));
+        }
+        return result;
+    }
+
+    private async Task OpenMomentDialog()
+    {
+        if (EduPlan == null) return;
+        var parameters = new DialogParameters<LessonMomentDialog>
+        {
+            { x => x.Plan,            EduPlan              },
+            { x => x.ExistingMoments, Evt.LinkedMoments    },
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        var dialog  = await DialogService.ShowAsync<LessonMomentDialog>("Utbildningsmoment", parameters, options);
+        var result  = await dialog.Result;
+        if (result is { Canceled: false, Data: List<LessonMoment> moments })
+        {
+            Evt.LinkedMoments = moments;
+            await OnChanged.InvokeAsync();
+        }
+    }
+}

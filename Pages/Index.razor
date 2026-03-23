@@ -1,7 +1,6 @@
 @page "/"
 @inject BookingService BookingService
 @inject IDialogService DialogService
-@using Heron.MudCalendar
 
 <PageTitle>Kalendervy</PageTitle>
 
@@ -12,6 +11,30 @@
     <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Class="mr-2" />
     <MudText Typo="Typo.h6" Class="d-none d-sm-block">Kalendervy</MudText>
     <MudSpacer />
+
+    @* View switcher – high-contrast: active = white text on teal, inactive = white outline *@
+    <MudButtonGroup Color="Color.Inherit" Variant="Variant.Outlined" Size="Size.Small" Class="mr-2">
+        <MudButton OnClick='() => SetView("dag")'
+                   Style="@(_currentView=="dag"
+                       ? "background:white; color:#1565C0; font-weight:700; border-color:white"
+                       : "color:white; border-color:rgba(255,255,255,0.6)")">
+            Dag
+        </MudButton>
+        <MudButton OnClick='() => SetView("vecka")'
+                   Style="@(_currentView=="vecka"
+                       ? "background:white; color:#1565C0; font-weight:700; border-color:white"
+                       : "color:white; border-color:rgba(255,255,255,0.6)")">
+            Vecka
+        </MudButton>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="false">
+            <MudButton OnClick='() => SetView("månad")'
+                       Style="@(_currentView=="månad"
+                           ? "background:white; color:#1565C0; font-weight:700; border-color:white"
+                           : "color:white; border-color:rgba(255,255,255,0.6)")">
+                Månad
+            </MudButton>
+        </MudHidden>
+    </MudButtonGroup>
 
     @* Filter drawer toggle *@
     <MudIconButton Icon="@Icons.Material.Filled.FilterList" Color="Color.Inherit"
@@ -53,6 +76,8 @@
                     var g             = grp;
 
                     <div style="margin-bottom:10px">
+
+                        @* Grupphuvud med "välj alla"-kryssruta *@
                         <div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #e0e0e0;margin-bottom:4px;cursor:pointer"
                              @onclick="() => ToggleGroupAll(g)">
                             <MudCheckBox T="bool"
@@ -65,6 +90,7 @@
                             <span style="font-size:13px;font-weight:700;color:#333;user-select:none">Grupp @g</span>
                         </div>
 
+                        @* Enskilda lärare *@
                         <div style="margin-left:8px">
                             @foreach (var teacher in groupTeachers)
                             {
@@ -84,6 +110,7 @@
                                 </div>
                             }
                         </div>
+
                     </div>
                 }
             </div>
@@ -153,6 +180,26 @@
 
             <MudDivider />
 
+            @* ── Helgdagar ────────────────────────────────────────────── *@
+            <MudButton Variant="@(_filter.HideWeekends ? Variant.Filled : Variant.Outlined)"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.DateRange"
+                       OnClick="ToggleHideWeekends">
+                @(_filter.HideWeekends ? "Visar mån–fre" : "Dölj lördagar och söndagar")
+            </MudButton>
+
+            @* ── Lärarinitialerna ──────────────────────────────────────── *@
+            <MudButton Variant="@(_filter.HideTeacherAvatars ? Variant.Filled : Variant.Outlined)"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.Person"
+                       OnClick="ToggleHideTeacherAvatars">
+                @(_filter.HideTeacherAvatars ? "Visar lärarinitialer" : "Dölj lärarinitialer")
+            </MudButton>
+
+            <MudDivider />
+
             @* ── Reset ────────────────────────────────────────────────── *@
             <MudButton Variant="Variant.Outlined" FullWidth="true"
                        StartIcon="@Icons.Material.Filled.Refresh"
@@ -165,67 +212,134 @@
 </MudDrawer>
 
 @* ═══════════════════════════════════════════════════════════════════════════ *@
-@* Main content – MudCalendar                                                 *@
+@* Main content                                                               *@
 @* ═══════════════════════════════════════════════════════════════════════════ *@
 <MudMainContent Class="cal-main-content">
 
-    @* ── Quick teacher chips above calendar ──────────────────────────────── *@
-    <MudPaper Elevation="0" Square="true" Class="d-flex align-center px-3 py-1 gap-2" Style="background:#f5f5f5;border-bottom:1px solid #e0e0e0">
-        <MudSelect T="int"
-                   Value="@_activeGroupFilter"
-                   ValueChanged="@SetGroupFilter"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense"
-                   Style="min-width:130px;background:white;border-radius:4px"
-                   Class="mr-2">
-            <MudSelectItem T="int" Value="0">Alla grupper</MudSelectItem>
-            <MudSelectItem T="int" Value="1">Grupp 1</MudSelectItem>
-            <MudSelectItem T="int" Value="2">Grupp 2</MudSelectItem>
-        </MudSelect>
+    @* ── Navigation toolbar ─────────────────────────────────────────────── *@
+    <MudPaper Elevation="0" Square="true" Class="cal-nav-bar d-flex align-center px-3 py-1 gap-2">
+        <MudButton Size="Size.Small" OnClick="PrevPeriod"
+                   StartIcon="@Icons.Material.Filled.ChevronLeft">@PrevLabel</MudButton>
+        <MudButton Size="Size.Small" OnClick="GoToToday" Variant="Variant.Outlined">Idag</MudButton>
+        <MudButton Size="Size.Small" OnClick="NextPeriod"
+                   EndIcon="@Icons.Material.Filled.ChevronRight">@NextLabel</MudButton>
 
-        @foreach (var t in BookingService.Teachers.Where(t => _activeGroupFilter == 0 || t.Group == _activeGroupFilter))
+        @* Period title – clickable to open date picker *@
+        <div style="flex:1; position:relative" class="ml-2">
+            <MudButton OnClick="ToggleDatePicker"
+                       EndIcon="@Icons.Material.Filled.CalendarMonth"
+                       Size="Size.Small"
+                       Style="text-transform:none; font-size:14px; font-weight:500; letter-spacing:0">
+                @PeriodTitle
+            </MudButton>
+
+            @if (_datePickerOpen)
+            {
+                @* Backdrop – closes picker when clicking outside *@
+                <div style="position:fixed; inset:0; z-index:998" @onclick="CloseDatePicker"></div>
+
+                @* Calendar panel *@
+                <MudPaper Elevation="8" Style="position:absolute; top:calc(100% + 4px); left:0; z-index:999; min-width:296px; overflow:hidden; border-radius:8px">
+                    <MudDatePicker PickerVariant="PickerVariant.Static"
+                                   Date="@_currentDate"
+                                   DateChanged="@OnPickerDateSelected"
+                                   ShowWeekNumbers="true"
+                                   FirstDayOfWeek="DayOfWeek.Monday"
+                                   Color="Color.Primary"
+                                   Culture="@_sv" />
+                </MudPaper>
+            }
+        </div>
+
+        @* Quick teacher chips (visible on desktop, hideable via filter) *@
+        @if (!_filter.HideTeacherAvatars)
         {
-            <MudChip T="string"
-                     Color="@(t.IsSelected ? Color.Primary : Color.Default)"
-                     Variant="@(t.IsSelected ? Variant.Filled : Variant.Outlined)"
-                     Size="Size.Small"
-                     OnClick="@(() => ToggleTeacher(t))"
-                     Style="@($"border-color:{t.Color}; {(t.IsSelected ? $"background-color:{t.Color}" : "")}")">
-                @t.Initials
-            </MudChip>
+            <div class="d-none d-md-flex align-center gap-1">
+                @* Group filter dropdown *@
+                <MudSelect T="int"
+                           Value="@_activeGroupFilter"
+                           ValueChanged="@SetGroupFilter"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Style="min-width:130px;background:white;border-radius:4px"
+                           Class="mr-2">
+                    <MudSelectItem T="int" Value="0">Alla grupper</MudSelectItem>
+                    <MudSelectItem T="int" Value="1">Grupp 1</MudSelectItem>
+                    <MudSelectItem T="int" Value="2">Grupp 2</MudSelectItem>
+                </MudSelect>
+
+                @* Teacher chips, filtered by group *@
+                @foreach (var t in BookingService.Teachers.Where(t => _activeGroupFilter == 0 || t.Group == _activeGroupFilter))
+                {
+                    <MudChip T="string"
+                             Color="@(t.IsSelected ? Color.Primary : Color.Default)"
+                             Variant="@(t.IsSelected ? Variant.Filled : Variant.Outlined)"
+                             Size="Size.Small"
+                             OnClick="@(() => ToggleTeacher(t))"
+                             Style="@($"border-color:{t.Color}; {(t.IsSelected ? $"background-color:{t.Color}" : "")}")">
+                        @t.Initials
+                    </MudChip>
+                }
+            </div>
         }
     </MudPaper>
 
-    @* ── MudCalendar replaces custom WeekView / MonthView / MobileViews ── *@
-    <div style="flex:1;overflow:auto">
-        <MudCalendar T="BookingCalendarItem"
-                     Items="@_calendarItems"
-                     ItemClicked="@OnCalendarItemClicked"
-                     CellClicked="@OnCalendarCellClicked"
-                     FirstDayOfWeek="DayOfWeek.Monday"
-                     ShowWeek="true"
-                     ShowWorkWeek="false"
-                     ShowDay="true"
-                     ShowMonth="true"
-                     Style="height:100%"
-                     ItemTemplate="@_itemTemplate" />
+    @* ── Calendar views ─────────────────────────────────────────────────── *@
+    <div class="cal-scroll-area">
+
+        @* Desktop: grid-based week/day/month view (hidden on mobile) *@
+        <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="false">
+            @if (_currentView == "dag")
+            {
+                <WeekView DisplayDays="@(new List<DateTime>{ _currentDate })"
+                          Filter="@_filter"
+                          ActiveTeachers="@ActiveTeachers"
+                          OnBookingChanged="@OnBookingChanged" />
+            }
+            else if (_currentView == "vecka")
+            {
+                <WeekView DisplayDays="@CurrentWeekDays"
+                          Filter="@_filter"
+                          ActiveTeachers="@ActiveTeachers"
+                          OnBookingChanged="@OnBookingChanged" />
+            }
+            else
+            {
+                <MonthView CurrentMonth="@_currentDate"
+                           Filter="@_filter"
+                           OnBookingChanged="@OnBookingChanged" />
+            }
+        </MudHidden>
+
+        @* Mobile views (shown only on small screens) *@
+        <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+            @if (_currentView == "vecka")
+            {
+                @* Compact week grid – shows all days at a glance *@
+                <MobileWeekView DisplayDays="@CurrentWeekDays"
+                                Filter="@_filter"
+                                ActiveTeachers="@ActiveTeachers"
+                                OnBookingChanged="@OnBookingChanged" />
+            }
+            else
+            {
+                @* Dag / Månad → agenda list for selected day *@
+                <MobileAgendaView WeekDays="@CurrentWeekDays"
+                                  CurrentDate="@_currentDate"
+                                  Filter="@_filter"
+                                  OnBookingChanged="@OnBookingChanged" />
+            }
+        </MudHidden>
     </div>
 </MudMainContent>
 
 @code {
-    // ── Item template ─────────────────────────────────────────────────────────
-    private RenderFragment<BookingCalendarItem> _itemTemplate => bci =>
-        builder =>
-        {
-            builder.OpenComponent<BookingCalendarItemView>(0);
-            builder.AddAttribute(1, "Item", bci);
-            builder.AddAttribute(2, "ShowTeacherAvatars", ActiveTeachers.Count > 1);
-            builder.CloseComponent();
-        };
-
     // ── State ─────────────────────────────────────────────────────────────────
 
+    private string _currentView = "vecka";
+    private DateTime _currentDate = DateTime.Today;
     private bool _filterOpen;
+    private bool _datePickerOpen;
 
     private CalendarFilter _filter = new()
     {
@@ -233,54 +347,28 @@
         ShowBooked    = true,
     };
 
+    // ── Group filter for quick-chips in nav bar (0 = Alla, 1 = Grupp 1, 2 = Grupp 2)
     private int _activeGroupFilter = 0;
 
-    private IReadOnlyCollection<int> _selectedTeacherIds    = new List<int>();
-    private IReadOnlyCollection<int> _selectedResourceIds   = new List<int>();
-    private IReadOnlyCollection<int> _selectedLessonTypeIds = new List<int>();
-
-    // ── MudCalendar items (built from filtered events) ─────────────────────
-
-    private IEnumerable<BookingCalendarItem> _calendarItems = Enumerable.Empty<BookingCalendarItem>();
+    // Multi-select dropdown state — initialised in OnInitialized
+    private IEnumerable<int> _selectedTeacherIds    = new List<int>();
+    private IEnumerable<int> _selectedGroup1Ids     = new List<int>();
+    private IEnumerable<int> _selectedGroup2Ids     = new List<int>();
+    private IEnumerable<int> _selectedResourceIds   = new List<int>();
+    private IEnumerable<int> _selectedLessonTypeIds = new List<int>();
 
     protected override void OnInitialized()
     {
-        _selectedTeacherIds = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
+        // Default: Grupp 1 selected, Grupp 2 unselected
+        _selectedGroup1Ids  = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
+        _selectedGroup2Ids  = new List<int>();
+        _selectedTeacherIds = _selectedGroup1Ids.ToList();
         foreach (var t in BookingService.Teachers)
             t.IsSelected = _selectedTeacherIds.Contains(t.Id);
-        RebuildCalendarItems();
     }
 
-    private void RebuildCalendarItems()
-    {
-        _calendarItems = BookingService.Events
-            .Where(e => MatchesFilter(e))
-            .Select(e => new BookingCalendarItem(e))
-            .ToList();
-    }
-
-    private bool MatchesFilter(CalendarEvent e)
-    {
-        // Show available / booked
-        if (e.IsBooked && !_filter.ShowBooked) return false;
-        if (!e.IsBooked && !_filter.ShowAvailable) return false;
-
-        // Teacher filter
-        if (_filter.SelectedTeacherIds.Count > 0 && !_filter.SelectedTeacherIds.Contains(e.TeacherId))
-            return false;
-
-        // Resource filter
-        if (_filter.SelectedResourceIds.Count > 0 && !e.ResourceIds.Any(r => _filter.SelectedResourceIds.Contains(r)))
-            return false;
-
-        // Lesson type filter
-        if (_filter.SelectedLessonTypeIds.Count > 0 && e.LessonTypeId.HasValue && !_filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value))
-            return false;
-
-        return true;
-    }
-
-    private static string PreviewText(IReadOnlyList<string> selected) => selected.Count switch
+    // Shows "Anna Lindgren" for 1 selected, "Anna Lindgren +2" for 3 selected, etc.
+    private static string PreviewText(List<string> selected) => selected.Count switch
     {
         0 => "",
         1 => selected[0],
@@ -290,82 +378,94 @@
     private List<Teacher> ActiveTeachers =>
         BookingService.Teachers.Where(t => t.IsSelected).ToList();
 
-    // ── MudCalendar event handlers ─────────────────────────────────────────
+    // ── Period helpers ────────────────────────────────────────────────────────
 
-    private async Task OnCalendarItemClicked(BookingCalendarItem item)
+    private List<DateTime> CurrentWeekDays
     {
-        var evt = item.Event;
-        var parameters = new DialogParameters<BookingDialog>
+        get
         {
-            { x => x.ExistingEvent, evt }
-        };
-        var dialog = await DialogService.ShowAsync<BookingDialog>("", parameters,
-            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
-        var result = await dialog.Result;
-
-        if (result is { Canceled: false })
-        {
-            if (result.Data?.ToString() == "book_existing")
-                await OpenBookingForSlot(evt.TeacherId, evt.StartTime, evt.LessonTypeId);
-            RebuildCalendarItems();
-            StateHasChanged();
+            var monday = _currentDate.AddDays(-(int)_currentDate.DayOfWeek + (int)DayOfWeek.Monday);
+            if (_currentDate.DayOfWeek == DayOfWeek.Sunday) monday = monday.AddDays(-7);
+            var days = Enumerable.Range(0, 7).Select(i => monday.AddDays(i));
+            if (_filter.HideWeekends)
+                days = days.Where(d => d.DayOfWeek != DayOfWeek.Saturday && d.DayOfWeek != DayOfWeek.Sunday);
+            return days.ToList();
         }
     }
 
-    private async Task OnCalendarCellClicked(DateTime cellDate)
+    private string PrevLabel => _currentView switch
     {
-        var startTime = cellDate.TimeOfDay == TimeSpan.Zero
-            ? cellDate.AddHours(9)   // Clicked on a day cell (month view) → default 09:00
-            : cellDate;              // Clicked on a time slot → use exact time
-        await OpenBookingForSlot(ActiveTeachers.FirstOrDefault()?.Id ?? 0, startTime, null);
+        "dag"   => "Igår",
+        "vecka" => "Förra veckan",
+        _       => "Förra månaden",
+    };
+
+    private string NextLabel => _currentView switch
+    {
+        "dag"   => "Imorgon",
+        "vecka" => "Nästa vecka",
+        _       => "Nästa månad",
+    };
+
+    private string PeriodTitle => _currentView switch
+    {
+        "dag"    => _currentDate.ToString("dddd d MMMM yyyy", _sv),
+        "vecka"  => $"Vecka {GetIso8601WeekOfYear(_currentDate)} · {CurrentWeekDays[0]:d MMM} – {CurrentWeekDays[^1]:d MMM yyyy}",
+        "månad"  => _currentDate.ToString("MMMM yyyy", _sv),
+        _        => ""
+    };
+
+    private System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+
+    private void SetView(string view)
+    {
+        _currentView = view;
+        StateHasChanged();
     }
 
-    private async Task OpenBookingForSlot(int teacherId, DateTime startTime, int? lessonTypeId)
-    {
-        var parameters = new DialogParameters<BookingDialog>
+    private void PrevPeriod() =>
+        _currentDate = _currentView switch
         {
-            { x => x.PreselectedTeacherId,    teacherId   },
-            { x => x.PreselectedStart,        startTime   },
-            { x => x.PreselectedLessonTypeId, lessonTypeId },
+            "dag"   => _currentDate.AddDays(-1),
+            "vecka" => _currentDate.AddDays(-7),
+            _       => _currentDate.AddMonths(-1),
         };
-        var dialog = await DialogService.ShowAsync<BookingDialog>("Boka lektion", parameters,
-            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
-        var result = await dialog.Result;
 
-        if (result is { Canceled: false })
+    private void NextPeriod() =>
+        _currentDate = _currentView switch
         {
-            RebuildCalendarItems();
-            StateHasChanged();
+            "dag"   => _currentDate.AddDays(1),
+            "vecka" => _currentDate.AddDays(7),
+            _       => _currentDate.AddMonths(1),
+        };
+
+    private void GoToToday() => _currentDate = DateTime.Today;
+
+    private void ToggleDatePicker() => _datePickerOpen = !_datePickerOpen;
+    private void CloseDatePicker()  => _datePickerOpen = false;
+
+    private void OnPickerDateSelected(DateTime? date)
+    {
+        if (date.HasValue)
+        {
+            _currentDate    = date.Value;
+            _datePickerOpen = false;
         }
     }
 
-    // ── New booking (from app bar) ─────────────────────────────────────────
-
-    private async Task OpenNewBookingDialog()
-    {
-        var parameters = new DialogParameters<BookingDialog>
-        {
-            { x => x.PreselectedStart,  DateTime.Today.AddHours(9) },
-            { x => x.FindNextAvailable, true },
-        };
-        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true };
-        var dialog  = await DialogService.ShowAsync<BookingDialog>("Ny bokning", parameters, options);
-        var result  = await dialog.Result;
-        if (!result!.Canceled)
-        {
-            RebuildCalendarItems();
-            StateHasChanged();
-        }
-    }
-
-    // ── Teacher toggle (quick chips) ───────────────────────────────────────
+    // ── Teacher toggle (quick chips in nav bar) ───────────────────────────────
 
     private void ToggleTeacher(Teacher t)
     {
         t.IsSelected = !t.IsSelected;
         _selectedTeacherIds = BookingService.Teachers.Where(x => x.IsSelected).Select(x => x.Id).ToList();
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
+
+    // ── Group filter toggle (nav bar dropdown) ────────────────────────────────
 
     private void SetGroupFilter(int group)
     {
@@ -373,7 +473,7 @@
         StateHasChanged();
     }
 
-    // ── Checkbox handlers (filter drawer) ──────────────────────────────────
+    // ── Checkbox handlers (filter drawer) ────────────────────────────────────
 
     private void ToggleTeacherInDrawer(int id)
     {
@@ -383,6 +483,7 @@
         _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
             t.IsSelected = sel.Contains(t.Id);
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
@@ -398,18 +499,35 @@
         _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
             t.IsSelected = sel.Contains(t.Id);
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
-    private void OnResourcesChanged(IReadOnlyCollection<int> selected)
+    private void SyncGroupSelectionsFromTeachers()
     {
-        _selectedResourceIds = selected;
+        var sel = _selectedTeacherIds.ToHashSet();
+        _selectedGroup1Ids = BookingService.Teachers.Where(t => t.Group == 1 && sel.Contains(t.Id)).Select(t => t.Id).ToList();
+        _selectedGroup2Ids = BookingService.Teachers.Where(t => t.Group == 2 && sel.Contains(t.Id)).Select(t => t.Id).ToList();
+    }
+
+    private void OnTeachersChanged(IEnumerable<int> selected)
+    {
+        _selectedTeacherIds = selected.ToList();
+        foreach (var t in BookingService.Teachers)
+            t.IsSelected = _selectedTeacherIds.Contains(t.Id);
+        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
-    private void OnLessonTypesChanged(IReadOnlyCollection<int> selected)
+    private void OnResourcesChanged(IEnumerable<int> selected)
     {
-        _selectedLessonTypeIds = selected;
+        _selectedResourceIds = selected.ToList();
+        RefreshFilter();
+    }
+
+    private void OnLessonTypesChanged(IEnumerable<int> selected)
+    {
+        _selectedLessonTypeIds = selected.ToList();
         RefreshFilter();
     }
 
@@ -423,24 +541,71 @@
         {
             ShowAvailable          = _filter.ShowAvailable,
             ShowBooked             = _filter.ShowBooked,
+            HideWeekends           = _filter.HideWeekends,
+            HideTeacherAvatars     = _filter.HideTeacherAvatars,
             SelectedLessonTypeIds  = _selectedLessonTypeIds.ToList(),
             SelectedTeacherIds     = _selectedTeacherIds.ToList(),
             SelectedResourceIds    = _selectedResourceIds.ToList(),
         };
-        RebuildCalendarItems();
         StateHasChanged();
+    }
+
+    private void ToggleHideWeekends()
+    {
+        _filter.HideWeekends = !_filter.HideWeekends;
+        RefreshFilter();
+    }
+
+    private void ToggleHideTeacherAvatars()
+    {
+        _filter.HideTeacherAvatars = !_filter.HideTeacherAvatars;
+        RefreshFilter();
     }
 
     private void ResetFilter()
     {
-        _selectedTeacherIds    = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
+        _selectedGroup1Ids     = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
+        _selectedGroup2Ids     = new List<int>();
+        _selectedTeacherIds    = _selectedGroup1Ids.ToList();
         _selectedResourceIds   = new List<int>();
         _selectedLessonTypeIds = new List<int>();
         _activeGroupFilter     = 0;
         foreach (var t in BookingService.Teachers)
             t.IsSelected = t.Group == 1;
-        _filter = new CalendarFilter { ShowAvailable = true, ShowBooked = true };
-        RebuildCalendarItems();
+        _filter = new CalendarFilter { ShowAvailable = true, ShowBooked = true, HideWeekends = false, HideTeacherAvatars = false };
         StateHasChanged();
+    }
+
+    // ── Booking dialog ────────────────────────────────────────────────────────
+
+    private async Task OpenNewBookingDialog()
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.PreselectedStart,  _currentDate.Date.AddHours(9) },
+            { x => x.FindNextAvailable, true },
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true };
+        var dialog  = await DialogService.ShowAsync<BookingDialog>("Ny bokning", parameters, options);
+        var result  = await dialog.Result;
+        if (!result!.Canceled) StateHasChanged();
+    }
+
+    private Task OnBookingChanged()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // ── ISO week number ───────────────────────────────────────────────────────
+
+    private static int GetIso8601WeekOfYear(DateTime date)
+    {
+        var day = (int)System.Globalization.CultureInfo.InvariantCulture.Calendar
+            .GetDayOfWeek(date);
+        if (day is >= 1 and <= 3) date = date.AddDays(3);
+        return System.Globalization.CultureInfo.InvariantCulture.Calendar
+            .GetWeekOfYear(date, System.Globalization.CalendarWeekRule.FirstFourDayWeek,
+                DayOfWeek.Monday);
     }
 }

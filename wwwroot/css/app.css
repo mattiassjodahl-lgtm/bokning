@@ -128,14 +128,14 @@ html, body {
 
 /* ── Compact slider used in Utbildning tab ───────────────────────────────── */
 .sc-slider .mud-slider-thumb {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
 }
 .sc-slider input[type=range]::-webkit-slider-thumb {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
 }
 .sc-slider input[type=range]::-moz-range-thumb {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
 }

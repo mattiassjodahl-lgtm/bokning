@@ -1,0 +1,225 @@
+@inject BookingService BookingService
+
+<div style="min-width:0;background:white;border:1px solid #e8e8e8;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+    <div class="ov-section-title">Status per behörighet</div>
+
+    @foreach (var cat in Profile.LicenseCategories)
+    {
+        var lcat      = cat;
+        var pSteps    = Profile.TrainingStepsByCategory.TryGetValue(cat, out var ps) ? ps : new();
+        var tSteps    = Profile.TheoryStepsByCategory.TryGetValue(cat, out var ts)   ? ts : new();
+        var pAssessed = pSteps.Count(s => s.Score > 0);
+        var pApproved = pSteps.Count(s => s.Score >= 4);
+        var pPct      = pSteps.Count > 0 ? (int)Math.Round(pAssessed / (double)pSteps.Count * 100) : 0;
+        var tAssessed = tSteps.Count(s => s.Score > 0);
+        var tApproved = tSteps.Count(s => s.Score >= 4);
+        var tPct      = tSteps.Count > 0 ? (int)Math.Round(tAssessed / (double)tSteps.Count * 100) : 0;
+        var areaExpanded = _theoryDetailsExpanded.Contains(lcat);
+
+        <div style="margin-bottom:18px">
+            @if (Profile.LicenseCategories.Count > 1)
+            {
+                <div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:8px;display:flex;align-items:center;gap:4px">
+                    <MudIcon Icon="@Icons.Material.Filled.DriveEta" Style="font-size:14px" />
+                    Behörighet @cat
+                </div>
+            }
+
+            @* Praktik *@
+            <div style="margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <span style="font-size:12px;font-weight:500;color:#424242;display:flex;align-items:center;gap:4px">
+                        <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Style="font-size:13px;color:#4caf50" />
+                        Praktik
+                    </span>
+                    <span style="font-size:11px;color:#757575">@pAssessed/@(pSteps.Count) bedömda · @pApproved godkända</span>
+                    <span style="font-size:13px;font-weight:700;color:#4caf50;min-width:38px;text-align:right">@pPct %</span>
+                </div>
+                <MudProgressLinear Value="@pPct" Color="Color.Success" Rounded="true" Size="Size.Small" />
+
+                @if (Profile.EduPlan != null)
+                {
+                    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                        <span style="font-size:11px;color:#1565C0;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                              @onclick="() => TogglePraktikDetails(cat)">
+                            @if (_praktikDetailsExpanded.Contains(cat))
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.ExpandLess" Style="font-size:14px" />
+                                <span>Dölj detaljer</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Style="font-size:14px" />
+                                <span>Läs mer</span>
+                            }
+                        </span>
+                    </div>
+
+                    @if (_praktikDetailsExpanded.Contains(cat))
+                    {
+                        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:12px">
+                            @foreach (var sec in GetPraktikSectionProgress())
+                            {
+                                <div style="text-align:center;width:80px">
+                                    @((MarkupString)PieChartSvg(sec.Approved, sec.Ok, sec.InProgress, sec.NotStarted, sec.Total))
+                                    <div style="font-size:9px;color:#757575;margin-top:2px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@sec.Name">@sec.Name</div>
+                                </div>
+                            }
+                        </div>
+                        <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
+                            <span style="font-size:9px;color:#4caf50">● Godkänd</span>
+                            <span style="font-size:9px;color:#ff9800">● Godtagbar</span>
+                            <span style="font-size:9px;color:#2196F3">● Påbörjad</span>
+                            <span style="font-size:9px;color:#e0e0e0">● Ej påbörjad</span>
+                        </div>
+                    }
+                }
+            </div>
+
+            @* Teori *@
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <span style="font-size:12px;font-weight:500;color:#424242;display:flex;align-items:center;gap:4px">
+                        <MudIcon Icon="@Icons.Material.Filled.MenuBook" Style="font-size:13px;color:#0097A7" />
+                        Teori
+                    </span>
+                    <span style="font-size:11px;color:#757575">@tAssessed/@(tSteps.Count) genomgångna · @tApproved godkända</span>
+                    <span style="font-size:13px;font-weight:700;color:#0097A7;min-width:38px;text-align:right">@tPct %</span>
+                </div>
+                <MudProgressLinear Value="@tPct" Color="Color.Secondary" Rounded="true" Size="Size.Small" />
+
+                @if (Profile.TheoryAreaProgress.Count > 0)
+                {
+                    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                        <span style="font-size:11px;color:#1565C0;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                              @onclick="() => ToggleTheoryDetails(lcat)">
+                            @if (areaExpanded)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.ExpandLess" Style="font-size:14px" />
+                                <span>Dölj detaljer</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.ExpandMore" Style="font-size:14px" />
+                                <span>Läs mer</span>
+                            }
+                        </span>
+                    </div>
+
+                    @if (areaExpanded)
+                    {
+                        <div style="margin-top:6px;padding:10px 12px;background:#FAFAFA;border:1px solid #E8E8E8;border-radius:8px">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                                <div style="width:2px;height:10px;background:#1565C0;border-radius:1px;flex-shrink:0"></div>
+                                <span style="font-size:10px;color:#757575">= 75 % (målnivå)</span>
+                            </div>
+                            @foreach (var area in Profile.TheoryAreaProgress)
+                            {
+                                var pctColor = AreaBarColor(area.Percentage);
+                                <div style="margin-bottom:7px">
+                                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+                                        <span style="font-size:11px;color:#424242;font-weight:500">@area.Name</span>
+                                        <span style="font-size:11px;font-weight:700;color:@pctColor;margin-left:8px;white-space:nowrap">@area.Percentage %</span>
+                                    </div>
+                                    <div style="position:relative">
+                                        <div style="height:6px;background:#E0E0E0;border-radius:4px;overflow:hidden">
+                                            <div style="width:@(area.Percentage)%;height:100%;background:@pctColor;border-radius:4px"></div>
+                                        </div>
+                                        <div style="position:absolute;top:-2px;left:75%;transform:translateX(-50%);width:2px;height:10px;background:#1565C0;border-radius:1px;pointer-events:none"></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public StudentProfile Profile { get; set; } = default!;
+
+    private HashSet<string> _theoryDetailsExpanded  = new();
+    private HashSet<string> _praktikDetailsExpanded = new();
+
+    private void ToggleTheoryDetails(string cat)
+    {
+        if (!_theoryDetailsExpanded.Add(cat))
+            _theoryDetailsExpanded.Remove(cat);
+    }
+
+    private void TogglePraktikDetails(string cat)
+    {
+        if (!_praktikDetailsExpanded.Add(cat))
+            _praktikDetailsExpanded.Remove(cat);
+    }
+
+    private static string AreaBarColor(int pct) => pct switch
+    {
+        >= 90 => "#4caf50",
+        >= 75 => "#8bc34a",
+        >= 50 => "#ff9800",
+        _     => "#f44336",
+    };
+
+    private List<(string Name, int Approved, int Ok, int InProgress, int NotStarted, int Total)>
+        GetPraktikSectionProgress()
+    {
+        if (Profile.EduPlan == null) return new();
+        var allEvents = BookingService.GetEventsForStudent(Profile.Name).ToList();
+        var bestScore = new Dictionary<string, int>();
+        foreach (var evt in allEvents)
+            foreach (var m in evt.LinkedMoments)
+                if (!bestScore.TryGetValue(m.GlobalId, out var existing) || m.Score > existing)
+                    bestScore[m.GlobalId] = m.Score;
+        var result = new List<(string, int, int, int, int, int)>();
+        foreach (var section in Profile.EduPlan.Sections)
+        {
+            int approved = 0, ok = 0, inProgress = 0, notStarted = 0;
+            foreach (var item in section.Items)
+            {
+                var score = bestScore.TryGetValue(item.GlobalId, out var s) ? s : 0;
+                if      (score >= 4) approved++;
+                else if (score == 3) ok++;
+                else if (score >= 1) inProgress++;
+                else                 notStarted++;
+            }
+            if (section.Items.Count > 0)
+                result.Add((section.Title, approved, ok, inProgress, notStarted, section.Items.Count));
+        }
+        return result;
+    }
+
+    private static string PieChartSvg(int approved, int ok, int inProgress, int notStarted, int total)
+    {
+        if (total == 0) return "";
+        var colors = new[] { "#4caf50", "#ff9800", "#2196F3", "#e0e0e0" };
+        var values = new[] { approved, ok, inProgress, notStarted };
+        double cx = 32, cy = 32, r = 28;
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<svg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'>");
+        double startAngle = -90;
+        for (int i = 0; i < 4; i++)
+        {
+            if (values[i] == 0) continue;
+            double pct = (double)values[i] / total;
+            double angle = pct * 360;
+            double endAngle = startAngle + angle;
+            double x1 = cx + r * Math.Cos(startAngle * Math.PI / 180);
+            double y1 = cy + r * Math.Sin(startAngle * Math.PI / 180);
+            double x2 = cx + r * Math.Cos(endAngle * Math.PI / 180);
+            double y2 = cy + r * Math.Sin(endAngle * Math.PI / 180);
+            int largeArc = angle > 180 ? 1 : 0;
+            if (pct >= 1.0)
+                sb.Append($"<circle cx='{cx}' cy='{cy}' r='{r}' fill='{colors[i]}'/>");
+            else
+                sb.Append($"<path d='M{cx},{cy} L{x1.ToString(System.Globalization.CultureInfo.InvariantCulture)},{y1.ToString(System.Globalization.CultureInfo.InvariantCulture)} A{r},{r} 0 {largeArc},1 {x2.ToString(System.Globalization.CultureInfo.InvariantCulture)},{y2.ToString(System.Globalization.CultureInfo.InvariantCulture)} Z' fill='{colors[i]}'/>");
+            startAngle = endAngle;
+        }
+        sb.Append("<circle cx='32' cy='32' r='16' fill='white'/>");
+        sb.Append($"<text x='32' y='36' text-anchor='middle' font-size='12' fill='#424242'>{approved}/{total}</text>");
+        sb.Append("</svg>");
+        return sb.ToString();
+    }
+}

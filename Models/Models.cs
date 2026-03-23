@@ -193,6 +193,14 @@ public class CalendarEvent
     public TimeSpan Duration => EndTime - StartTime;
     public double DurationHours => Duration.TotalHours;
 
+    /// Checkboxes for lesson assessment.
+    public bool Demonstrated { get; set; }
+    public bool Instructed   { get; set; }
+    public bool Independent  { get; set; }
+
+    /// Free-text comment for the whole lesson.
+    public string LessonComment { get; set; } = "";
+
     /// Education plan moments linked to this lesson booking.
     public List<LessonMoment> LinkedMoments { get; set; } = new();
 }
