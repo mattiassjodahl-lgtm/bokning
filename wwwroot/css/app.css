@@ -126,24 +126,44 @@ html, body {
     .sc-center { overflow-y: visible; }
 }
 
-/* ── Compact slider used in Utbildning tab ───────────────────────────────── */
-.sc-slider .mud-slider-container input[type=range].mud-slider-input::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    transform: scale(1) !important;
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 50% !important;
-    border: 2px solid rgba(0,0,0,0.25) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.30) !important;
-    cursor: pointer !important;
+/* ── Custom score slider (plain HTML, no MudBlazor) ─────────────────────── */
+.sc-score-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 6px;
+    background: #E0E0E0;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
 }
-.sc-slider .mud-slider-container input[type=range].mud-slider-input::-moz-range-thumb {
-    transform: scale(1) !important;
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 50% !important;
-    border: 2px solid rgba(0,0,0,0.25) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.30) !important;
-    cursor: pointer !important;
+.sc-score-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1565C0;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+.sc-score-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1565C0;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+.sc-score-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+}
+.sc-score-slider::-moz-range-track {
+    height: 6px;
+    background: #E0E0E0;
+    border-radius: 3px;
+    border: none;
 }

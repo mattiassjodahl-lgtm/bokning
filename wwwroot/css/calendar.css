@@ -597,28 +597,7 @@
     white-space: nowrap;
 }
 
-/* ── StudentCard slider thumb – compact and fully opaque ────────────────── */
-
-.sc-slider .mud-slider-container input[type=range].mud-slider-input::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    transform: scale(1) !important;
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 50% !important;
-    opacity: 1 !important;
-    border: 2px solid rgba(0,0,0,0.25) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.30) !important;
-}
-.sc-slider .mud-slider-container input[type=range].mud-slider-input::-moz-range-thumb {
-    transform: scale(1) !important;
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 50% !important;
-    opacity: 1 !important;
-    border: 2px solid rgba(0,0,0,0.25) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.30) !important;
-}
+/* (Score slider styling moved to app.css as .sc-score-slider) */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mobile Week View
