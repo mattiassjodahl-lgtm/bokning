@@ -75,8 +75,17 @@
                                 }
                                 <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moc.Score)</span>
                             </div>
-                            <div class="sc-slider" style="margin:0 4px">
-                                <MudSlider T="int" Value="@moc.Score" ValueChanged="@(v => { moc.Score = v; StateHasChanged(); })" Min="0" Max="5" Step="1" Color="@SliderColor(moc.Score)" TickMarks="true" TickMarkLabels="@_sliderLabels" Immediate="true" Class="mb-3" />
+                            <div style="display:flex;align-items:center;gap:4px;margin:4px 0">
+                                @for (int i = 0; i <= 5; i++)
+                                {
+                                    var val = i;
+                                    var isActive = moc.Score == val;
+                                    var label = val == 0 ? "–" : val.ToString();
+                                    var bg = isActive ? ScoreButtonColor(val) : "#F0F0F0";
+                                    var fg = isActive ? "white" : "#757575";
+                                    <span style="width:32px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:12px;font-weight:@(isActive ? "700" : "500");background:@bg;color:@fg;cursor:pointer;user-select:none;transition:all 0.15s"
+                                          @onclick="() => { moc.Score = val; StateHasChanged(); }">@label</span>
+                                }
                             </div>
                             <div style="display:flex;align-items:center;gap:6px;margin-top:-4px">
                                 <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ck)">
@@ -148,13 +157,13 @@
         _      => "Godkänd",
     };
 
-    private static Color SliderColor(int score) => score switch
+    private static string ScoreButtonColor(int score) => score switch
     {
-        0         => Color.Default,
-        1 or 2    => Color.Error,
-        3         => Color.Warning,
-        4 or 5    => Color.Success,
-        _         => Color.Default
+        0      => "#9E9E9E",
+        1 or 2 => "#f44336",
+        3      => "#ff9800",
+        4 or 5 => "#4caf50",
+        _      => "#9E9E9E",
     };
 
     private static List<(EduPlanSection, List<LessonMoment>)> GroupMomentsBySection(
