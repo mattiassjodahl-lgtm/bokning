@@ -321,6 +321,26 @@
                                          Placeholder="Sök eller skriv namn…" />
                     }
 
+                    @* ── Elevsaldo ──────────────────────────────────────── *@
+                    @if (!string.IsNullOrWhiteSpace(_request.StudentName) && GetStudentBalance(_request.StudentName) is var bal && bal != null)
+                    {
+                        <div style="background:#f5f5f5;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-top:-4px">
+                            <MudIcon Icon="@Icons.Material.Filled.AccountBalanceWallet" Style="font-size:20px;color:#1565C0" />
+                            <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px">
+                                <span style="font-weight:600;color:#1a1a1a">@bal.PrepaidLessons lektioner kvar</span>
+                                <span style="color:#757575">·</span>
+                                @if (bal.BalanceKr >= 0)
+                                {
+                                    <span style="font-weight:600;color:#2e7d32">Tillgodo: @bal.BalanceKr.ToString("N0"):‑</span>
+                                }
+                                else
+                                {
+                                    <span style="font-weight:600;color:#c62828">Att betala: @Math.Abs(bal.BalanceKr).ToString("N0"):‑</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     @* Pickup location *@
                     <MudSelect T="int?" Label="Upphämtningsplats (valfritt)"
                                Value="@_request.PickupLocationId"
@@ -564,6 +584,23 @@
         if (idx >= 0 && idx < _extraStudents.Count)
             _extraStudents.RemoveAt(idx);
     }
+
+    // ── Elevsaldo (mock) ───────────────────────────────────────────────────
+
+    private record StudentBalance(int PrepaidLessons, decimal BalanceKr);
+
+    private static readonly Dictionary<string, StudentBalance> _mockBalances = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Anna Andersson"]    = new(3, -4800m),
+        ["Erik Eriksson"]     = new(7, 2400m),
+        ["Maria Johansson"]   = new(0, -9600m),
+        ["Karl Svensson"]     = new(5, 0m),
+        ["Sofia Lindström"]   = new(1, -1200m),
+        ["Johan Nilsson"]     = new(10, 6000m),
+    };
+
+    private static StudentBalance? GetStudentBalance(string name) =>
+        _mockBalances.TryGetValue(name.Trim(), out var b) ? b : new(0, 0m);
 
     // ── Resource toggle ───────────────────────────────────────────────────────
 
