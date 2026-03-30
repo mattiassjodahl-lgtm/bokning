@@ -304,6 +304,8 @@
     private const int DayHeaderHeight = 36;
     private const int TotalHeight    = (EndHour - StartHour) * PixelsPerHour;
 
+    private static readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
+
     private int?              _selectedTeacherId  = 1;
     private int?              _pickedLessonTypeId = null;
     private bool              _isDragging         = false;
