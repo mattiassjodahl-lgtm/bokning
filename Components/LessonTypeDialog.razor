@@ -1,0 +1,168 @@
+@inject BookingService BookingService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(IsNew ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
+                     Class="mr-1" Style="vertical-align:middle" />
+            @(IsNew ? "Ny lektionsmall" : "Redigera lektionsmall")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width:320px">
+
+            <MudTextField @bind-Value="_model.Name"
+                          Label="Namn" Required="true"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+            <MudTextField @bind-Value="_model.Description"
+                          Label="Beskrivning"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+            <MudNumericField T="int" @bind-Value="_model.DefaultDurationMinutes"
+                             Label="Längd (minuter)" Min="15" Max="480" Step="15"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+            <MudNumericField T="int" @bind-Value="_model.MaxStudents"
+                             Label="Max elever" Min="1" Max="50"
+                             Variant="Variant.Outlined" Margin="Margin.Dense"
+                             HelperText="1 = individuell lektion, >1 = grupplektion" />
+
+            <MudStack Row="true" Spacing="2">
+                <MudSwitch @bind-Value="_model.IsBookable"
+                           Label="Bokningsbar" Color="Color.Primary" />
+                <MudSwitch @bind-Value="_model.RequiresIdCheck"
+                           Label="ID-kontroll" Color="Color.Warning" />
+            </MudStack>
+
+            @* Color picker *@
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <div style="width:36px; height:36px; border-radius:6px;
+                            background:@_model.Color; border:1px solid #ccc; flex-shrink:0;">
+                </div>
+                <MudTextField @bind-Value="_model.Color"
+                              Label="Accentfärg (hex)" Placeholder="#1565C0"
+                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Style="flex:1" />
+                <MudTextField @bind-Value="_model.LightColor"
+                              Label="Ljus bakgrund (hex)" Placeholder="#E3F2FD"
+                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Style="flex:1" />
+            </MudStack>
+
+            @* Quick color palette *@
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+                @foreach (var (accent, light) in _palette)
+                {
+                    var a = accent; var l = light;
+                    <div style="width:24px; height:24px; border-radius:50%; background:@a;
+                                cursor:pointer; border:2px solid @(_model.Color == a ? "#333" : "transparent")"
+                         title="@a"
+                         @onclick="@(() => { _model.Color = a; _model.LightColor = l; })">
+                    </div>
+                }
+            </div>
+
+            @* Preview *@
+            <div style="border-left:4px solid @_model.Color; background:@_model.LightColor;
+                        border-radius:4px; padding:6px 10px; font-size:13px; font-weight:600; color:#1a237e">
+                @(string.IsNullOrWhiteSpace(_model.Name) ? "Förhandsgranskning" : _model.Name)
+                <span style="font-weight:400; color:#546e7a; margin-left:8px">@_model.DefaultDurationMinutes min</span>
+                @if (!_model.IsBookable)
+                {
+                    <span style="font-size:11px; color:#78909c; margin-left:6px">(ej bokningsbar)</span>
+                }
+            </div>
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        @if (!IsNew)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Text"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="Delete">
+                Ta bort
+            </MudButton>
+            <MudSpacer />
+        }
+        <MudButton OnClick="Cancel">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   OnClick="Save"
+                   Disabled="@string.IsNullOrWhiteSpace(_model.Name)">
+            Spara
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public LessonType? ExistingType { get; set; }
+
+    private LessonType _model = new();
+    private bool IsNew => ExistingType == null;
+
+    private static readonly (string, string)[] _palette = new[]
+    {
+        ("#1565C0", "#BBDEFB"), // blue
+        ("#2E7D32", "#C8E6C9"), // green
+        ("#6A1B9A", "#E1BEE7"), // purple
+        ("#E65100", "#FFE0B2"), // orange
+        ("#B71C1C", "#FFCDD2"), // red
+        ("#00695C", "#B2DFDB"), // teal
+        ("#4527A0", "#D1C4E9"), // deep purple
+        ("#F57F17", "#FFF9C4"), // yellow
+        ("#880E4F", "#FCE4EC"), // pink
+        ("#0277BD", "#B3E5FC"), // light blue
+        ("#78909C", "#ECEFF1"), // grey (lunch/rest)
+        ("#37474F", "#CFD8DC"), // blue-grey
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (ExistingType != null)
+        {
+            _model = new LessonType
+            {
+                Id                     = ExistingType.Id,
+                Name                   = ExistingType.Name,
+                Description            = ExistingType.Description,
+                Icon                   = ExistingType.Icon,
+                DefaultDurationMinutes = ExistingType.DefaultDurationMinutes,
+                MaxStudents            = ExistingType.MaxStudents,
+                Color                  = ExistingType.Color,
+                LightColor             = ExistingType.LightColor,
+                IsBookable             = ExistingType.IsBookable,
+                RequiresIdCheck        = ExistingType.RequiresIdCheck,
+            };
+        }
+        else
+        {
+            _model = new LessonType
+            {
+                Color      = "#1565C0",
+                LightColor = "#BBDEFB",
+                DefaultDurationMinutes = 60,
+                MaxStudents = 1,
+                IsBookable  = true,
+            };
+        }
+    }
+
+    private void Save()
+    {
+        BookingService.AddOrUpdateLessonType(_model);
+        MudDialog.Close(DialogResult.Ok(_model));
+    }
+
+    private void Delete()
+    {
+        BookingService.DeleteLessonType(_model.Id);
+        MudDialog.Close(DialogResult.Ok<LessonType?>(null));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -37,6 +37,7 @@ public class BookingService
         new() { Id = 6, Name = "Riskutbildning 2",     Description = "Alkohol, droger & trafiksäkerhet",             Icon = Icons.Material.Filled.LocalBar,            DefaultDurationMinutes = 90,  Color = "#BF360C", LightColor = "#FFCCBC", MaxStudents = 20 },
         new() { Id = 7, Name = "Uppkörning",           Description = "Körprov hos Trafikverket",                     Icon = Icons.Material.Filled.FactCheck,           DefaultDurationMinutes = 45,  Color = "#00695C", LightColor = "#B2DFDB" },
         new() { Id = 8, Name = "Delad körlektion",     Description = "Flera elever delar på en lektion",              Icon = Icons.Material.Filled.Group,               DefaultDurationMinutes = 60,  Color = "#F57F17", LightColor = "#FFF9C4" },
+        new() { Id = 9, Name = "Lunch",                Description = "Lunchpaus",                                     Icon = Icons.Material.Filled.Restaurant,           DefaultDurationMinutes = 60,  Color = "#78909C", LightColor = "#ECEFF1", IsBookable = false },
     };
 
     public List<Student> Students { get; } = new()
@@ -1423,4 +1424,86 @@ public class BookingService
 
     public void DeleteEvent(int eventId)
         => _events.RemoveAll(e => e.Id == eventId);
+
+    // ── Lesson type CRUD ──────────────────────────────────────────────────────
+
+    public void AddOrUpdateLessonType(LessonType lt)
+    {
+        var existing = LessonTypes.FirstOrDefault(l => l.Id == lt.Id);
+        if (existing is not null)
+        {
+            existing.Name                   = lt.Name;
+            existing.Description            = lt.Description;
+            existing.DefaultDurationMinutes = lt.DefaultDurationMinutes;
+            existing.MaxStudents            = lt.MaxStudents;
+            existing.Color                  = lt.Color;
+            existing.LightColor             = lt.LightColor;
+            existing.IsBookable             = lt.IsBookable;
+            existing.RequiresIdCheck        = lt.RequiresIdCheck;
+        }
+        else
+        {
+            lt.Id = LessonTypes.Count > 0 ? LessonTypes.Max(l => l.Id) + 1 : 1;
+            LessonTypes.Add(lt);
+        }
+    }
+
+    public void DeleteLessonType(int id)
+        => LessonTypes.RemoveAll(l => l.Id == id);
+
+    // ── Schedule templates ────────────────────────────────────────────────────
+
+    private int _nextBlockId = 100;
+    public int GetNextBlockId() => _nextBlockId++;
+
+    public List<ScheduleTemplate> ScheduleTemplates { get; } = new()
+    {
+        new()
+        {
+            Id = 1, Name = "Standard vecka", CycleWeeks = 1, TeacherId = 1,
+            TimeBlocks = new List<ScheduleTimeBlock>
+            {
+                // Måndag
+                new() { Id = 1, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(8, 0),  LessonTypeId = 2 },
+                new() { Id = 2, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(9, 0),  LessonTypeId = 2 },
+                new() { Id = 3, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(10, 0), LessonTypeId = 2 },
+                new() { Id = 4, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(12, 0), LessonTypeId = 9 },
+                new() { Id = 5, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(13, 0), LessonTypeId = 2 },
+                new() { Id = 6, WeekNumber = 1, DayOfWeek = 1, StartTime = new TimeOnly(14, 0), LessonTypeId = 2 },
+                // Tisdag
+                new() { Id = 7,  WeekNumber = 1, DayOfWeek = 2, StartTime = new TimeOnly(8, 0),  LessonTypeId = 2 },
+                new() { Id = 8,  WeekNumber = 1, DayOfWeek = 2, StartTime = new TimeOnly(9, 0),  LessonTypeId = 2 },
+                new() { Id = 9,  WeekNumber = 1, DayOfWeek = 2, StartTime = new TimeOnly(10, 0), LessonTypeId = 4 },
+                new() { Id = 10, WeekNumber = 1, DayOfWeek = 2, StartTime = new TimeOnly(12, 0), LessonTypeId = 9 },
+                new() { Id = 11, WeekNumber = 1, DayOfWeek = 2, StartTime = new TimeOnly(13, 0), LessonTypeId = 2 },
+                // Onsdag
+                new() { Id = 12, WeekNumber = 1, DayOfWeek = 3, StartTime = new TimeOnly(8, 0),  LessonTypeId = 2 },
+                new() { Id = 13, WeekNumber = 1, DayOfWeek = 3, StartTime = new TimeOnly(9, 0),  LessonTypeId = 2 },
+                new() { Id = 14, WeekNumber = 1, DayOfWeek = 3, StartTime = new TimeOnly(12, 0), LessonTypeId = 9 },
+                new() { Id = 15, WeekNumber = 1, DayOfWeek = 3, StartTime = new TimeOnly(13, 0), LessonTypeId = 2 },
+                new() { Id = 16, WeekNumber = 1, DayOfWeek = 3, StartTime = new TimeOnly(14, 0), LessonTypeId = 2 },
+                // Torsdag
+                new() { Id = 17, WeekNumber = 1, DayOfWeek = 4, StartTime = new TimeOnly(8, 0),  LessonTypeId = 2 },
+                new() { Id = 18, WeekNumber = 1, DayOfWeek = 4, StartTime = new TimeOnly(9, 0),  LessonTypeId = 2 },
+                new() { Id = 19, WeekNumber = 1, DayOfWeek = 4, StartTime = new TimeOnly(10, 0), LessonTypeId = 2 },
+                new() { Id = 20, WeekNumber = 1, DayOfWeek = 4, StartTime = new TimeOnly(12, 0), LessonTypeId = 9 },
+                new() { Id = 21, WeekNumber = 1, DayOfWeek = 4, StartTime = new TimeOnly(13, 0), LessonTypeId = 2 },
+                // Fredag
+                new() { Id = 22, WeekNumber = 1, DayOfWeek = 5, StartTime = new TimeOnly(8, 0),  LessonTypeId = 2 },
+                new() { Id = 23, WeekNumber = 1, DayOfWeek = 5, StartTime = new TimeOnly(9, 0),  LessonTypeId = 2 },
+                new() { Id = 24, WeekNumber = 1, DayOfWeek = 5, StartTime = new TimeOnly(12, 0), LessonTypeId = 9 },
+                new() { Id = 25, WeekNumber = 1, DayOfWeek = 5, StartTime = new TimeOnly(13, 0), LessonTypeId = 2 },
+            }
+        }
+    };
+
+    public void SaveScheduleTemplate(ScheduleTemplate template)
+    {
+        var existing = ScheduleTemplates.FirstOrDefault(t => t.Id == template.Id);
+        if (existing is not null)
+            ScheduleTemplates.Remove(existing);
+        if (template.Id == 0)
+            template.Id = ScheduleTemplates.Count > 0 ? ScheduleTemplates.Max(t => t.Id) + 1 : 1;
+        ScheduleTemplates.Add(template);
+    }
 }

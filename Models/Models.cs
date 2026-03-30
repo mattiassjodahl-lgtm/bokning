@@ -33,6 +33,42 @@ public class LessonType
     public string Color { get; set; } = "#1565C0";
     /// <summary>Light background color for event blocks.</summary>
     public string LightColor { get; set; } = "#E3F2FD";
+    /// <summary>When false, the block occupies time in the schedule but cannot be booked by students (e.g. lunch, break).</summary>
+    public bool IsBookable { get; set; } = true;
+    /// <summary>When true, the teacher must verify student ID before the lesson starts.</summary>
+    public bool RequiresIdCheck { get; set; } = false;
+}
+
+// ── Schedule planning ─────────────────────────────────────────────────────────
+
+/// <summary>
+/// A single time block within a schedule template cycle.
+/// </summary>
+public class ScheduleTimeBlock
+{
+    public int Id { get; set; }
+    /// <summary>Which week of the cycle this block belongs to (1–4).</summary>
+    public int WeekNumber { get; set; } = 1;
+    /// <summary>Day of week: 1 = Måndag … 7 = Söndag.</summary>
+    public int DayOfWeek { get; set; }
+    public TimeOnly StartTime { get; set; }
+    public int LessonTypeId { get; set; }
+}
+
+/// <summary>
+/// A reusable schedule template assigned to a teacher. Contains time blocks
+/// repeated over a 1–4 week cycle.
+/// </summary>
+public class ScheduleTemplate
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    /// <summary>Length of repeating cycle: 1–4 weeks.</summary>
+    public int CycleWeeks { get; set; } = 1;
+    public int TeacherId { get; set; }
+    public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
+    public List<ScheduleTimeBlock> TimeBlocks { get; set; } = new();
 }
 
 // ── Resources ─────────────────────────────────────────────────────────────────
