@@ -114,11 +114,21 @@
                 }
             </MudSelect>
 
-            @if (_template != null)
+            @if (_template?.Id == 0)
             {
                 <MudTextField @bind-Value="_template.Name" Label="Mallnamn"
                               Variant="Variant.Outlined" Margin="Margin.Dense"
                               Style="min-width:150px" />
+            }
+
+            @if (_template != null)
+            {
+                <MudDatePicker Date="_startDateDt" DateChanged="d => { if(_template!=null) _template.StartDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
+                               Label="Från" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
+                <MudDatePicker Date="_endDateDt" DateChanged="d => { if(_template!=null) _template.EndDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
+                               Label="Till" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
             }
 
             <MudSpacer />
@@ -150,6 +160,14 @@
                 @if (_template.CycleWeeks > 1)
                 {
                     <button class="plan-week-tab plan-week-tab-remove" @onclick="RemoveLastWeek" title="Ta bort sista veckan">−</button>
+                }
+                @if (_activeWeek > 1 && _template.TimeBlocks.Any(b => b.WeekNumber == _activeWeek - 1))
+                {
+                    <button class="plan-week-tab" style="margin-left:12px; color:#555; font-size:12px;"
+                            @onclick="CopyPreviousWeek"
+                            title="Kopiera alla block från vecka @(_activeWeek - 1) hit">
+                        ⎘ Kopiera v.@(_activeWeek - 1)
+                    </button>
                 }
             </div>
 
@@ -291,6 +309,11 @@
         }
     }
 
+    // ── Date picker helpers (MudDatePicker uses DateTime?) ───────────────────
+
+    private DateTime? _startDateDt => _template?.StartDate?.ToDateTime(TimeOnly.MinValue);
+    private DateTime? _endDateDt   => _template?.EndDate?.ToDateTime(TimeOnly.MinValue);
+
     // ── Template loading ──────────────────────────────────────────────────────
 
     private void OnTemplateSelected(int? id)
@@ -379,6 +402,32 @@
         _template.CycleWeeks--;
         if (_activeWeek > _template.CycleWeeks)
             _activeWeek = _template.CycleWeeks;
+        ValidateConflicts();
+    }
+
+    // ── Copy previous week ────────────────────────────────────────────────────
+
+    private void CopyPreviousWeek()
+    {
+        if (_template == null || _activeWeek <= 1) return;
+        var prevWeek = _activeWeek - 1;
+        var toCopy = _template.TimeBlocks.Where(b => b.WeekNumber == prevWeek).ToList();
+        foreach (var src in toCopy)
+        {
+            bool exists = _template.TimeBlocks.Any(b =>
+                b.WeekNumber == _activeWeek &&
+                b.DayOfWeek  == src.DayOfWeek &&
+                b.StartTime  == src.StartTime);
+            if (!exists)
+                _template.TimeBlocks.Add(new ScheduleTimeBlock
+                {
+                    Id           = BookingService.GetNextBlockId(),
+                    WeekNumber   = _activeWeek,
+                    DayOfWeek    = src.DayOfWeek,
+                    StartTime    = src.StartTime,
+                    LessonTypeId = src.LessonTypeId
+                });
+        }
         ValidateConflicts();
     }
 
