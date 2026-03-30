@@ -92,7 +92,8 @@
 
         @* Toolbar *@
         <div class="plan-toolbar">
-            <MudSelect T="int?" @bind-Value="_selectedTeacherId" Label="Lärare"
+            <MudSelect T="int?" Value="_selectedTeacherId" Label="Lärare"
+                       ValueChanged="OnTeacherChanged"
                        Variant="Variant.Outlined" Margin="Margin.Dense"
                        Style="min-width:170px"
                        AnchorOrigin="Origin.BottomLeft">
@@ -102,23 +103,11 @@
                 }
             </MudSelect>
 
-            <MudSelect T="int?" Value="_selectedTemplateId" Label="Mall"
-                       ValueChanged="OnTemplateSelected"
-                       Variant="Variant.Outlined" Margin="Margin.Dense"
-                       Style="min-width:180px"
-                       AnchorOrigin="Origin.BottomLeft">
-                <MudSelectItem T="int?" Value="@((int?)null)">— Ny mall —</MudSelectItem>
-                @foreach (var tmpl in BookingService.ScheduleTemplates)
-                {
-                    <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">@tmpl.Name</MudSelectItem>
-                }
-            </MudSelect>
-
             @if (_template?.Id == 0)
             {
-                <MudTextField @bind-Value="_template.Name" Label="Mallnamn"
+                <MudTextField @bind-Value="_template.Name" Label="Schemanamn"
                               Variant="Variant.Outlined" Margin="Margin.Dense"
-                              Style="min-width:150px" />
+                              Style="min-width:160px" />
             }
 
             @if (_template != null)
@@ -133,12 +122,39 @@
 
             <MudSpacer />
 
+            @if (_saveError != null)
+            {
+                <MudChip T="string" Color="Color.Error" Icon="@Icons.Material.Filled.Error" Size="Size.Small">
+                    @_saveError
+                </MudChip>
+            }
             @if (_conflicts.Any())
             {
                 <MudChip T="string" Color="Color.Error" Icon="@Icons.Material.Filled.Warning" Size="Size.Small">
                     @_conflicts.Count konflikter
                 </MudChip>
             }
+        </div>
+
+        @* ── Schemaöversikt för vald lärare ───────────────────────────────── *@
+        <div class="plan-schema-strip">
+            @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0))
+            {
+                var t = tmpl;
+                var status = GetTemplateStatus(t);
+                var isSelected = _template?.Id == t.Id;
+                <div class="plan-schema-card @(isSelected ? "plan-schema-card-active" : "")"
+                     style="border-left-color: @StatusColor(status)"
+                     @onclick="@(() => LoadTemplate(t))"
+                     title="@t.Name">
+                    <div class="plan-schema-card-name">@t.Name</div>
+                    <div class="plan-schema-card-dates">@FormatDateRange(t)</div>
+                    <span class="plan-schema-badge" style="background:@StatusColor(status)">@StatusLabel(status)</span>
+                </div>
+            }
+            <button class="plan-schema-new" @onclick="CreateNewTemplate" title="Skapa nytt schema">
+                + Nytt schema
+            </button>
         </div>
 
         @* Week tabs *@
@@ -289,24 +305,19 @@
     private const int DayHeaderHeight = 36;
     private const int TotalHeight    = (EndHour - StartHour) * PixelsPerHour;
 
-    private int?             _selectedTeacherId  = 1;
-    private int?             _selectedTemplateId = null;
-    private int?             _pickedLessonTypeId = null;
-    private bool             _isDragging         = false;
-    private int              _activeWeek         = 1;
-    private ScheduleTemplate? _template          = null;
-    private List<string>     _conflicts          = new();
+    private int?              _selectedTeacherId  = 1;
+    private int?              _pickedLessonTypeId = null;
+    private bool              _isDragging         = false;
+    private int               _activeWeek         = 1;
+    private ScheduleTemplate? _template           = null;
+    private List<string>      _conflicts          = new();
+    private string?           _saveError          = null;
 
     protected override void OnInitialized()
     {
-        // Load the first template by default if any exist
-        if (BookingService.ScheduleTemplates.Any())
-        {
-            var first = BookingService.ScheduleTemplates.First();
-            _selectedTemplateId = first.Id;
-            _selectedTeacherId  = first.TeacherId > 0 ? first.TeacherId : 1;
-            LoadTemplate(first);
-        }
+        // Ladda första schemat för lärare 1
+        var first = BookingService.GetTemplatesForTeacher(1).FirstOrDefault();
+        if (first != null) LoadTemplate(first);
     }
 
     // ── Date picker helpers (MudDatePicker uses DateTime?) ───────────────────
@@ -314,23 +325,20 @@
     private DateTime? _startDateDt => _template?.StartDate?.ToDateTime(TimeOnly.MinValue);
     private DateTime? _endDateDt   => _template?.EndDate?.ToDateTime(TimeOnly.MinValue);
 
-    // ── Template loading ──────────────────────────────────────────────────────
+    // ── Teacher change ────────────────────────────────────────────────────────
 
-    private void OnTemplateSelected(int? id)
+    private void OnTeacherChanged(int? teacherId)
     {
-        _selectedTemplateId = id;
-        if (id == null)
-        {
-            CreateNewTemplate();
-            return;
-        }
-        var tmpl = BookingService.ScheduleTemplates.FirstOrDefault(t => t.Id == id);
-        if (tmpl is not null)
-        {
-            _selectedTeacherId = tmpl.TeacherId > 0 ? tmpl.TeacherId : 1;
-            LoadTemplate(tmpl);
-        }
+        _selectedTeacherId = teacherId;
+        _template  = null;
+        _saveError = null;
+        _conflicts.Clear();
+        // Auto-load first schema for this teacher
+        var first = BookingService.GetTemplatesForTeacher(teacherId ?? 0).FirstOrDefault();
+        if (first != null) LoadTemplate(first);
     }
+
+    // ── Template loading ──────────────────────────────────────────────────────
 
     private void LoadTemplate(ScheduleTemplate source)
     {
@@ -357,15 +365,15 @@
 
     private void CreateNewTemplate()
     {
-        _selectedTemplateId = null;
         _template = new ScheduleTemplate
         {
             Id         = 0,
-            Name       = "Ny mall",
+            Name       = "Nytt schema",
             CycleWeeks = 1,
             TeacherId  = _selectedTeacherId ?? 1
         };
         _activeWeek = 1;
+        _saveError  = null;
         _conflicts.Clear();
     }
 
@@ -378,11 +386,48 @@
         if (_conflicts.Any()) return;
 
         _template.TeacherId = _selectedTeacherId ?? _template.TeacherId;
-        BookingService.SaveScheduleTemplate(_template);
-        _selectedTemplateId = _template.Id;
+        _saveError = BookingService.SaveScheduleTemplate(_template);
+        if (_saveError != null) return;
+
         // Reload to sync state
         var saved = BookingService.ScheduleTemplates.First(t => t.Id == _template.Id);
         LoadTemplate(saved);
+    }
+
+    // ── Schema status helpers ─────────────────────────────────────────────────
+
+    private enum SchemaStatus { Aktiv, Kommande, Avslutad, Odaterad }
+
+    private static SchemaStatus GetTemplateStatus(ScheduleTemplate t)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (t.StartDate == null && t.EndDate == null) return SchemaStatus.Odaterad;
+        if (t.EndDate   != null && t.EndDate < today)   return SchemaStatus.Avslutad;
+        if (t.StartDate != null && t.StartDate > today) return SchemaStatus.Kommande;
+        return SchemaStatus.Aktiv;
+    }
+
+    private static string StatusColor(SchemaStatus s) => s switch
+    {
+        SchemaStatus.Aktiv    => "#2e7d32",
+        SchemaStatus.Kommande => "#1565C0",
+        SchemaStatus.Avslutad => "#9e9e9e",
+        _                     => "#e65100",
+    };
+
+    private static string StatusLabel(SchemaStatus s) => s switch
+    {
+        SchemaStatus.Aktiv    => "Aktiv",
+        SchemaStatus.Kommande => "Kommande",
+        SchemaStatus.Avslutad => "Avslutad",
+        _                     => "Odaterad",
+    };
+
+    private static string FormatDateRange(ScheduleTemplate t)
+    {
+        var from = t.StartDate?.ToString("d MMM") ?? "–";
+        var to   = t.EndDate?.ToString("d MMM yyyy") ?? "–";
+        return $"{from} → {to}";
     }
 
     // ── Week cycle management ─────────────────────────────────────────────────

@@ -1307,15 +1307,14 @@ public class BookingService
             : Teachers.Where(t => t.IsSelected).Select(t => t.Id).ToList();
 
         var result = new List<CalendarEvent>();
-        var rangeDate = DateOnly.FromDateTime(start);
 
         foreach (var teacherId in selectedTeachers)
         {
-            var tmpl = GetActiveTemplate(teacherId, rangeDate);
+            bool hasAnyTemplate = ScheduleTemplates.Any(t => t.TeacherId == teacherId);
 
-            if (tmpl != null)
+            if (hasAnyTemplate)
             {
-                // Only real booked events from _events for template-driven teachers
+                // Booked events from _events (real bookings always shown)
                 var booked = _events.Where(e =>
                     e.TeacherId == teacherId &&
                     e.StartTime < end && e.EndTime > start &&
@@ -1325,10 +1324,10 @@ public class BookingService
                 ).ToList();
                 result.AddRange(booked);
 
-                // Available slots come from the template
+                // Available slots generated week-by-week from whichever template is active that week
                 if (filter.ShowAvailable)
                 {
-                    foreach (var slot in GenerateTemplateSlots(tmpl, start, end))
+                    foreach (var slot in GenerateTemplateSlotsForTeacher(teacherId, start, end))
                     {
                         bool conflict = booked.Any(b => b.StartTime < slot.EndTime && b.EndTime > slot.StartTime);
                         if (!conflict &&
@@ -1357,7 +1356,7 @@ public class BookingService
     // ── Template-driven slot generation ───────────────────────────────────────
 
     /// Returns the active template for a teacher on the given date.
-    /// If multiple match, the one with the latest StartDate wins.
+    /// If multiple match (shouldn't happen if non-overlapping), latest StartDate wins.
     public ScheduleTemplate? GetActiveTemplate(int teacherId, DateOnly date)
         => ScheduleTemplates
             .Where(t => t.TeacherId == teacherId
@@ -1369,8 +1368,7 @@ public class BookingService
     /// Determines which week of the cycle a given Monday belongs to (1-based).
     private static int GetCycleWeek(ScheduleTemplate tmpl, DateOnly weekMonday)
     {
-        var anchor = tmpl.StartDate ?? new DateOnly(2024, 1, 1);
-        // Find Monday of the anchor week
+        var anchor       = tmpl.StartDate ?? new DateOnly(2024, 1, 1);
         var anchorMonday = anchor.AddDays(-(((int)anchor.DayOfWeek + 6) % 7));
         var weeksDiff    = (weekMonday.DayNumber - anchorMonday.DayNumber) / 7;
         return (weeksDiff % tmpl.CycleWeeks + tmpl.CycleWeeks) % tmpl.CycleWeeks + 1;
@@ -1378,41 +1376,41 @@ public class BookingService
 
     private int _ephemeralId = -1;
 
-    /// Generates ephemeral (not stored) available CalendarEvents from a template for a date range.
-    private IEnumerable<CalendarEvent> GenerateTemplateSlots(ScheduleTemplate tmpl, DateTime rangeStart, DateTime rangeEnd)
+    /// Generates available slots week-by-week, picking the right template for each week.
+    private IEnumerable<CalendarEvent> GenerateTemplateSlotsForTeacher(int teacherId, DateTime rangeStart, DateTime rangeEnd)
     {
-        var slots = new List<CalendarEvent>();
-        // Start from Monday of the first week in range
+        var slots  = new List<CalendarEvent>();
         var monday = rangeStart.Date.AddDays(-(((int)rangeStart.DayOfWeek + 6) % 7));
 
         while (monday < rangeEnd)
         {
             var weekMonday = DateOnly.FromDateTime(monday);
-            var cycleWeek  = GetCycleWeek(tmpl, weekMonday);
-
-            foreach (var block in tmpl.TimeBlocks.Where(b => b.WeekNumber == cycleWeek))
+            var tmpl       = GetActiveTemplate(teacherId, weekMonday);
+            if (tmpl != null)
             {
-                var blockDate = monday.AddDays(block.DayOfWeek - 1);
-                if (blockDate < rangeStart || blockDate >= rangeEnd) continue;
-
-                var blockDateOnly = DateOnly.FromDateTime(blockDate);
-                if (tmpl.StartDate != null && blockDateOnly < tmpl.StartDate) continue;
-                if (tmpl.EndDate   != null && blockDateOnly > tmpl.EndDate)   continue;
-
-                var lt       = GetLessonType(block.LessonTypeId);
-                var duration = lt?.DefaultDurationMinutes ?? 60;
-                var slotStart = blockDate.Add(block.StartTime.ToTimeSpan());
-                var slotEnd   = slotStart.AddMinutes(duration);
-
-                slots.Add(new CalendarEvent
+                var cycleWeek = GetCycleWeek(tmpl, weekMonday);
+                foreach (var block in tmpl.TimeBlocks.Where(b => b.WeekNumber == cycleWeek))
                 {
-                    Id           = _ephemeralId--,
-                    TeacherId    = tmpl.TeacherId,
-                    StartTime    = slotStart,
-                    EndTime      = slotEnd,
-                    IsBooked     = false,
-                    LessonTypeId = block.LessonTypeId,
-                });
+                    var blockDate     = monday.AddDays(block.DayOfWeek - 1);
+                    var blockDateOnly = DateOnly.FromDateTime(blockDate);
+                    if (blockDate < rangeStart || blockDate >= rangeEnd)           continue;
+                    if (tmpl.StartDate != null && blockDateOnly < tmpl.StartDate)  continue;
+                    if (tmpl.EndDate   != null && blockDateOnly > tmpl.EndDate)    continue;
+
+                    var lt        = GetLessonType(block.LessonTypeId);
+                    var slotStart = blockDate.Add(block.StartTime.ToTimeSpan());
+                    var slotEnd   = slotStart.AddMinutes(lt?.DefaultDurationMinutes ?? 60);
+
+                    slots.Add(new CalendarEvent
+                    {
+                        Id           = _ephemeralId--,
+                        TeacherId    = teacherId,
+                        StartTime    = slotStart,
+                        EndTime      = slotEnd,
+                        IsBooked     = false,
+                        LessonTypeId = block.LessonTypeId,
+                    });
+                }
             }
             monday = monday.AddDays(7);
         }
@@ -1577,13 +1575,40 @@ public class BookingService
         }
     };
 
-    public void SaveScheduleTemplate(ScheduleTemplate template)
+    /// Returns all templates for a teacher sorted by start date.
+    public List<ScheduleTemplate> GetTemplatesForTeacher(int teacherId)
+        => ScheduleTemplates
+            .Where(t => t.TeacherId == teacherId)
+            .OrderBy(t => t.StartDate ?? DateOnly.MaxValue)
+            .ToList();
+
+    /// Returns true if the candidate's date range overlaps any other template for the same teacher.
+    public bool HasTemplateOverlap(ScheduleTemplate candidate)
     {
+        var cStart = candidate.StartDate ?? DateOnly.MinValue;
+        var cEnd   = candidate.EndDate   ?? DateOnly.MaxValue;
+        return ScheduleTemplates
+            .Where(t => t.TeacherId == candidate.TeacherId && t.Id != candidate.Id)
+            .Any(t =>
+            {
+                var tStart = t.StartDate ?? DateOnly.MinValue;
+                var tEnd   = t.EndDate   ?? DateOnly.MaxValue;
+                return cStart <= tEnd && cEnd >= tStart;
+            });
+    }
+
+    /// Returns null on success, or an error message if the date range overlaps another template.
+    public string? SaveScheduleTemplate(ScheduleTemplate template)
+    {
+        if (HasTemplateOverlap(template))
+            return "Datumintervallet överlappar med ett annat schema för denna lärare.";
+
         var existing = ScheduleTemplates.FirstOrDefault(t => t.Id == template.Id);
         if (existing is not null)
             ScheduleTemplates.Remove(existing);
         if (template.Id == 0)
             template.Id = ScheduleTemplates.Count > 0 ? ScheduleTemplates.Max(t => t.Id) + 1 : 1;
         ScheduleTemplates.Add(template);
+        return null;
     }
 }
