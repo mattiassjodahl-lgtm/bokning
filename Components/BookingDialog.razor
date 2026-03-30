@@ -73,12 +73,24 @@
 
                     @if (ViewLessonType != null)
                     {
+                        var article = BookingService.GetArticle(ViewLessonType.ArticleId);
                         <div>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">Lektionstyp</MudText>
-                            <MudChip T="string" Icon="@ViewLessonType.Icon" Size="Size.Small"
-                                     Color="Color.Primary" Variant="Variant.Filled">
-                                @ViewLessonType.Name
-                            </MudChip>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
+                                <MudChip T="string" Icon="@ViewLessonType.Icon" Size="Size.Small"
+                                         Color="Color.Primary" Variant="Variant.Filled">
+                                    @ViewLessonType.Name
+                                </MudChip>
+                                @if (article != null)
+                                {
+                                    <MudTooltip Text="@($"{article.ArticleNumber} · {article.Name}")">
+                                        <MudChip T="string" Icon="@Icons.Material.Filled.Receipt"
+                                                 Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                                            @article.Price.ToString("N0") kr
+                                        </MudChip>
+                                    </MudTooltip>
+                                }
+                            </MudStack>
                         </div>
                     }
 

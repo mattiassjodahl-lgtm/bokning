@@ -27,16 +27,34 @@ public class BookingService
         new() { Id =11, Name = "Kristin Fransson", Initials = "KF", Color = "#6D4C41", LightColor = "#EFEBE9", IsSelected = false, Group = 2 },
     };
 
+    // ── Articles (mock PIM data) ──────────────────────────────────────────────
+
+    public List<Article> Articles { get; } = new()
+    {
+        new() { Id = 1,  ArticleNumber = "INT-050", Name = "Introduktionslektion B, 50 min",    Price =  850m },
+        new() { Id = 2,  ArticleNumber = "KB-060",  Name = "Körlektion B, 60 min",              Price =  950m },
+        new() { Id = 3,  ArticleNumber = "KB-090",  Name = "Körlektion B, 90 min",              Price = 1_350m },
+        new() { Id = 4,  ArticleNumber = "MV-090",  Name = "Motorvägslektion, 90 min",          Price = 1_350m },
+        new() { Id = 5,  ArticleNumber = "KV-060",  Name = "Körlektion kväll, 60 min",          Price = 1_050m },
+        new() { Id = 6,  ArticleNumber = "RISK-1",  Name = "Riskutbildning del 1 (halkbana)",   Price = 1_200m },
+        new() { Id = 7,  ArticleNumber = "RISK-2",  Name = "Riskutbildning del 2 (teori/ALK)",  Price = 1_200m },
+        new() { Id = 8,  ArticleNumber = "UPP-B",   Name = "Uppkörning B",                      Price = 1_500m },
+        new() { Id = 9,  ArticleNumber = "DEL-060", Name = "Delad körlektion, 60 min (p. elev)",Price =  650m  },
+    };
+
+    public Article? GetArticle(int? id)
+        => id.HasValue ? Articles.FirstOrDefault(a => a.Id == id.Value) : null;
+
     public List<LessonType> LessonTypes { get; } = new()
     {
-        new() { Id = 1, Name = "Introduktionslektion", Description = "Första lektionen – introduktion till körning", Icon = Icons.Material.Filled.EmojiTransportation, DefaultDurationMinutes = 50,  Color = "#1565C0", LightColor = "#BBDEFB" },
-        new() { Id = 2, Name = "Körlektion B",         Description = "Standard körlektion för B-körkort",           Icon = Icons.Material.Filled.DirectionsCar,       DefaultDurationMinutes = 60,  Color = "#2E7D32", LightColor = "#C8E6C9" },
-        new() { Id = 3, Name = "Motorvägslektion",     Description = "Körning på motorväg",                          Icon = Icons.Material.Filled.Speed,               DefaultDurationMinutes = 90,  Color = "#E65100", LightColor = "#FFE0B2" },
-        new() { Id = 4, Name = "Körlektion kväll",     Description = "Mörkerövning",                                 Icon = Icons.Material.Filled.NightsStay,          DefaultDurationMinutes = 60,  Color = "#4527A0", LightColor = "#D1C4E9" },
-        new() { Id = 5, Name = "Riskutbildning 1",     Description = "Halkbana och riskmedvetenhet",                 Icon = Icons.Material.Filled.Warning,             DefaultDurationMinutes = 120, Color = "#B71C1C", LightColor = "#FFCDD2", MaxStudents = 20 },
-        new() { Id = 6, Name = "Riskutbildning 2",     Description = "Alkohol, droger & trafiksäkerhet",             Icon = Icons.Material.Filled.LocalBar,            DefaultDurationMinutes = 90,  Color = "#BF360C", LightColor = "#FFCCBC", MaxStudents = 20 },
-        new() { Id = 7, Name = "Uppkörning",           Description = "Körprov hos Trafikverket",                     Icon = Icons.Material.Filled.FactCheck,           DefaultDurationMinutes = 45,  Color = "#00695C", LightColor = "#B2DFDB" },
-        new() { Id = 8, Name = "Delad körlektion",     Description = "Flera elever delar på en lektion",              Icon = Icons.Material.Filled.Group,               DefaultDurationMinutes = 60,  Color = "#F57F17", LightColor = "#FFF9C4" },
+        new() { Id = 1, Name = "Introduktionslektion", Description = "Första lektionen – introduktion till körning", Icon = Icons.Material.Filled.EmojiTransportation, DefaultDurationMinutes = 50,  Color = "#1565C0", LightColor = "#BBDEFB", ArticleId = 1 },
+        new() { Id = 2, Name = "Körlektion B",         Description = "Standard körlektion för B-körkort",           Icon = Icons.Material.Filled.DirectionsCar,       DefaultDurationMinutes = 60,  Color = "#2E7D32", LightColor = "#C8E6C9", ArticleId = 2 },
+        new() { Id = 3, Name = "Motorvägslektion",     Description = "Körning på motorväg",                          Icon = Icons.Material.Filled.Speed,               DefaultDurationMinutes = 90,  Color = "#E65100", LightColor = "#FFE0B2", ArticleId = 4 },
+        new() { Id = 4, Name = "Körlektion kväll",     Description = "Mörkerövning",                                 Icon = Icons.Material.Filled.NightsStay,          DefaultDurationMinutes = 60,  Color = "#4527A0", LightColor = "#D1C4E9", ArticleId = 5 },
+        new() { Id = 5, Name = "Riskutbildning 1",     Description = "Halkbana och riskmedvetenhet",                 Icon = Icons.Material.Filled.Warning,             DefaultDurationMinutes = 120, Color = "#B71C1C", LightColor = "#FFCDD2", MaxStudents = 20, ArticleId = 6 },
+        new() { Id = 6, Name = "Riskutbildning 2",     Description = "Alkohol, droger & trafiksäkerhet",             Icon = Icons.Material.Filled.LocalBar,            DefaultDurationMinutes = 90,  Color = "#BF360C", LightColor = "#FFCCBC", MaxStudents = 20, ArticleId = 7 },
+        new() { Id = 7, Name = "Uppkörning",           Description = "Körprov hos Trafikverket",                     Icon = Icons.Material.Filled.FactCheck,           DefaultDurationMinutes = 45,  Color = "#00695C", LightColor = "#B2DFDB", ArticleId = 8 },
+        new() { Id = 8, Name = "Delad körlektion",     Description = "Flera elever delar på en lektion",              Icon = Icons.Material.Filled.Group,               DefaultDurationMinutes = 60,  Color = "#F57F17", LightColor = "#FFF9C4", ArticleId = 9 },
         new() { Id = 9, Name = "Lunch",                Description = "Lunchpaus",                                     Icon = Icons.Material.Filled.Restaurant,           DefaultDurationMinutes = 60,  Color = "#78909C", LightColor = "#ECEFF1", IsBookable = false },
     };
 

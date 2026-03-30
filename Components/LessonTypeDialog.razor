@@ -29,6 +29,21 @@
                              Variant="Variant.Outlined" Margin="Margin.Dense"
                              HelperText="1 = individuell lektion, >1 = grupplektion" />
 
+            @* PIM-artikel *@
+            <MudSelect T="int?" @bind-Value="_model.ArticleId"
+                       Label="Artikel (PIM)" Clearable="true"
+                       Variant="Variant.Outlined" Margin="Margin.Dense"
+                       AnchorOrigin="Origin.BottomLeft"
+                       HelperText="Koppla en säljbar artikel – styr pris på bokningen">
+                <MudSelectItem T="int?" Value="@((int?)null)">— Ingen artikel —</MudSelectItem>
+                @foreach (var a in BookingService.Articles)
+                {
+                    <MudSelectItem T="int?" Value="@((int?)a.Id)">
+                        @a.ArticleNumber · @a.Name — @a.Price.ToString("N0") kr
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
             <MudStack Row="true" Spacing="2">
                 <MudSwitch @bind-Value="_model.IsBookable"
                            Label="Bokningsbar" Color="Color.Primary" />
@@ -137,6 +152,7 @@
                 LightColor             = ExistingType.LightColor,
                 IsBookable             = ExistingType.IsBookable,
                 RequiresIdCheck        = ExistingType.RequiresIdCheck,
+                ArticleId              = ExistingType.ArticleId,
             };
         }
         else

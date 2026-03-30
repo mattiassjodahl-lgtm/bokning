@@ -18,7 +18,23 @@ public class Teacher
     public int Group { get; set; } = 1;
 }
 
-// ── Lesson types (1–7) ────────────────────────────────────────────────────────
+// ── Articles (from PIM) ───────────────────────────────────────────────────────
+
+/// <summary>
+/// Represents a sellable article from the PIM system.
+/// In production this would be fetched from PIM; here it is mocked in-memory.
+/// </summary>
+public class Article
+{
+    public int    Id            { get; set; }
+    /// <summary>Article number as shown in PIM / invoice, e.g. "KB001".</summary>
+    public string ArticleNumber { get; set; } = "";
+    public string Name          { get; set; } = "";
+    /// <summary>Price in SEK excl. VAT.</summary>
+    public decimal Price        { get; set; }
+}
+
+// ── Lesson types ──────────────────────────────────────────────────────────────
 
 public class LessonType
 {
@@ -37,6 +53,8 @@ public class LessonType
     public bool IsBookable { get; set; } = true;
     /// <summary>When true, the teacher must verify student ID before the lesson starts.</summary>
     public bool RequiresIdCheck { get; set; } = false;
+    /// <summary>Linked PIM article. Null for non-sellable types (e.g. lunch).</summary>
+    public int? ArticleId { get; set; }
 }
 
 // ── Schedule planning ─────────────────────────────────────────────────────────
