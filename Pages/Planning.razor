@@ -103,21 +103,20 @@
                 }
             </MudSelect>
 
-            @if (_template?.Id == 0)
+            @if (_template != null)
             {
                 <MudTextField @bind-Value="_template.Name" Label="Schemanamn"
                               Variant="Variant.Outlined" Margin="Margin.Dense"
                               Style="min-width:160px" />
-            }
-
-            @if (_template != null)
-            {
-                <MudDatePicker Date="_startDateDt" DateChanged="d => { if(_template!=null) _template.StartDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
-                               Label="Från" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
-                <MudDatePicker Date="_endDateDt" DateChanged="d => { if(_template!=null) _template.EndDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
-                               Label="Till" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
+                <MudDateRangePicker DateRange="_dateRange"
+                                    DateRangeChanged="OnDateRangeChanged"
+                                    Label="Giltighetstid"
+                                    Variant="Variant.Outlined" Margin="Margin.Dense"
+                                    DateFormat="d MMM yyyy"
+                                    Style="min-width:260px"
+                                    Clearable="true"
+                                    Culture="_svCulture"
+                                    AutoClose="false" />
             }
 
             <MudSpacer />
@@ -320,10 +319,24 @@
         if (first != null) LoadTemplate(first);
     }
 
-    // ── Date picker helpers (MudDatePicker uses DateTime?) ───────────────────
+    // ── Date range picker ─────────────────────────────────────────────────────
 
-    private DateTime? _startDateDt => _template?.StartDate?.ToDateTime(TimeOnly.MinValue);
-    private DateTime? _endDateDt   => _template?.EndDate?.ToDateTime(TimeOnly.MinValue);
+    private DateRange _dateRange = new();
+
+    private void SyncDateRange()
+    {
+        _dateRange = new DateRange(
+            _template?.StartDate?.ToDateTime(TimeOnly.MinValue),
+            _template?.EndDate?.ToDateTime(TimeOnly.MinValue));
+    }
+
+    private void OnDateRangeChanged(DateRange range)
+    {
+        _dateRange = range;
+        if (_template == null) return;
+        _template.StartDate = range.Start.HasValue ? DateOnly.FromDateTime(range.Start.Value) : null;
+        _template.EndDate   = range.End.HasValue   ? DateOnly.FromDateTime(range.End.Value)   : null;
+    }
 
     // ── Teacher change ────────────────────────────────────────────────────────
 
@@ -360,6 +373,7 @@
                             }).ToList()
         };
         _activeWeek = 1;
+        SyncDateRange();
         ValidateConflicts();
     }
 
@@ -374,6 +388,7 @@
         };
         _activeWeek = 1;
         _saveError  = null;
+        _dateRange  = new DateRange();
         _conflicts.Clear();
     }
 
