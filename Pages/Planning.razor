@@ -103,17 +103,21 @@
                 }
             </MudSelect>
 
-            @if (_template != null)
+            @if (_template?.Id == 0)
             {
                 <MudTextField @bind-Value="_template.Name" Label="Schemanamn"
                               Variant="Variant.Outlined" Margin="Margin.Dense"
                               Style="min-width:160px" />
+            }
+
+            @if (_template != null)
+            {
                 <MudDatePicker Date="_startDateDt" DateChanged="d => { if(_template!=null) _template.StartDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
                                Label="Från" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               DateFormat="yyyy-MM-dd" Style="min-width:130px" Clearable="true" />
+                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
                 <MudDatePicker Date="_endDateDt" DateChanged="d => { if(_template!=null) _template.EndDate = d.HasValue ? DateOnly.FromDateTime(d.Value) : null; }"
                                Label="Till" Variant="Variant.Outlined" Margin="Margin.Dense"
-                               DateFormat="yyyy-MM-dd" Style="min-width:130px" Clearable="true" />
+                               DateFormat="yyyy-MM-dd" Style="min-width:140px" Clearable="true" />
             }
 
             <MudSpacer />
@@ -132,105 +136,25 @@
             }
         </div>
 
-        @* ── Schemaöversikt — tidslinje ───────────────────────────────────── *@
-        <div class="plan-tl-wrap">
-
-            @* Header: rubrik + knapp *@
-            <div class="plan-tl-header">
-                <span class="plan-tl-title">
-                    Scheman – @(BookingService.Teachers.FirstOrDefault(t => t.Id == _selectedTeacherId)?.Name ?? "")
-                </span>
-                <button class="plan-tl-add-btn @(_showAddPanel ? "plan-tl-add-btn-open" : "")"
-                        @onclick="ToggleAddPanel">
-                    + Lägg till schema
-                </button>
-            </div>
-
-            @* Lägg-till-panel *@
-            @if (_showAddPanel)
+        @* ── Schemaöversikt för vald lärare ───────────────────────────────── *@
+        <div class="plan-schema-strip">
+            @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0))
             {
-                <div class="plan-tl-add-panel">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Add"
-                               OnClick="@(() => { CreateNewTemplate(); _showAddPanel = false; })">
-                        Tomt schema
-                    </MudButton>
-                    <div class="plan-tl-copy-row">
-                        <span class="plan-tl-copy-label">Kopiera befintlig:</span>
-                        <MudSelect T="int?" @bind-Value="_copyFromId"
-                                   Variant="Variant.Outlined" Margin="Margin.Dense"
-                                   Placeholder="Välj mall…" Style="min-width:230px"
-                                   AnchorOrigin="Origin.BottomLeft">
-                            <MudSelectItem T="int?" Value="@((int?)null)">— Välj —</MudSelectItem>
-                            @foreach (var tmpl in BookingService.ScheduleTemplates)
-                            {
-                                var teacherName = BookingService.Teachers
-                                    .FirstOrDefault(t => t.Id == tmpl.TeacherId)?.Name ?? "?";
-                                <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">
-                                    @tmpl.Name (@teacherName)
-                                </MudSelectItem>
-                            }
-                        </MudSelect>
-                        <MudButton Variant="Variant.Outlined" Size="Size.Small"
-                                   Disabled="@(_copyFromId == null)"
-                                   OnClick="AddFromCopy">
-                            Kopiera
-                        </MudButton>
-                    </div>
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
-                                   title="Stäng" OnClick="@(() => _showAddPanel = false)" />
-                </div>
-            }
-
-            @* Månadsrubriker *@
-            <div class="plan-tl-row plan-tl-row-header">
-                <div class="plan-tl-name"></div>
-                <div class="plan-tl-badge"></div>
-                <div class="plan-tl-bar">
-                    @foreach (var (month, label) in _timelineMonths)
-                    {
-                        var isCurrentMonth = month.Year == DateTime.Today.Year && month.Month == DateTime.Today.Month;
-                        <div class="plan-tl-month plan-tl-month-hdr @(isCurrentMonth ? "plan-tl-month-current" : "")">
-                            @label
-                        </div>
-                    }
-                </div>
-            </div>
-
-            @* Schema-rader *@
-            @{
-                var teacherTemplates = BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0);
-            }
-            @if (!teacherTemplates.Any())
-            {
-                <div class="plan-tl-empty">Inga scheman – klicka "+ Lägg till schema" ovan.</div>
-            }
-            @foreach (var tmpl in teacherTemplates)
-            {
-                var t      = tmpl;
+                var t = tmpl;
                 var status = GetTemplateStatus(t);
-                var isSel  = _template?.Id == t.Id;
-                <div class="plan-tl-row @(isSel ? "plan-tl-row-selected" : "")"
-                     @onclick="@(() => LoadTemplate(t))">
-                    <div class="plan-tl-name" title="@t.Name">@t.Name</div>
-                    <div class="plan-tl-badge">
-                        <span class="plan-schema-badge" style="background:@StatusColor(status)">
-                            @StatusLabel(status)
-                        </span>
-                    </div>
-                    <div class="plan-tl-bar">
-                        @foreach (var (month, _) in _timelineMonths)
-                        {
-                            bool active = IsMonthActive(t, month);
-                            bool isCurrent = month.Year == DateTime.Today.Year && month.Month == DateTime.Today.Month;
-                            <div class="plan-tl-month @(isCurrent ? "plan-tl-month-current" : "") @(active ? "plan-tl-month-active" : "")"
-                                 style="@(active ? $"background:{StatusColor(status)}28;border-bottom:3px solid {StatusColor(status)};" : "")">
-                            </div>
-                        }
-                    </div>
+                var isSelected = _template?.Id == t.Id;
+                <div class="plan-schema-card @(isSelected ? "plan-schema-card-active" : "")"
+                     style="border-left-color: @StatusColor(status)"
+                     @onclick="@(() => LoadTemplate(t))"
+                     title="@t.Name">
+                    <div class="plan-schema-card-name">@t.Name</div>
+                    <div class="plan-schema-card-dates">@FormatDateRange(t)</div>
+                    <span class="plan-schema-badge" style="background:@StatusColor(status)">@StatusLabel(status)</span>
                 </div>
             }
-
+            <button class="plan-schema-new" @onclick="CreateNewTemplate" title="Skapa nytt schema">
+                + Nytt schema
+            </button>
         </div>
 
         @* Week tabs *@
@@ -389,23 +313,8 @@
     private List<string>      _conflicts          = new();
     private string?           _saveError          = null;
 
-    // ── Timeline state ────────────────────────────────────────────────────────
-    private bool  _showAddPanel = false;
-    private int?  _copyFromId   = null;
-    private (DateOnly month, string label)[] _timelineMonths = Array.Empty<(DateOnly, string)>();
-
-    private static readonly System.Globalization.CultureInfo _svCulture =
-        new("sv-SE");
-
     protected override void OnInitialized()
     {
-        // Bygg tidslinje för innevarande år
-        _timelineMonths = Enumerable.Range(0, 12).Select(i =>
-        {
-            var d = new DateOnly(DateTime.Today.Year, 1, 1).AddMonths(i);
-            return (d, d.ToString("MMM", _svCulture));
-        }).ToArray();
-
         // Ladda första schemat för lärare 1
         var first = BookingService.GetTemplatesForTeacher(1).FirstOrDefault();
         if (first != null) LoadTemplate(first);
@@ -485,40 +394,6 @@
         LoadTemplate(saved);
     }
 
-    // ── Add-panel helpers ─────────────────────────────────────────────────────
-
-    private void ToggleAddPanel()
-    {
-        _showAddPanel = !_showAddPanel;
-        _copyFromId   = null;
-    }
-
-    private void AddFromCopy()
-    {
-        if (_copyFromId == null) return;
-        var src = BookingService.ScheduleTemplates.FirstOrDefault(t => t.Id == _copyFromId);
-        if (src == null) return;
-        _template = new ScheduleTemplate
-        {
-            Id         = 0,
-            Name       = $"Kopia av {src.Name}",
-            CycleWeeks = src.CycleWeeks,
-            TeacherId  = _selectedTeacherId ?? 1,
-            TimeBlocks = src.TimeBlocks.Select(b => new ScheduleTimeBlock
-            {
-                Id           = BookingService.GetNextBlockId(),
-                WeekNumber   = b.WeekNumber,
-                DayOfWeek    = b.DayOfWeek,
-                StartTime    = b.StartTime,
-                LessonTypeId = b.LessonTypeId,
-            }).ToList()
-        };
-        _activeWeek   = 1;
-        _saveError    = null;
-        _showAddPanel = false;
-        _conflicts.Clear();
-    }
-
     // ── Schema status helpers ─────────────────────────────────────────────────
 
     private enum SchemaStatus { Aktiv, Kommande, Avslutad, Odaterad }
@@ -553,14 +428,6 @@
         var from = t.StartDate?.ToString("d MMM") ?? "–";
         var to   = t.EndDate?.ToString("d MMM yyyy") ?? "–";
         return $"{from} → {to}";
-    }
-
-    private static bool IsMonthActive(ScheduleTemplate t, DateOnly month)
-    {
-        var monthEnd = month.AddMonths(1).AddDays(-1);
-        var tStart   = t.StartDate ?? DateOnly.MinValue;
-        var tEnd     = t.EndDate   ?? DateOnly.MaxValue;
-        return tStart <= monthEnd && tEnd >= month;
     }
 
     // ── Week cycle management ─────────────────────────────────────────────────
