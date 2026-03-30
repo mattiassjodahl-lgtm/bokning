@@ -823,31 +823,8 @@ public class BookingService
         int id = 1;
 
         // ── Teacher 1: Anna Lindgren ─────────────────────────────────────────
-        // Mon–Fri available blocks 07:00–19:00 (generates available + some booked)
-        foreach (var (dayOffset, slots) in new[]
-        {
-            (0, new[] { (7,0,9,0,false,""), (9,0,10,0,true,"Kalle Berg"), (10,0,11,0,false,""), (12,0,13,0,true,"Sara Holm"), (13,0,14,0,false,""), (15,0,17,0,false,"") }),
-            (1, new[] { (8,0,9,0,false,""), (9,0,10,0,true,"Lena Nyström"), (10,0,12,0,false,""), (13,0,14,0,true,"Anders Ek"), (14,0,15,0,false,""), (16,0,18,0,false,"") }),
-            (2, new[] { (7,0,9,0,false,""), (9,0,11,0,true,"Maja Ström"), (12,0,13,0,false,""), (13,0,14,0,true,"Erik Dal"), (15,0,16,0,false,"") }),
-            (3, new[] { (8,0,10,0,false,""), (10,0,11,0,true,"Ida Lind"), (11,0,12,0,false,""), (14,0,15,0,true,"Björn Berg"), (15,0,17,0,false,"") }),
-            (4, new[] { (7,0,9,0,false,""), (9,0,10,0,true,"Sofia Gren"), (13,0,15,0,false,""), (15,0,16,0,true,"Nils Palm") }),
-        })
-        {
-            var day = monday.AddDays(dayOffset);
-            foreach (var (sh, sm, eh, em, booked, student) in slots)
-            {
-                _events.Add(new CalendarEvent
-                {
-                    Id = id++, TeacherId = 1,
-                    StartTime = day.AddHours(sh).AddMinutes(sm),
-                    EndTime   = day.AddHours(eh).AddMinutes(em),
-                    IsBooked  = booked,
-                    StudentName = student,
-                    LessonTypeId = booked ? (id % 4 + 1) : FreeLessonType(sh, sm, eh, em),
-                    ResourceIds  = booked ? new List<int> { (id % 3) + 1 } : new(),
-                });
-            }
-        }
+        // Lediga pass styrs av hennes aktiva lektionsmall (GenerateTemplateSlots).
+        // Här läggs bara in riktiga bokningar som finns i systemet.
 
         // ── Teacher 2: Erik Svensson ─────────────────────────────────────────
         foreach (var (dayOffset, slots) in new[]
@@ -927,8 +904,8 @@ public class BookingService
             });
         }
 
-        // Introductionslecture next week as well (week + 7)
-        foreach (var t in new[] { 1, 2, 3 })
+        // Introductionslecture next week as well (week + 7) – ej Anna, hon styrs av mall
+        foreach (var t in new[] { 2, 3 })
         {
             var nextMon = monday.AddDays(7);
             for (int d = 0; d < 5; d++)
