@@ -1,0 +1,239 @@
+@inject BookingService BookingService
+@inject IDialogService DialogService
+
+@* ═══════════════════════════════════════════════════════════════════════════
+   TeacherWeekView – visar alla (filtrerade) lärares vecka sida vid sida
+   med lediga pass (från schemamall) och bokade lektioner.
+   ═══════════════════════════════════════════════════════════════════════════ *@
+
+<div class="tcw-root">
+
+    @* Tidsgutter – gemensam för alla lärarsektioner *@
+    <div class="tcw-gutter" style="height:@(GutterHeight)px">
+        <div style="height:@(DayHeaderHeight)px"></div>
+        @for (int h = StartHour; h <= EndHour; h++)
+        {
+            var top = (h - StartHour) * PixelsPerHour + DayHeaderHeight;
+            <div class="tcw-time-label" style="top:@(top)px">@h:00</div>
+        }
+    </div>
+
+    @* Lärarsektioner *@
+    <div class="tcw-sections">
+        @foreach (var teacher in ActiveTeachers)
+        {
+            var t       = teacher;
+            var events  = GetEventsForTeacher(t.Id);
+            var days    = DisplayDays;
+            var toggled = _collapsed.Contains(t.Id);
+
+            <div class="tcw-section">
+
+                @* Rubrikrad *@
+                <div class="tcw-section-header" @onclick="@(() => ToggleCollapse(t.Id))">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:16px; color:#546e7a; margin-right:4px" />
+                    <strong>@t.Name</strong>
+                    <span class="tcw-section-stats">
+                        @{ var booked = events.Count(e => e.IsBooked);
+                           var avail  = events.Count(e => !e.IsBooked); }
+                        @booked bokade · @avail lediga
+                    </span>
+                    <MudIcon Icon="@(toggled ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)"
+                             Style="font-size:18px; color:#90a4ae; margin-left:auto" />
+                </div>
+
+                @* Dagkolumner (döljs vid kollaps) *@
+                @if (!toggled)
+                {
+                    <div class="tcw-days">
+                        @foreach (var day in days)
+                        {
+                            var d       = day;
+                            var dayEvts = events.Where(e => e.StartTime.Date == d.Date).ToList();
+
+                            <div class="tcw-day-col">
+                                @* Dag-header *@
+                                <div class="tcw-day-header @(d.Date == DateTime.Today.Date ? "tcw-day-today" : "")">
+                                    <span class="tcw-day-name">@d.ToString("ddd", _sv)</span>
+                                    <span class="tcw-day-num">@d.Day</span>
+                                </div>
+
+                                @* Tidskolumn *@
+                                <div class="tcw-day-body" style="height:@(TotalHeight)px">
+
+                                    @* Timlinjer *@
+                                    @for (int h = StartHour; h <= EndHour; h++)
+                                    {
+                                        var top = (h - StartHour) * PixelsPerHour;
+                                        <div class="cal-gridline-hour" style="top:@(top)px"></div>
+                                        @if (h < EndHour)
+                                        {
+                                            <div class="cal-gridline-half" style="top:@(top + PixelsPerHour / 2)px"></div>
+                                        }
+                                    }
+
+                                    @* Klickbara slots för ny bokning (ej täckta) *@
+                                    @for (int h = StartHour; h < EndHour; h++)
+                                    {
+                                        for (int m = 0; m < 60; m += 15)
+                                        {
+                                            var slotH   = h;
+                                            var slotM   = m;
+                                            var slotTop = (h - StartHour) * PixelsPerHour + m * PixelsPerHour / 60;
+                                            var slotDt  = d.Date.AddHours(slotH).AddMinutes(slotM);
+                                            // Visa klickbar slot bara om en template-slot täcker denna tid
+                                            var templateEvt = dayEvts.FirstOrDefault(e =>
+                                                !e.IsBooked &&
+                                                slotDt >= e.StartTime &&
+                                                slotDt < e.EndTime);
+                                            if (templateEvt != null)
+                                            {
+                                                var te = templateEvt;
+                                                <div class="tcw-slot-available"
+                                                     style="top:@(slotTop)px; height:@(PixelsPerHour / 4)px"
+                                                     @onclick="@(() => OnAvailableSlotClick(t.Id, te))"
+                                                     title="Boka @te.StartTime.ToString("HH:mm")–@te.EndTime.ToString("HH:mm")">
+                                                </div>
+                                            }
+                                        }
+                                    }
+
+                                    @* Lediga pass (template-slots) *@
+                                    @foreach (var evt in dayEvts.Where(e => !e.IsBooked))
+                                    {
+                                        var e      = evt;
+                                        var topPx  = (e.StartTime.Hour - StartHour) * PixelsPerHour
+                                                   + e.StartTime.Minute * PixelsPerHour / 60;
+                                        var durMin = (e.EndTime - e.StartTime).TotalMinutes;
+                                        var htPx   = (int)(durMin * PixelsPerHour / 60);
+                                        var lt     = BookingService.LessonTypes.FirstOrDefault(l => l.Id == e.LessonTypeId);
+
+                                        <div class="tcw-evt-available"
+                                             style="top:@(topPx)px; height:@(htPx)px;
+                                                    border-left-color:@(lt?.Color ?? "#4caf50")"
+                                             @onclick="@(() => OnAvailableSlotClick(t.Id, e))"
+                                             title="Ledigt: @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")">
+                                            <span class="tcw-evt-label">@(lt?.Name ?? "Ledigt")</span>
+                                            <span class="tcw-evt-time">@e.StartTime.ToString("HH:mm")</span>
+                                        </div>
+                                    }
+
+                                    @* Bokade lektioner *@
+                                    @foreach (var evt in dayEvts.Where(e => e.IsBooked))
+                                    {
+                                        var e      = evt;
+                                        var topPx  = (e.StartTime.Hour - StartHour) * PixelsPerHour
+                                                   + e.StartTime.Minute * PixelsPerHour / 60;
+                                        var durMin = (e.EndTime - e.StartTime).TotalMinutes;
+                                        var htPx   = (int)(durMin * PixelsPerHour / 60);
+                                        var lt     = BookingService.LessonTypes.FirstOrDefault(l => l.Id == e.LessonTypeId);
+
+                                        <div class="tcw-evt-booked"
+                                             style="top:@(topPx)px; height:@(htPx)px;
+                                                    background:@(lt?.LightColor ?? "#e3f2fd");
+                                                    border-left-color:@(lt?.Color ?? "#1565c0")"
+                                             @onclick="@(() => OnBookedEventClick(e))"
+                                             title="@e.StudentName – @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")">
+                                            <span class="tcw-evt-label">@e.StudentName</span>
+                                            <span class="tcw-evt-time">@e.StartTime.ToString("HH:mm")</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // ── Konstanter ────────────────────────────────────────────────────────────
+    private const int StartHour      = 7;
+    private const int EndHour        = 20;
+    private const int PixelsPerHour  = 50;   // kompaktare än veckovyn (80)
+    private const int DayHeaderHeight = 34;
+    private const int TotalHeight    = (EndHour - StartHour) * PixelsPerHour;
+    private const int GutterHeight   = TotalHeight + DayHeaderHeight;
+
+    private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    // ── Parametrar ────────────────────────────────────────────────────────────
+
+    /// <summary>Dagarna som ska visas (redan filtrerade på helg av Index.razor).</summary>
+    [Parameter] public List<DateTime>  DisplayDays    { get; set; } = new();
+
+    [Parameter] public CalendarFilter  Filter         { get; set; } = new();
+    [Parameter] public List<Teacher>   ActiveTeachers { get; set; } = new();
+    [Parameter] public EventCallback   OnBookingChanged { get; set; }
+
+    // ── Lokal state ───────────────────────────────────────────────────────────
+
+    private HashSet<int> _collapsed = new();
+
+    private void ToggleCollapse(int teacherId)
+    {
+        if (!_collapsed.Add(teacherId)) _collapsed.Remove(teacherId);
+    }
+
+    // ── Datahämtning ──────────────────────────────────────────────────────────
+
+    private List<CalendarEvent> GetEventsForTeacher(int teacherId)
+    {
+        if (!DisplayDays.Any()) return new();
+        var start = DisplayDays.First().Date;
+        var end   = DisplayDays.Last().Date.AddDays(1);
+
+        // Filtrera till enbart denna lärare
+        var teacherFilter = new CalendarFilter
+        {
+            ShowAvailable        = true,
+            ShowBooked           = true,
+            HideWeekends         = Filter.HideWeekends,
+            HideTeacherAvatars   = Filter.HideTeacherAvatars,
+            SelectedTeacherIds   = new List<int> { teacherId },
+            SelectedLessonTypeIds = Filter.SelectedLessonTypeIds,
+        };
+
+        return BookingService.GetEventsForRange(start, end, teacherFilter).ToList();
+    }
+
+    // ── Bokning ───────────────────────────────────────────────────────────────
+
+    private async Task OnAvailableSlotClick(int teacherId, CalendarEvent slot)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.PreselectedTeacherId,    teacherId          },
+            { x => x.PreselectedStart,        slot.StartTime     },
+            { x => x.PreselectedLessonTypeId, slot.LessonTypeId  },
+        };
+        var dialog = await DialogService.ShowAsync<BookingDialog>(
+            "Boka lektion", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnBookedEventClick(CalendarEvent evt)
+    {
+        var parameters = new DialogParameters<BookingDialog>
+        {
+            { x => x.ExistingEvent, evt },
+        };
+        var dialog = await DialogService.ShowAsync<BookingDialog>(
+            "", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Small });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+}

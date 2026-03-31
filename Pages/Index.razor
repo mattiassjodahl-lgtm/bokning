@@ -33,6 +33,12 @@
                            : "color:white; border-color:rgba(255,255,255,0.6)")">
                 Månad
             </MudButton>
+            <MudButton OnClick='() => SetView("lärare")'
+                       Style="@(_currentView=="lärare"
+                           ? "background:white; color:#1565C0; font-weight:700; border-color:white"
+                           : "color:white; border-color:rgba(255,255,255,0.6)")">
+                Lärare
+            </MudButton>
         </MudHidden>
     </MudButtonGroup>
 
@@ -292,7 +298,7 @@
     @* ── Calendar views ─────────────────────────────────────────────────── *@
     <div class="cal-scroll-area">
 
-        @* Desktop: grid-based week/day/month view (hidden on mobile) *@
+        @* Desktop: grid-based week/day/month/teacher view (hidden on mobile) *@
         <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="false">
             @if (_currentView == "dag")
             {
@@ -307,6 +313,13 @@
                           Filter="@_filter"
                           ActiveTeachers="@ActiveTeachers"
                           OnBookingChanged="@OnBookingChanged" />
+            }
+            else if (_currentView == "lärare")
+            {
+                <TeacherWeekView DisplayDays="@CurrentWeekDays"
+                                 Filter="@_filter"
+                                 ActiveTeachers="@ActiveTeachers"
+                                 OnBookingChanged="@OnBookingChanged" />
             }
             else
             {
@@ -400,22 +413,25 @@
 
     private string PrevLabel => _currentView switch
     {
-        "dag"   => "Igår",
-        "vecka" => "Förra veckan",
-        _       => "Förra månaden",
+        "dag"    => "Igår",
+        "vecka"  => "Förra veckan",
+        "lärare" => "Förra veckan",
+        _        => "Förra månaden",
     };
 
     private string NextLabel => _currentView switch
     {
-        "dag"   => "Imorgon",
-        "vecka" => "Nästa vecka",
-        _       => "Nästa månad",
+        "dag"    => "Imorgon",
+        "vecka"  => "Nästa vecka",
+        "lärare" => "Nästa vecka",
+        _        => "Nästa månad",
     };
 
     private string PeriodTitle => _currentView switch
     {
         "dag"    => _currentDate.ToString("dddd d MMMM yyyy", _sv),
         "vecka"  => $"Vecka {GetIso8601WeekOfYear(_currentDate)} · {CurrentWeekDays[0]:d MMM} – {CurrentWeekDays[^1]:d MMM yyyy}",
+        "lärare" => $"Vecka {GetIso8601WeekOfYear(_currentDate)} · {CurrentWeekDays[0]:d MMM} – {CurrentWeekDays[^1]:d MMM yyyy}",
         "månad"  => _currentDate.ToString("MMMM yyyy", _sv),
         _        => ""
     };
