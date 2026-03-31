@@ -70,7 +70,9 @@
                             var slotTop  = (h - StartHour) * PixelsPerHour + m * PixelsPerHour / 60;
                             <div class="cal-empty-slot"
                                  style="top:@(slotTop)px; height:@(PixelsPerHour / 2)px"
-                                 @onclick="@(() => OnEmptySlotClick(slotTime))">
+                                 @onclick="@(() => OnEmptySlotClick(slotTime))"
+                                 @ondragover:preventDefault="true"
+                                 @ondrop="@(() => OnSlotDrop(slotTime))">
                             </div>
                         }
                     }
@@ -87,9 +89,18 @@
                              style="@pe.PositionStyle;
                                     background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
                                     border-left-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                             draggable="@(!evt.IsBooked ? "true" : "false")"
+                             @ondragstart="@(() => { if (!evt.IsBooked) _draggingEvent = evt; })"
+                             @ondragend="@(() => _draggingEvent = null)"
                              @onclick="@(() => OnEventClick(evt))"
-                             title="@(evt.IsBooked ? $"{evt.StudentName} – {lt?.Name}" : $"Ledig: {lt?.Name ?? "okänd typ"}")">
+                             title="@(evt.IsBooked ? $"{evt.StudentName} – {lt?.Name}" : $"Ledig: {lt?.Name ?? "okänd typ"} – dra för att flytta")">
 
+                            @if (!evt.IsBooked)
+                            {
+                                <button class="cal-slot-delete-btn" title="Ta bort detta pass"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="@(() => DeleteTemplateSlot(evt))">×</button>
+                            }
                             @if (pe.Height >= 32)
                             {
                                 <div class="cal-event-time">
@@ -158,6 +169,9 @@
     [Parameter] public CalendarFilter Filter           { get; set; } = new();
     [Parameter] public List<Teacher>  ActiveTeachers  { get; set; } = new();
     [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    // ── Drag state for moving template slots ─────────────────────────────────
+    private CalendarEvent? _draggingEvent;
 
     private const int StartHour     = 7;
     private const int EndHour       = 20;
@@ -303,7 +317,34 @@
     }
 
     private async Task OnEmptySlotClick(DateTime slotTime)
-        => await OpenNewBookingDialog(ActiveTeachers.FirstOrDefault()?.Id ?? 0, slotTime, null);
+    {
+        if (_draggingEvent != null) return; // drop hanteras av OnSlotDrop
+        await OpenNewBookingDialog(ActiveTeachers.FirstOrDefault()?.Id ?? 0, slotTime, null);
+    }
+
+    private void OnSlotDrop(DateTime slotTime)
+    {
+        if (_draggingEvent == null) return;
+        var evt           = _draggingEvent;
+        _draggingEvent    = null;
+        if (evt.LessonTypeId == null) return;
+
+        var date          = DateOnly.FromDateTime(evt.StartTime);
+        var originalStart = evt.TemplateOriginalStart ?? TimeOnly.FromDateTime(evt.StartTime);
+        var newStart      = TimeOnly.FromDateTime(slotTime);
+
+        BookingService.MoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value, newStart);
+        StateHasChanged();
+    }
+
+    private void DeleteTemplateSlot(CalendarEvent evt)
+    {
+        if (evt.LessonTypeId == null) return;
+        var date          = DateOnly.FromDateTime(evt.StartTime);
+        var originalStart = evt.TemplateOriginalStart ?? TimeOnly.FromDateTime(evt.StartTime);
+        BookingService.RemoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value);
+        StateHasChanged();
+    }
 
     private async Task OpenNewBookingDialog(int teacherId, DateTime startTime, int? lessonTypeId)
     {

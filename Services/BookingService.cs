@@ -1392,6 +1392,52 @@ public class BookingService
         return (weeksDiff % tmpl.CycleWeeks + tmpl.CycleWeeks) % tmpl.CycleWeeks + 1;
     }
 
+    // ── Schedule exceptions (manual overrides of template slots) ─────────────
+
+    public List<ScheduleException> ScheduleExceptions { get; } = new();
+    private int _nextExceptionId = 1;
+
+    /// Tar bort en enskild förekomst av ett template-slot för en specifik dag.
+    public void RemoveTemplateSlot(int teacherId, DateOnly date, TimeOnly originalStart, int lessonTypeId)
+    {
+        // Ersätt eventuell befintlig exception för samma slot
+        ScheduleExceptions.RemoveAll(e =>
+            e.TeacherId == teacherId && e.Date == date &&
+            e.OriginalStartTime == originalStart && e.LessonTypeId == lessonTypeId);
+
+        ScheduleExceptions.Add(new ScheduleException
+        {
+            Id                = _nextExceptionId++,
+            TeacherId         = teacherId,
+            Date              = date,
+            OriginalStartTime = originalStart,
+            LessonTypeId      = lessonTypeId,
+            IsRemoved         = true,
+        });
+    }
+
+    /// Flyttar en enskild förekomst av ett template-slot till en ny tid samma dag.
+    public void MoveTemplateSlot(int teacherId, DateOnly date, TimeOnly originalStart, int lessonTypeId, TimeOnly newStart)
+    {
+        ScheduleExceptions.RemoveAll(e =>
+            e.TeacherId == teacherId && e.Date == date &&
+            e.OriginalStartTime == originalStart && e.LessonTypeId == lessonTypeId);
+
+        // Tillbaka till originaltid = ta bort exception
+        if (newStart == originalStart) return;
+
+        ScheduleExceptions.Add(new ScheduleException
+        {
+            Id                = _nextExceptionId++,
+            TeacherId         = teacherId,
+            Date              = date,
+            OriginalStartTime = originalStart,
+            LessonTypeId      = lessonTypeId,
+            IsRemoved         = false,
+            NewStartTime      = newStart,
+        });
+    }
+
     private int _ephemeralId = -1;
 
     /// Generates available slots week-by-week, picking the right template for each week.
@@ -1415,18 +1461,32 @@ public class BookingService
                     if (tmpl.StartDate != null && blockDateOnly < tmpl.StartDate)  continue;
                     if (tmpl.EndDate   != null && blockDateOnly > tmpl.EndDate)    continue;
 
-                    var lt        = GetLessonType(block.LessonTypeId);
-                    var slotStart = blockDate.Add(block.StartTime.ToTimeSpan());
-                    var slotEnd   = slotStart.AddMinutes(lt?.DefaultDurationMinutes ?? 60);
+                    var lt            = GetLessonType(block.LessonTypeId);
+                    var originalStart = block.StartTime;
+                    var blockDateOnly = DateOnly.FromDateTime(blockDate);
+
+                    // Kontrollera om det finns ett manuellt undantag för denna slot
+                    var ex = ScheduleExceptions.FirstOrDefault(e =>
+                        e.TeacherId         == teacherId        &&
+                        e.Date              == blockDateOnly    &&
+                        e.OriginalStartTime == originalStart    &&
+                        e.LessonTypeId      == block.LessonTypeId);
+
+                    if (ex?.IsRemoved == true) continue; // borttagen
+
+                    var effectiveStart = ex?.NewStartTime ?? originalStart;
+                    var slotStart      = blockDate.Date.Add(effectiveStart.ToTimeSpan());
+                    var slotEnd        = slotStart.AddMinutes(lt?.DefaultDurationMinutes ?? 60);
 
                     slots.Add(new CalendarEvent
                     {
-                        Id           = _ephemeralId--,
-                        TeacherId    = teacherId,
-                        StartTime    = slotStart,
-                        EndTime      = slotEnd,
-                        IsBooked     = false,
-                        LessonTypeId = block.LessonTypeId,
+                        Id                    = _ephemeralId--,
+                        TeacherId             = teacherId,
+                        StartTime             = slotStart,
+                        EndTime               = slotEnd,
+                        IsBooked              = false,
+                        LessonTypeId          = block.LessonTypeId,
+                        TemplateOriginalStart = originalStart, // behåll för exception-lookup vid drag/delete
                     });
                 }
             }

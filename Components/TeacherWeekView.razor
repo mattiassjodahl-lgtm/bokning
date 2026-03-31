@@ -74,6 +74,23 @@
                                         }
                                     }
 
+                                    @* Droppbara 30-min slots (för drag-och-släpp av template-slots) *@
+                                    @for (int h = StartHour; h < EndHour; h++)
+                                    {
+                                        for (int m = 0; m < 60; m += 30)
+                                        {
+                                            var dropH   = h;
+                                            var dropM   = m;
+                                            var dropTop = (h - StartHour) * PixelsPerHour + m * PixelsPerHour / 60;
+                                            var dropDt  = d.Date.AddHours(dropH).AddMinutes(dropM);
+                                            <div class="tcw-drop-slot"
+                                                 style="top:@(dropTop)px; height:@(PixelsPerHour / 2)px"
+                                                 @ondragover:preventDefault="true"
+                                                 @ondrop="@(() => OnSlotDrop(t.Id, dropDt))">
+                                            </div>
+                                        }
+                                    }
+
                                     @* Lediga pass (template-slots) *@
                                     @foreach (var evt in dayEvts.Where(e => !e.IsBooked))
                                     {
@@ -87,8 +104,14 @@
                                         <div class="tcw-evt-available"
                                              style="top:@(topPx)px; height:@(htPx)px;
                                                     border-left-color:@(lt?.Color ?? "#4caf50")"
+                                             draggable="true"
+                                             @ondragstart="@(() => _draggingEvent = e)"
+                                             @ondragend="@(() => _draggingEvent = null)"
                                              @onclick="@(() => OnAvailableSlotClick(t.Id, e))"
-                                             title="@(lt?.Name ?? "Ledigt") @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm") · klicka för att boka">
+                                             title="@(lt?.Name ?? "Ledigt") @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm") · dra för att flytta">
+                                            <button class="cal-slot-delete-btn" title="Ta bort detta pass"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="@(() => DeleteTemplateSlot(e))">×</button>
                                             <span class="tcw-evt-label">@(lt?.Name ?? "Ledigt")</span>
                                             <span class="tcw-evt-time">@e.StartTime.ToString("HH:mm")</span>
                                         </div>
@@ -125,6 +148,9 @@
 </div>
 
 @code {
+    // ── Drag state för flytt av template-slots ────────────────────────────────
+    private CalendarEvent? _draggingEvent;
+
     // ── Layoutkonstanter ──────────────────────────────────────────────────────
     private const int StartHour       = 7;
     private const int EndHour         = 20;
@@ -200,5 +226,29 @@
             await OnBookingChanged.InvokeAsync();
             StateHasChanged();
         }
+    }
+
+    private void OnSlotDrop(int teacherId, DateTime slotTime)
+    {
+        if (_draggingEvent == null || _draggingEvent.TeacherId != teacherId) return;
+        var evt           = _draggingEvent;
+        _draggingEvent    = null;
+        if (evt.LessonTypeId == null) return;
+
+        var date          = DateOnly.FromDateTime(evt.StartTime);
+        var originalStart = evt.TemplateOriginalStart ?? TimeOnly.FromDateTime(evt.StartTime);
+        var newStart      = TimeOnly.FromDateTime(slotTime);
+
+        BookingService.MoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value, newStart);
+        StateHasChanged();
+    }
+
+    private void DeleteTemplateSlot(CalendarEvent evt)
+    {
+        if (evt.LessonTypeId == null) return;
+        var date          = DateOnly.FromDateTime(evt.StartTime);
+        var originalStart = evt.TemplateOriginalStart ?? TimeOnly.FromDateTime(evt.StartTime);
+        BookingService.RemoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value);
+        StateHasChanged();
     }
 }

@@ -266,6 +266,40 @@
     border-left-color: #43A047 !important;
     border-style: dashed !important;
     border-width: 1px 1px 1px 3px !important;
+    cursor: grab;
+}
+
+.cal-event-free:active { cursor: grabbing; }
+
+/* × ta bort-knapp på template-slots */
+.cal-slot-delete-btn {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    background: rgba(0,0,0,.12);
+    color: #555;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 3px;
+    cursor: pointer;
+    display: none; /* visas vid hover på förälder */
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+}
+
+.cal-event-free:hover .cal-slot-delete-btn,
+.tcw-evt-available:hover .cal-slot-delete-btn {
+    display: flex;
+}
+
+.cal-slot-delete-btn:hover {
+    background: #f44336;
+    color: #fff;
 }
 
 .cal-event-time {
@@ -1533,6 +1567,20 @@
 .tcw-day-body {
     position: relative;
     background: #fff;
+}
+
+/* Osynliga droppbara 30-min slots för drag-och-släpp */
+.tcw-drop-slot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
+.tcw-drop-slot:hover,
+.tcw-drop-slot[dragover] {
+    background: rgba(33,150,243,.12);
+    outline: 1px dashed #42a5f5;
 }
 
 /* ── Ledigt pass (template-slot) ─────────────────────────────────────────── */

@@ -257,6 +257,10 @@ public class CalendarEvent
 
     /// Education plan moments linked to this lesson booking.
     public List<LessonMoment> LinkedMoments { get; set; } = new();
+
+    /// Set on template-generated slots: the original start time from the block.
+    /// Used to identify which exception to create/update when moving or deleting.
+    public TimeOnly? TemplateOriginalStart { get; set; }
 }
 
 // ── Lesson moment (education plan item linked to a booking) ───────────────────
@@ -306,5 +310,23 @@ public class CalendarFilter
     public List<int> SelectedTeacherIds { get; set; } = new();
     public List<int> SelectedResourceIds { get; set; } = new();
     public List<int> SelectedLessonTypeIds { get; set; } = new();
+}
+
+// ── Schedule exception (manual override of a template-generated slot) ─────────
+
+/// <summary>
+/// Records a manual edit to a single occurrence of a template slot.
+/// IsRemoved = true  → slot is hidden this day.
+/// NewStartTime != null → slot is moved to that time.
+/// </summary>
+public class ScheduleException
+{
+    public int      Id                { get; set; }
+    public int      TeacherId         { get; set; }
+    public DateOnly Date              { get; set; }
+    public TimeOnly OriginalStartTime { get; set; }
+    public int      LessonTypeId      { get; set; }
+    public bool     IsRemoved         { get; set; }
+    public TimeOnly? NewStartTime     { get; set; }
 }
 
