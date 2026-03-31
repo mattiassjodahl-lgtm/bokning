@@ -1463,7 +1463,6 @@ public class BookingService
 
                     var lt            = GetLessonType(block.LessonTypeId);
                     var originalStart = block.StartTime;
-                    var blockDateOnly = DateOnly.FromDateTime(blockDate);
 
                     // Kontrollera om det finns ett manuellt undantag för denna slot
                     var ex = ScheduleExceptions.FirstOrDefault(e =>
