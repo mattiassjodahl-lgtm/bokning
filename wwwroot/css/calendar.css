@@ -1101,6 +1101,96 @@
     flex-wrap: wrap;
 }
 
+/* ── Schema-överblick (chips på toolbarraden) ────────────────────────────── */
+
+.plan-schema-overview {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.plan-schema-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px 3px 8px;
+    border-left: 3px solid #ccc;
+    border-radius: 4px;
+    background: #f5f5f5;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .12s;
+    white-space: nowrap;
+}
+
+.plan-schema-chip:hover { background: #e3f2fd; }
+
+.plan-schema-chip-active {
+    background: #e8f5e9;
+    box-shadow: 0 0 0 1px #81c784;
+}
+
+.plan-schema-chip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.plan-schema-chip-name {
+    font-weight: 600;
+    color: #37474f;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plan-schema-chip-dates {
+    color: #78909c;
+    font-size: 10px;
+}
+
+.plan-schema-chip-delete {
+    margin-left: 2px;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plan-schema-chip-delete:hover { background: #ffebee; color: #f44336; }
+
+/* ── Markering av upptagna datum i MudDateRangePicker ───────────────────── */
+
+.plan-date-occupied button.mud-button-root {
+    background: #fff3e0 !important;
+    color: #e65100 !important;
+    border-radius: 50%;
+}
+
+.plan-date-occupied button.mud-button-root::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ff9800;
+}
+
 /* ── 3-step toolbar ────────────────────────────────────────────────────────── */
 
 .plan-step {

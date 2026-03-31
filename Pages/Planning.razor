@@ -138,11 +138,35 @@
                                         Label="@(_template.Id == 0 ? "Från – Till" : _template.Name)"
                                         Variant="Variant.Outlined" Margin="Margin.Dense"
                                         DateFormat="d MMM yyyy" Style="min-width:270px"
-                                        Clearable="true" Culture="_svCulture" AutoClose="false" />
+                                        Clearable="true" Culture="_svCulture" AutoClose="false"
+                                        AdditionalDateClassesFunc="GetDateClass" />
                 </div>
             }
 
             <MudSpacer />
+
+            @* Aktiva scheman för vald lärare *@
+            @if (_selectedTeacherId != null)
+            {
+                <div class="plan-schema-overview">
+                    @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value))
+                    {
+                        var st      = GetTemplateStatus(tmpl);
+                        var isCurrent = tmpl.Id == _template?.Id;
+                        <div class="plan-schema-chip @(isCurrent ? "plan-schema-chip-active" : "")"
+                             style="border-left-color:@StatusColor(st)"
+                             @onclick="@(() => OnTemplatePickerChanged(tmpl.Id))"
+                             title="Klicka för att redigera">
+                            <span class="plan-schema-chip-dot" style="background:@StatusColor(st)"></span>
+                            <span class="plan-schema-chip-name">@tmpl.Name</span>
+                            <span class="plan-schema-chip-dates">@FormatDateRange(tmpl)</span>
+                            <button class="plan-schema-chip-delete" title="Ta bort schema"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="@(() => DeleteTemplate(tmpl.Id))">×</button>
+                        </div>
+                    }
+                </div>
+            }
 
             @if (_saveError != null)
             {
@@ -441,6 +465,38 @@
         var saved = BookingService.ScheduleTemplates.First(t => t.Id == _template.Id);
         _selectedTemplateId = saved.Id;
         LoadTemplate(saved);
+    }
+
+    // ── Ta bort schema ────────────────────────────────────────────────────────
+
+    private void DeleteTemplate(int templateId)
+    {
+        BookingService.DeleteScheduleTemplate(templateId);
+        if (_template?.Id == templateId)
+        {
+            _template           = null;
+            _selectedTemplateId = null;
+            _dateRange          = new DateRange();
+        }
+        StateHasChanged();
+    }
+
+    // ── Datum-klass för MudDateRangePicker (markera upptagna perioder) ────────
+
+    /// Returnerar CSS-klass för datum som täcks av ett ANNAT schema för samma lärare.
+    private string GetDateClass(DateTime date)
+    {
+        if (_selectedTeacherId == null || _template == null) return "";
+        var d = DateOnly.FromDateTime(date);
+        var others = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+            .Where(t => t.Id != _template.Id);
+        foreach (var t in others)
+        {
+            bool afterStart = t.StartDate == null || d >= t.StartDate;
+            bool beforeEnd  = t.EndDate   == null || d <= t.EndDate;
+            if (afterStart && beforeEnd) return "plan-date-occupied";
+        }
+        return "";
     }
 
     // ── Schema status helpers ─────────────────────────────────────────────────

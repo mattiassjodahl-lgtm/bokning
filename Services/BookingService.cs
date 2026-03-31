@@ -1688,4 +1688,11 @@ public class BookingService
         ScheduleTemplates.Add(template);
         return null;
     }
+
+    public void DeleteScheduleTemplate(int templateId)
+    {
+        ScheduleTemplates.RemoveAll(t => t.Id == templateId);
+        // Rensa även undantag kopplade till detta schema
+        // (undantag är per datum, ej per mall – behålls för nu)
+    }
 }
