@@ -135,16 +135,7 @@
                                         Clearable="true" Culture="_svCulture" AutoClose="false"
                                         AdditionalDateClassesFunc="GetDateClass" />
                 </div>
-                <div class="plan-step" style="gap:4px; flex-direction:row; align-items:flex-end; padding-bottom:1px">
-                    @if (_template.Id > 0)
-                    {
-                        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   OnClick="CopyTemplateAsNewPeriod"
-                                   title="Skapa en kopia av denna mall för en ny tidsperiod">
-                            Ny period
-                        </MudButton>
-                    }
+                <div class="plan-step" style="flex-direction:row; align-items:flex-end; padding-bottom:1px">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Save"
                                OnClick="SaveTemplate"
@@ -371,6 +362,10 @@
     private List<string>      _conflicts          = new();
     private string?           _saveError          = null;
 
+    // Originalvärden för att avgöra om datum ändrats (→ ny period)
+    private DateOnly? _originalStartDate;
+    private DateOnly? _originalEndDate;
+
     protected override void OnInitialized()
     {
         // Användaren väljer mall via dropdown — ingen auto-load
@@ -440,7 +435,9 @@
                                 LessonTypeId = b.LessonTypeId
                             }).ToList()
         };
-        _activeWeek = 1;
+        _activeWeek        = 1;
+        _originalStartDate = source.StartDate;
+        _originalEndDate   = source.EndDate;
         SyncDateRange();
         ValidateConflicts();
     }
@@ -460,36 +457,6 @@
         _conflicts.Clear();
     }
 
-    /// Kopierar aktuell malls tidsblock till en ny, osparad mall med tomma datum.
-    /// Används för att lägga samma schema på en ny tidsperiod (t.ex. nästa termin).
-    private void CopyTemplateAsNewPeriod()
-    {
-        if (_template == null) return;
-        _selectedTemplateId = 0; // markera som "ny" i dropdown
-        _template = new ScheduleTemplate
-        {
-            Id         = 0,
-            Name       = _template.Name,   // behåll mallnamnet
-            CycleWeeks = _template.CycleWeeks,
-            TeacherId  = _selectedTeacherId ?? _template.TeacherId,
-            StartDate  = null,             // töm datum – användaren anger ny period
-            EndDate    = null,
-            TimeBlocks = _template.TimeBlocks
-                            .Select(b => new ScheduleTimeBlock
-                            {
-                                Id           = BookingService.GetNextBlockId(),
-                                WeekNumber   = b.WeekNumber,
-                                DayOfWeek    = b.DayOfWeek,
-                                StartTime    = b.StartTime,
-                                LessonTypeId = b.LessonTypeId
-                            }).ToList()
-        };
-        _activeWeek = 1;
-        _saveError  = null;
-        _dateRange  = new DateRange();
-        _conflicts.Clear();
-    }
-
     // ── Save ──────────────────────────────────────────────────────────────────
 
     private void SaveTemplate()
@@ -499,6 +466,13 @@
         if (_conflicts.Any()) return;
 
         _template.TeacherId = _selectedTeacherId ?? _template.TeacherId;
+
+        // Om datum ändrats på ett befintligt schema → skapa ny period istället för att skriva över
+        bool datesChanged = _template.Id > 0 &&
+            (_template.StartDate != _originalStartDate || _template.EndDate != _originalEndDate);
+        if (datesChanged)
+            _template.Id = 0;
+
         _saveError = BookingService.SaveScheduleTemplate(_template);
         if (_saveError != null) return;
 
