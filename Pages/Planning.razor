@@ -18,22 +18,6 @@
             ? $"Dra eller klicka på ett tidsfack: {GetLessonType(_pickedLessonTypeId.Value)?.Name}"
             : "Välj en lektionsmall — dra eller klicka för att placera")
     </MudText>
-    @if (_template is { Id: > 0 })
-    {
-        <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
-                   StartIcon="@Icons.Material.Filled.ContentCopy"
-                   OnClick="CopyTemplateAsNewPeriod"
-                   title="Skapa en kopia av denna mall för en ny tidsperiod"
-                   Class="mr-1">
-            Ny period
-        </MudButton>
-    }
-    <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
-               StartIcon="@Icons.Material.Filled.Save"
-               OnClick="SaveTemplate"
-               Disabled="@(_template == null)">
-        Spara
-    </MudButton>
 </MudAppBar>
 
 @* ══════════════════════════════════════════════════════════════════════════ *@
@@ -137,7 +121,7 @@
                 </MudSelect>
             </div>
 
-            @* Steg 3: Giltighetstid (visas när mall är vald) *@
+            @* Steg 3: Giltighetstid + spara (visas när mall är vald) *@
             @if (_template != null)
             {
                 <div class="plan-step-divider">›</div>
@@ -150,6 +134,23 @@
                                         DateFormat="d MMM yyyy" Style="min-width:270px"
                                         Clearable="true" Culture="_svCulture" AutoClose="false"
                                         AdditionalDateClassesFunc="GetDateClass" />
+                </div>
+                <div class="plan-step" style="gap:4px; flex-direction:row; align-items:flex-end; padding-bottom:1px">
+                    @if (_template.Id > 0)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   OnClick="CopyTemplateAsNewPeriod"
+                                   title="Skapa en kopia av denna mall för en ny tidsperiod">
+                            Ny period
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SaveTemplate"
+                               Disabled="@(_conflicts.Any())">
+                        Spara
+                    </MudButton>
                 </div>
             }
 
