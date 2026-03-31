@@ -54,11 +54,10 @@
 
                             <div class="tcw-day-col">
 
-                                @* Dagheader (sticky top:TeacherHeaderH) *@
+                                @* Dagheader (sticky top:TeacherHeaderH) — format: 16/2 *@
                                 <div class="tcw-day-header @(isToday ? "tcw-day-today" : "")"
                                      style="height:@(DayHeaderH)px; top:@(TeacherHeaderH)px">
-                                    <span class="tcw-day-name">@d.ToString("ddd", _sv)</span>
-                                    <span class="tcw-day-num">@d.Day</span>
+                                    <span class="tcw-day-num">@d.Day/@d.Month</span>
                                 </div>
 
                                 @* Tidskolumn *@
