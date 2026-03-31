@@ -1400,18 +1400,27 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TeacherWeekView – lärarvy
+   TeacherWeekView – lärare bredvid varandra (horisontell layout)
+   Upp till 6 lärare × 5–7 dagar. Scrollar horisontellt + vertikalt.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Yttersta scrollbar – hanterar BÅDA riktningarna */
 .tcw-root {
-    display: flex;
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: auto;
     background: #fafafa;
+    position: relative;
 }
 
-/* Gemensam tidsaxel till vänster */
+/* Inre rad: [gutter] [läraresektioner] – minst lika bred som viewport */
+.tcw-inner {
+    display: flex;
+    flex-direction: row;
+    min-width: max-content; /* krymper aldrig under innehållets bredd */
+}
+
+/* ── Gemensam tidsaxel (sticky vänster) ─────────────────────────────────── */
+
 .tcw-gutter {
     position: sticky;
     left: 0;
@@ -1419,8 +1428,7 @@
     flex-shrink: 0;
     background: #fff;
     border-right: 1px solid #e0e0e0;
-    z-index: 3;
-    position: relative; /* för absolut positionerade labels */
+    z-index: 4;
 }
 
 .tcw-time-label {
@@ -1433,72 +1441,83 @@
     white-space: nowrap;
 }
 
-/* Sektionscontainer */
+/* ── Sektionscontainer ───────────────────────────────────────────────────── */
+
 .tcw-sections {
+    display: flex;
+    flex-direction: row;
     flex: 1;
+}
+
+/* En lärares kolumn-grupp */
+.tcw-section {
     display: flex;
     flex-direction: column;
+    border-right: 2px solid #90a4ae; /* tydlig avdelare mellan lärare */
+}
+
+.tcw-section:last-child { border-right: none; }
+
+/* ── Lärarens rubrikrad (sticky top:0) ─────────────────────────────────── */
+
+.tcw-section-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    background: #eceff1;
+    border-bottom: 1px solid #b0bec5;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 3;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.tcw-teacher-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
     min-width: 0;
 }
 
-/* En lärares sektion */
-.tcw-section {
-    border-bottom: 2px solid #e0e0e0;
-}
-
-/* Lärarens rubrikrad */
-.tcw-section-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: #eceff1;
-    border-bottom: 1px solid #cfd8dc;
-    cursor: pointer;
-    font-size: 13px;
-    user-select: none;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-}
-
-.tcw-section-header:hover { background: #e3f2fd; }
-
 .tcw-section-stats {
-    font-size: 11px;
+    font-size: 10px;
+    font-weight: 400;
     color: #78909c;
-    margin-left: 6px;
+    flex-shrink: 0;
 }
 
-/* Dagkolumner */
+/* ── Dagkolumner ─────────────────────────────────────────────────────────── */
+
 .tcw-days {
     display: flex;
-    overflow-x: auto;
+    flex-direction: row;
 }
 
 .tcw-day-col {
-    flex: 1;
-    min-width: 90px;
+    width: 80px;          /* fast bredd – kompakt, 6 lärare × 5 dagar = 2 400 px */
+    flex-shrink: 0;
     border-right: 1px solid #e0e0e0;
 }
 
 .tcw-day-col:last-child { border-right: none; }
 
-/* Dag-header */
+/* Dagheader (sticky top: under lärarrubrik) */
 .tcw-day-header {
+    position: sticky;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 4px 0;
+    justify-content: center;
     background: #fff;
     border-bottom: 1px solid #e0e0e0;
-    font-size: 11px;
     color: #546e7a;
-    position: sticky;
-    top: 36px; /* rubrikrad-höjd */
-    z-index: 1;
-    height: 34px;
-    justify-content: center;
+    z-index: 2;
+    /* top sätts inline: top:TeacherHeaderH px */
 }
 
 .tcw-day-today {
@@ -1507,63 +1526,56 @@
     font-weight: 700;
 }
 
-.tcw-day-name { text-transform: capitalize; font-size: 10px; }
-.tcw-day-num  { font-size: 14px; font-weight: 600; line-height: 1.1; }
+.tcw-day-name { text-transform: capitalize; font-size: 9px; }
+.tcw-day-num  { font-size: 13px; font-weight: 600; line-height: 1.1; }
 
-/* Tidskolumn */
+/* ── Tidskolumn (dagkropp) ───────────────────────────────────────────────── */
+
 .tcw-day-body {
     position: relative;
     background: #fff;
 }
 
-/* Klickbara lediga slots */
-.tcw-slot-available {
-    position: absolute;
-    left: 0;
-    right: 0;
-    cursor: pointer;
-    z-index: 1;
-}
-.tcw-slot-available:hover { background: rgba(76,175,80,.12); }
+/* ── Ledigt pass (template-slot) ─────────────────────────────────────────── */
 
-/* Ledigt pass (template-slot) */
 .tcw-evt-available {
     position: absolute;
-    left: 2px;
-    right: 2px;
+    left: 1px;
+    right: 1px;
     border-left: 3px solid #4caf50;
     background: rgba(76,175,80,.08);
     border-radius: 3px;
-    padding: 2px 4px;
+    padding: 1px 3px;
     cursor: pointer;
     z-index: 2;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    font-size: 10px;
+    font-size: 9px;
     color: #2e7d32;
-    transition: background .15s;
+    transition: background .12s;
 }
-.tcw-evt-available:hover { background: rgba(76,175,80,.2); }
+.tcw-evt-available:hover { background: rgba(76,175,80,.22); }
 
-/* Bokad lektion */
+/* ── Bokad lektion ────────────────────────────────────────────────────────── */
+
 .tcw-evt-booked {
     position: absolute;
-    left: 2px;
-    right: 2px;
+    left: 1px;
+    right: 1px;
     border-left: 3px solid #1565c0;
     border-radius: 3px;
-    padding: 2px 4px;
+    padding: 1px 3px;
     cursor: pointer;
     z-index: 2;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    font-size: 10px;
+    font-size: 9px;
     color: #1a237e;
-    transition: filter .15s;
+    transition: filter .12s;
 }
-.tcw-evt-booked:hover { filter: brightness(.93); }
+.tcw-evt-booked:hover { filter: brightness(.9); }
 
 .tcw-evt-label {
     font-weight: 600;
@@ -1573,6 +1585,6 @@
 }
 
 .tcw-evt-time {
-    font-size: 9px;
-    opacity: .75;
+    font-size: 8px;
+    opacity: .72;
 }
