@@ -90,33 +90,56 @@
     @* ── Right area: toolbar + grid ───────────────────────────────────── *@
     <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
 
-        @* Toolbar *@
+        @* ── Toolbar: tre steg ───────────────────────────────────────────── *@
         <div class="plan-toolbar">
-            <MudSelect T="int?" Value="_selectedTeacherId" Label="Lärare"
-                       ValueChanged="OnTeacherChanged"
-                       Variant="Variant.Outlined" Margin="Margin.Dense"
-                       Style="min-width:170px"
-                       AnchorOrigin="Origin.BottomLeft">
-                @foreach (var t in BookingService.Teachers)
-                {
-                    <MudSelectItem T="int?" Value="@((int?)t.Id)">@t.Name</MudSelectItem>
-                }
-            </MudSelect>
 
+            @* Steg 1: Välj lärare *@
+            <div class="plan-step">
+                <span class="plan-step-label">1 · Lärare</span>
+                <MudSelect T="int?" Value="_selectedTeacherId"
+                           ValueChanged="OnTeacherChanged"
+                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Style="min-width:170px" AnchorOrigin="Origin.BottomLeft">
+                    @foreach (var t in BookingService.Teachers)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)t.Id)">@t.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+
+            <div class="plan-step-divider">›</div>
+
+            @* Steg 2: Välj schemamall *@
+            <div class="plan-step">
+                <span class="plan-step-label">2 · Schemamall</span>
+                <MudSelect T="int?" Value="_selectedTemplateId"
+                           ValueChanged="OnTemplatePickerChanged"
+                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                           Style="min-width:200px" AnchorOrigin="Origin.BottomLeft"
+                           Placeholder="Välj eller skapa…"
+                           Disabled="@(_selectedTeacherId == null)">
+                    <MudSelectItem T="int?" Value="@((int?)null)">— Välj schemamall —</MudSelectItem>
+                    @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0))
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">@tmpl.Name</MudSelectItem>
+                    }
+                    <MudSelectItem T="int?" Value="@((int?)0)">✦ Ny schemamall…</MudSelectItem>
+                </MudSelect>
+            </div>
+
+            @* Steg 3: Giltighetstid (visas när mall är vald) *@
             @if (_template != null)
             {
-                <MudTextField @bind-Value="_template.Name" Label="Schemanamn"
-                              Variant="Variant.Outlined" Margin="Margin.Dense"
-                              Style="min-width:160px" />
-                <MudDateRangePicker DateRange="_dateRange"
-                                    DateRangeChanged="OnDateRangeChanged"
-                                    Label="Giltighetstid"
-                                    Variant="Variant.Outlined" Margin="Margin.Dense"
-                                    DateFormat="d MMM yyyy"
-                                    Style="min-width:260px"
-                                    Clearable="true"
-                                    Culture="_svCulture"
-                                    AutoClose="false" />
+                <div class="plan-step-divider">›</div>
+                <div class="plan-step">
+                    <span class="plan-step-label">3 · Giltighetstid</span>
+                    <MudDateRangePicker DateRange="_dateRange"
+                                        DateRangeChanged="OnDateRangeChanged"
+                                        Label="@(_template.Id == 0 ? "Från – Till" : _template.Name)"
+                                        Variant="Variant.Outlined" Margin="Margin.Dense"
+                                        DateFormat="d MMM yyyy" Style="min-width:270px"
+                                        Clearable="true" Culture="_svCulture" AutoClose="false" />
+                </div>
             }
 
             <MudSpacer />
@@ -135,26 +158,24 @@
             }
         </div>
 
-        @* ── Schemaöversikt för vald lärare ───────────────────────────────── *@
-        <div class="plan-schema-strip">
-            @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0))
-            {
-                var t = tmpl;
-                var status = GetTemplateStatus(t);
-                var isSelected = _template?.Id == t.Id;
-                <div class="plan-schema-card @(isSelected ? "plan-schema-card-active" : "")"
-                     style="border-left-color: @StatusColor(status)"
-                     @onclick="@(() => LoadTemplate(t))"
-                     title="@t.Name">
-                    <div class="plan-schema-card-name">@t.Name</div>
-                    <div class="plan-schema-card-dates">@FormatDateRange(t)</div>
-                    <span class="plan-schema-badge" style="background:@StatusColor(status)">@StatusLabel(status)</span>
-                </div>
-            }
-            <button class="plan-schema-new" @onclick="CreateNewTemplate" title="Skapa nytt schema">
-                + Nytt schema
-            </button>
-        </div>
+        @* ── Banner: ny schemamall ────────────────────────────────────────── *@
+        @if (_template?.Id == 0)
+        {
+            <div class="plan-new-banner">
+                <MudIcon Icon="@Icons.Material.Filled.EditNote" Style="color:#e65100;font-size:20px" />
+                <span>Du skapar en ny schemamall. Ge den ett namn:</span>
+                <MudTextField @bind-Value="_template.Name"
+                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Style="min-width:200px;background:#fff"
+                              Placeholder="T.ex. Standardvecka höst" />
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SaveTemplate"
+                           Disabled="@(string.IsNullOrWhiteSpace(_template.Name) || _conflicts.Any())">
+                    Spara ny mall
+                </MudButton>
+            </div>
+        }
 
         @* Week tabs *@
         @if (_template != null)
@@ -307,6 +328,7 @@
     private static readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
 
     private int?              _selectedTeacherId  = 1;
+    private int?              _selectedTemplateId = null;
     private int?              _pickedLessonTypeId = null;
     private bool              _isDragging         = false;
     private int               _activeWeek         = 1;
@@ -316,9 +338,7 @@
 
     protected override void OnInitialized()
     {
-        // Ladda första schemat för lärare 1
-        var first = BookingService.GetTemplatesForTeacher(1).FirstOrDefault();
-        if (first != null) LoadTemplate(first);
+        // Användaren väljer mall via dropdown — ingen auto-load
     }
 
     // ── Date range picker ─────────────────────────────────────────────────────
@@ -344,13 +364,24 @@
 
     private void OnTeacherChanged(int? teacherId)
     {
-        _selectedTeacherId = teacherId;
-        _template  = null;
+        _selectedTeacherId  = teacherId;
+        _selectedTemplateId = null;
+        _template           = null;
+        _saveError          = null;
+        _conflicts.Clear();
+    }
+
+    private void OnTemplatePickerChanged(int? id)
+    {
+        _selectedTemplateId = id;
         _saveError = null;
         _conflicts.Clear();
-        // Auto-load first schema for this teacher
-        var first = BookingService.GetTemplatesForTeacher(teacherId ?? 0).FirstOrDefault();
-        if (first != null) LoadTemplate(first);
+
+        if (id == null)   { _template = null; return; }
+        if (id == 0)      { CreateNewTemplate(); return; }
+
+        var src = BookingService.ScheduleTemplates.FirstOrDefault(t => t.Id == id);
+        if (src != null) LoadTemplate(src);
     }
 
     // ── Template loading ──────────────────────────────────────────────────────
@@ -406,8 +437,9 @@
         _saveError = BookingService.SaveScheduleTemplate(_template);
         if (_saveError != null) return;
 
-        // Reload to sync state
+        // Reload to sync state (also syncs dropdown to the saved ID)
         var saved = BookingService.ScheduleTemplates.First(t => t.Id == _template.Id);
+        _selectedTemplateId = saved.Id;
         LoadTemplate(saved);
     }
 

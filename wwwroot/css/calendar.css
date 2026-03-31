@@ -1067,6 +1067,48 @@
     flex-wrap: wrap;
 }
 
+/* ── 3-step toolbar ────────────────────────────────────────────────────────── */
+
+.plan-step {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.plan-step-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #78909c;
+    padding-left: 2px;
+}
+
+.plan-step-divider {
+    font-size: 20px;
+    color: #cfd8dc;
+    line-height: 1;
+    align-self: center;
+    margin-top: 14px; /* align with input, not label */
+    user-select: none;
+}
+
+/* ── New-template banner ───────────────────────────────────────────────────── */
+
+.plan-new-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    background: #fff3e0;
+    border-bottom: 2px solid #ffb74d;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    font-size: 13px;
+    font-weight: 500;
+    color: #e65100;
+}
+
 /* ── Week tabs ─────────────────────────────────────────────────────────────── */
 
 .plan-week-tabs {
