@@ -18,6 +18,16 @@
             ? $"Dra eller klicka på ett tidsfack: {GetLessonType(_pickedLessonTypeId.Value)?.Name}"
             : "Välj en lektionsmall — dra eller klicka för att placera")
     </MudText>
+    @if (_template is { Id: > 0 })
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                   OnClick="CopyTemplateAsNewPeriod"
+                   title="Skapa en kopia av denna mall för en ny tidsperiod"
+                   Class="mr-1">
+            Ny period
+        </MudButton>
+    }
     <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small"
                StartIcon="@Icons.Material.Filled.Save"
                OnClick="SaveTemplate"
@@ -442,6 +452,36 @@
             Name       = "Nytt schema",
             CycleWeeks = 1,
             TeacherId  = _selectedTeacherId ?? 1
+        };
+        _activeWeek = 1;
+        _saveError  = null;
+        _dateRange  = new DateRange();
+        _conflicts.Clear();
+    }
+
+    /// Kopierar aktuell malls tidsblock till en ny, osparad mall med tomma datum.
+    /// Används för att lägga samma schema på en ny tidsperiod (t.ex. nästa termin).
+    private void CopyTemplateAsNewPeriod()
+    {
+        if (_template == null) return;
+        _selectedTemplateId = 0; // markera som "ny" i dropdown
+        _template = new ScheduleTemplate
+        {
+            Id         = 0,
+            Name       = _template.Name,   // behåll mallnamnet
+            CycleWeeks = _template.CycleWeeks,
+            TeacherId  = _selectedTeacherId ?? _template.TeacherId,
+            StartDate  = null,             // töm datum – användaren anger ny period
+            EndDate    = null,
+            TimeBlocks = _template.TimeBlocks
+                            .Select(b => new ScheduleTimeBlock
+                            {
+                                Id           = BookingService.GetNextBlockId(),
+                                WeekNumber   = b.WeekNumber,
+                                DayOfWeek    = b.DayOfWeek,
+                                StartTime    = b.StartTime,
+                                LessonTypeId = b.LessonTypeId
+                            }).ToList()
         };
         _activeWeek = 1;
         _saveError  = null;

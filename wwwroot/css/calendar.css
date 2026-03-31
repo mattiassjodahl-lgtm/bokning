@@ -1172,14 +1172,15 @@
 .plan-schema-chip-delete:hover { background: #ffebee; color: #f44336; }
 
 /* ── Markering av upptagna datum i MudDateRangePicker ───────────────────── */
+/* AdditionalDateClassesFunc lägger klassen direkt på <button>-elementet    */
 
-.plan-date-occupied button.mud-button-root {
+button.plan-date-occupied {
     background: #fff3e0 !important;
     color: #e65100 !important;
-    border-radius: 50%;
+    position: relative;
 }
 
-.plan-date-occupied button.mud-button-root::after {
+button.plan-date-occupied::after {
     content: '';
     position: absolute;
     bottom: 3px;
