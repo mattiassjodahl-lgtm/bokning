@@ -49,7 +49,7 @@
                                  ? BookingService.GetLessonType(evt.LessonTypeId.Value)
                                  : null;
 
-                    <div class="cal-mv-tl-event @(evt.IsBooked ? "" : "cal-mv-tl-event-free")"
+                    <div class="cal-mv-tl-event @(evt.IsBooked ? "" : "cal-mv-tl-event-free") @StudentFilterClass(evt)"
                          style="background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
                                 border-top-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
                          title="@(evt.IsBooked
@@ -92,7 +92,17 @@
 @code {
     [Parameter] public DateTime       CurrentMonth     { get; set; } = DateTime.Today;
     [Parameter] public CalendarFilter Filter           { get; set; } = new();
+    [Parameter] public string         SelectedStudent  { get; set; } = "";
     [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    private string StudentFilterClass(CalendarEvent evt)
+    {
+        if (string.IsNullOrEmpty(SelectedStudent)) return "";
+        if (!evt.IsBooked) return "";
+        bool isMatch = evt.StudentName.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase)
+                    || evt.ExtraStudents.Any(s => s.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase));
+        return isMatch ? "cal-student-highlight" : "cal-student-dim";
+    }
 
     private readonly System.Globalization.CultureInfo _sv = new("sv-SE");
 

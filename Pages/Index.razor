@@ -42,6 +42,45 @@
         </MudHidden>
     </MudButtonGroup>
 
+    @* Elevsökning – sökikon, inline-autocomplete eller aktiv elev-chip *@
+    @if (_searchMode)
+    {
+        <div class="stu-search-wrap">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Style="color:rgba(255,255,255,.7); font-size:18px" />
+            <MudAutocomplete T="string"
+                             Value="@_studentSearch"
+                             SearchFunc="SearchStudents"
+                             ValueChanged="OnStudentSelected"
+                             Placeholder="Sök elev..."
+                             ResetValueOnEmptyText="true"
+                             CoerceText="false"
+                             Immediate="true"
+                             Style="flex:1; --mud-input-label-color:rgba(255,255,255,.7); --mud-input-text-color:white"
+                             Variant="Variant.Text"
+                             Dense="true"
+                             AdornmentColor="Color.Inherit" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Color="Color.Inherit"
+                           Size="Size.Small"
+                           OnClick="ClearStudentSearch"
+                           title="Stäng sökning" />
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_selectedStudent))
+    {
+        <div class="stu-active-chip" @onclick="ClearStudentSearch" title="Rensa elevfilter">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:16px" />
+            @_selectedStudent
+            <MudIcon Icon="@Icons.Material.Filled.Close" Style="font-size:14px; opacity:.8" />
+        </div>
+    }
+    else
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.PersonSearch" Color="Color.Inherit"
+                       OnClick="OpenStudentSearch"
+                       title="Sök elev" />
+    }
+
     @* Filter drawer toggle *@
     <MudIconButton Icon="@Icons.Material.Filled.FilterList" Color="Color.Inherit"
                    OnClick="ToggleFilterDrawer"
@@ -305,6 +344,7 @@
                 <WeekView DisplayDays="@(new List<DateTime>{ _currentDate })"
                           Filter="@_filter"
                           ActiveTeachers="@ActiveTeachers"
+                          SelectedStudent="@_selectedStudent"
                           OnBookingChanged="@OnBookingChanged" />
             }
             else if (_currentView == "vecka")
@@ -312,6 +352,7 @@
                 <WeekView DisplayDays="@CurrentWeekDays"
                           Filter="@_filter"
                           ActiveTeachers="@ActiveTeachers"
+                          SelectedStudent="@_selectedStudent"
                           OnBookingChanged="@OnBookingChanged" />
             }
             else if (_currentView == "lärare")
@@ -319,12 +360,14 @@
                 <TeacherWeekView DisplayDays="@CurrentWeekDays"
                                  Filter="@_filter"
                                  ActiveTeachers="@ActiveTeachers"
+                                 SelectedStudent="@_selectedStudent"
                                  OnBookingChanged="@OnBookingChanged" />
             }
             else
             {
                 <MonthView CurrentMonth="@_currentDate"
                            Filter="@_filter"
+                           SelectedStudent="@_selectedStudent"
                            OnBookingChanged="@OnBookingChanged" />
             }
         </MudHidden>
@@ -333,7 +376,6 @@
         <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
             @if (_currentView == "vecka")
             {
-                @* Compact week grid – shows all days at a glance *@
                 <MobileWeekView DisplayDays="@CurrentWeekDays"
                                 Filter="@_filter"
                                 ActiveTeachers="@ActiveTeachers"
@@ -341,7 +383,6 @@
             }
             else
             {
-                @* Dag / Månad → agenda list for selected day *@
                 <MobileAgendaView WeekDays="@CurrentWeekDays"
                                   CurrentDate="@_currentDate"
                                   Filter="@_filter"
@@ -358,6 +399,37 @@
     private DateTime _currentDate = DateTime.Today;
     private bool _filterOpen;
     private bool _datePickerOpen;
+
+    // ── Elevsökning ───────────────────────────────────────────────────────────
+    private bool   _searchMode     = false;
+    private string _studentSearch  = "";
+    private string _selectedStudent = "";
+
+    private void OpenStudentSearch()
+    {
+        _searchMode    = true;
+        _studentSearch = "";
+    }
+
+    private void ClearStudentSearch()
+    {
+        _searchMode      = false;
+        _studentSearch   = "";
+        _selectedStudent = "";
+        StateHasChanged();
+    }
+
+    private void OnStudentSelected(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+        _selectedStudent = name;
+        _studentSearch   = "";
+        _searchMode      = false;
+        StateHasChanged();
+    }
+
+    private Task<IEnumerable<string>> SearchStudents(string search, CancellationToken _)
+        => Task.FromResult(BookingService.SearchStudents(search));
 
     private CalendarFilter _filter = new()
     {

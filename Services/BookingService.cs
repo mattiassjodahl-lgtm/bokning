@@ -101,6 +101,18 @@ public class BookingService
             .Select(s => s.Name);
     }
 
+    /// <summary>
+    /// Returns all confirmed bookings where the student is primary or extra participant,
+    /// from <paramref name="from"/> and onwards, sorted by start time.
+    /// </summary>
+    public IEnumerable<CalendarEvent> GetBookingsForStudent(string studentName, DateTime from)
+        => _events
+            .Where(e => e.IsBooked
+                && e.StartTime >= from
+                && (e.StudentName.Equals(studentName, StringComparison.OrdinalIgnoreCase)
+                    || e.ExtraStudents.Any(s => s.Equals(studentName, StringComparison.OrdinalIgnoreCase))))
+            .OrderBy(e => e.StartTime);
+
     // ── Student profiles (Elevkort) ────────────────────────────────────────────
 
     private static List<TrainingStep> MakeSteps() => new()

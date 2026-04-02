@@ -85,7 +85,7 @@
                                           ? BookingService.GetLessonType(evt.LessonTypeId.Value)
                                           : null;
 
-                        <div class="cal-event @(evt.IsBooked ? "cal-event-booked" : "cal-event-free")"
+                        <div class="cal-event @(evt.IsBooked ? "cal-event-booked" : "cal-event-free") @StudentFilterClass(evt)"
                              style="@pe.PositionStyle;
                                     background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
                                     border-left-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
@@ -168,7 +168,21 @@
     [Parameter] public List<DateTime> DisplayDays     { get; set; } = new();
     [Parameter] public CalendarFilter Filter           { get; set; } = new();
     [Parameter] public List<Teacher>  ActiveTeachers  { get; set; } = new();
+    [Parameter] public string         SelectedStudent  { get; set; } = "";
     [Parameter] public EventCallback  OnBookingChanged { get; set; }
+
+    /// <summary>
+    /// Returnerar extra CSS-klass baserat på elevfilter.
+    /// Elevens egna pass: highlight. Andras bokade pass: tonas ned. Lediga: oförändrade.
+    /// </summary>
+    private string StudentFilterClass(CalendarEvent evt)
+    {
+        if (string.IsNullOrEmpty(SelectedStudent)) return "";
+        if (!evt.IsBooked) return "";
+        bool isMatch = evt.StudentName.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase)
+                    || evt.ExtraStudents.Any(s => s.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase));
+        return isMatch ? "cal-student-highlight" : "cal-student-dim";
+    }
 
     // ── Drag state for moving template slots ─────────────────────────────────
     private CalendarEvent? _draggingEvent;

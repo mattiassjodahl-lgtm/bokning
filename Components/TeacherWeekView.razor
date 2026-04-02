@@ -127,14 +127,58 @@
                                         var htPx   = Math.Max((int)(durMin * PixelsPerHour / 60), 14);
                                         var lt     = BookingService.LessonTypes.FirstOrDefault(l => l.Id == e.LessonTypeId);
 
-                                        <div class="tcw-evt-booked"
+                                        <div class="tcw-evt-booked @StudentFilterClass(e)"
                                              style="top:@(topPx)px; height:@(htPx)px;
                                                     background:@(lt?.LightColor ?? "#e3f2fd");
                                                     border-left-color:@(lt?.Color ?? "#1565c0")"
                                              @onclick="@(() => OnBookedEventClick(e))"
                                              title="@e.StudentName – @(lt?.Name) @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")">
-                                            <span class="tcw-evt-label">@e.StudentName</span>
-                                            <span class="tcw-evt-time">@e.StartTime.ToString("HH:mm")</span>
+
+                                            @if (htPx >= 32)
+                                            {
+                                                <div class="cal-event-time">
+                                                    @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")
+                                                </div>
+                                            }
+                                            @if (htPx >= 48)
+                                            {
+                                                @if (lt is { MaxStudents: > 1 })
+                                                {
+                                                    var bookedCount = e.AllStudentNames.Count();
+                                                    var pct         = (double)bookedCount / lt.MaxStudents;
+                                                    var badgeColor  = pct >= 0.9 ? "#f44336" : pct >= 0.5 ? "#ff9800" : "#4caf50";
+                                                    <div class="cal-event-title">@lt.Name</div>
+                                                    <div class="cal-capacity-badge" style="background-color:@badgeColor">
+                                                        @bookedCount/@lt.MaxStudents
+                                                    </div>
+                                                }
+                                                else if (e.ExtraStudents.Any())
+                                                {
+                                                    <div class="cal-event-title">
+                                                        @e.StudentName
+                                                        <span class="cal-event-shared-badge">+@e.ExtraStudents.Count</span>
+                                                    </div>
+                                                    @if (htPx >= 80)
+                                                    {
+                                                        @foreach (var s in e.ExtraStudents)
+                                                        {
+                                                            <div class="cal-event-sub">@s</div>
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="cal-event-title">@e.StudentName</div>
+                                                }
+                                                @if (lt is not { MaxStudents: > 1 } && lt != null && htPx >= 64)
+                                                {
+                                                    <div class="cal-event-sub">@lt.Name</div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="tcw-evt-label">@e.StudentName</span>
+                                            }
                                         </div>
                                     }
                                 </div>
@@ -167,7 +211,17 @@
     [Parameter] public List<DateTime>  DisplayDays      { get; set; } = new();
     [Parameter] public CalendarFilter  Filter           { get; set; } = new();
     [Parameter] public List<Teacher>   ActiveTeachers   { get; set; } = new();
+    [Parameter] public string          SelectedStudent  { get; set; } = "";
     [Parameter] public EventCallback   OnBookingChanged { get; set; }
+
+    private string StudentFilterClass(CalendarEvent evt)
+    {
+        if (string.IsNullOrEmpty(SelectedStudent)) return "";
+        if (!evt.IsBooked) return "";
+        bool isMatch = evt.StudentName.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase)
+                    || evt.ExtraStudents.Any(s => s.Equals(SelectedStudent, StringComparison.OrdinalIgnoreCase));
+        return isMatch ? "cal-student-highlight" : "cal-student-dim";
+    }
 
     // ── Datahämtning ──────────────────────────────────────────────────────────
 
