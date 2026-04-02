@@ -307,6 +307,11 @@ public class CalendarFilter
     public bool ShowAvailable { get; set; } = true;
     public bool HideWeekends { get; set; } = false;
     public bool HideTeacherAvatars { get; set; } = false;
+    /// <summary>
+    /// När true visas enbart fullbokade pass (individuella alltid fulla; grupplektioner
+    /// visas bara om antal bokade elever == MaxStudents).
+    /// </summary>
+    public bool ShowOnlyFullyBooked { get; set; } = false;
     public List<int> SelectedTeacherIds { get; set; } = new();
     public List<int> SelectedResourceIds { get; set; } = new();
     public List<int> SelectedLessonTypeIds { get; set; } = new();

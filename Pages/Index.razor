@@ -47,7 +47,8 @@
     {
         <div class="stu-search-wrap">
             <MudIcon Icon="@Icons.Material.Filled.Search" Style="color:rgba(255,255,255,.7); font-size:18px" />
-            <MudAutocomplete T="string"
+            <MudAutocomplete @key="@_searchKey"
+                             T="string"
                              Value="@_studentSearch"
                              SearchFunc="SearchStudents"
                              ValueChanged="OnStudentSelected"
@@ -124,12 +125,12 @@
                     var allSel        = groupTeachers.All(t  => _selectedTeacherIds.Contains(t.Id));
                     var anySel        = groupTeachers.Any(t  => _selectedTeacherIds.Contains(t.Id));
                     var g             = grp;
+                    var expanded      = _groupExpanded.GetValueOrDefault(g, false);
 
-                    <div style="margin-bottom:10px">
+                    <div style="margin-bottom:6px">
 
-                        @* Grupphuvud med "välj alla"-kryssruta *@
-                        <div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #e0e0e0;margin-bottom:4px;cursor:pointer"
-                             @onclick="() => ToggleGroupAll(g)">
+                        @* Grupphuvud: chevron expanderar/fäller ihop, kryssruta väljer alla *@
+                        <div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #e0e0e0;margin-bottom:4px">
                             <MudCheckBox T="bool"
                                          Value="@allSel"
                                          Indeterminate="@(anySel && !allSel)"
@@ -137,29 +138,39 @@
                                          Dense="true"
                                          StopClickPropagation="true"
                                          ValueChanged="@(_ => ToggleGroupAll(g))" />
-                            <span style="font-size:13px;font-weight:700;color:#333;user-select:none">Grupp @g</span>
+                            <span style="font-size:13px;font-weight:700;color:#333;user-select:none;flex:1;cursor:pointer"
+                                  @onclick="() => _groupExpanded[g] = !expanded">
+                                Grupp @g
+                            </span>
+                            <MudIconButton Icon="@(expanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                           Size="Size.Small"
+                                           Style="padding:2px"
+                                           OnClick="() => _groupExpanded[g] = !expanded" />
                         </div>
 
-                        @* Enskilda lärare *@
-                        <div style="margin-left:8px">
-                            @foreach (var teacher in groupTeachers)
-                            {
-                                var tc    = teacher;
-                                var isSel = _selectedTeacherIds.Contains(tc.Id);
-                                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer"
-                                     @onclick="() => ToggleTeacherInDrawer(tc.Id)">
-                                    <MudCheckBox T="bool"
-                                                 Value="@isSel"
-                                                 Color="Color.Primary"
-                                                 Dense="true"
-                                                 StopClickPropagation="true"
-                                                 ValueChanged="@(_ => ToggleTeacherInDrawer(tc.Id))" />
-                                    <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:9px;flex-shrink:0")"
-                                               Size="Size.Small">@tc.Initials</MudAvatar>
-                                    <span style="font-size:13px;user-select:none">@tc.Name</span>
-                                </div>
-                            }
-                        </div>
+                        @* Enskilda lärare – visas bara när gruppen är expanderad *@
+                        @if (expanded)
+                        {
+                            <div style="margin-left:8px">
+                                @foreach (var teacher in groupTeachers)
+                                {
+                                    var tc    = teacher;
+                                    var isSel = _selectedTeacherIds.Contains(tc.Id);
+                                    <div style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer"
+                                         @onclick="() => ToggleTeacherInDrawer(tc.Id)">
+                                        <MudCheckBox T="bool"
+                                                     Value="@isSel"
+                                                     Color="Color.Primary"
+                                                     Dense="true"
+                                                     StopClickPropagation="true"
+                                                     ValueChanged="@(_ => ToggleTeacherInDrawer(tc.Id))" />
+                                        <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:9px;flex-shrink:0")"
+                                                   Size="Size.Small">@tc.Initials</MudAvatar>
+                                        <span style="font-size:13px;user-select:none">@tc.Name</span>
+                                    </div>
+                                }
+                            </div>
+                        }
 
                     </div>
                 }
@@ -226,6 +237,9 @@
                 <MudCheckBox T="bool" Value="@_filter.ShowBooked" Label="Bokade lektioner"
                              ValueChanged="@((bool v) => { _filter.ShowBooked = v; RefreshFilter(); })"
                              Color="Color.Primary" Dense="true" />
+                <MudCheckBox T="bool" Value="@_filter.ShowOnlyFullyBooked" Label="Endast fullbokade"
+                             ValueChanged="@((bool v) => { _filter.ShowOnlyFullyBooked = v; RefreshFilter(); })"
+                             Color="Color.Error" Dense="true" />
             </MudStack>
 
             <MudDivider />
@@ -400,15 +414,20 @@
     private bool _filterOpen;
     private bool _datePickerOpen;
 
+    // ── Grupper ihopfällda per default ────────────────────────────────────────
+    private Dictionary<int, bool> _groupExpanded = new() { { 1, false }, { 2, false } };
+
     // ── Elevsökning ───────────────────────────────────────────────────────────
-    private bool   _searchMode     = false;
-    private string _studentSearch  = "";
+    private bool   _searchMode      = false;
+    private string _studentSearch   = "";
     private string _selectedStudent = "";
+    private int    _searchKey       = 0;  // ökas vid varje öppning för att tvinga remount av MudAutocomplete
 
     private void OpenStudentSearch()
     {
         _searchMode    = true;
         _studentSearch = "";
+        _searchKey++;
     }
 
     private void ClearStudentSearch()
@@ -634,6 +653,7 @@
         {
             ShowAvailable          = _filter.ShowAvailable,
             ShowBooked             = _filter.ShowBooked,
+            ShowOnlyFullyBooked    = _filter.ShowOnlyFullyBooked,
             HideWeekends           = _filter.HideWeekends,
             HideTeacherAvatars     = _filter.HideTeacherAvatars,
             SelectedLessonTypeIds  = _selectedLessonTypeIds.ToList(),

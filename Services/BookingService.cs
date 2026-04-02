@@ -1342,20 +1342,24 @@ public class BookingService
         {
             bool hasAnyTemplate = ScheduleTemplates.Any(t => t.TeacherId == teacherId);
 
+            // ShowOnlyFullyBooked innebär implicit att bokade pass ska inkluderas
+            bool effectiveShowBooked    = filter.ShowBooked    || filter.ShowOnlyFullyBooked;
+            bool effectiveShowAvailable = filter.ShowAvailable && !filter.ShowOnlyFullyBooked;
+
             if (hasAnyTemplate)
             {
                 // Booked events from _events (real bookings always shown)
                 var booked = _events.Where(e =>
                     e.TeacherId == teacherId &&
                     e.StartTime < end && e.EndTime > start &&
-                    e.IsBooked && filter.ShowBooked &&
+                    e.IsBooked && effectiveShowBooked &&
                     (filter.SelectedLessonTypeIds.Count == 0 || (e.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value))) &&
                     (filter.SelectedResourceIds.Count  == 0 || filter.SelectedResourceIds.All(r => e.ResourceIds.Contains(r)))
                 ).ToList();
                 result.AddRange(booked);
 
                 // Available slots generated week-by-week from whichever template is active that week
-                if (filter.ShowAvailable)
+                if (effectiveShowAvailable)
                 {
                     foreach (var slot in GenerateTemplateSlotsForTeacher(teacherId, start, end))
                     {
@@ -1372,12 +1376,29 @@ public class BookingService
                 result.AddRange(_events.Where(e =>
                     e.TeacherId == teacherId &&
                     e.StartTime < end && e.EndTime > start &&
-                    (filter.ShowBooked    || !e.IsBooked) &&
-                    (filter.ShowAvailable || e.IsBooked)  &&
+                    (effectiveShowBooked    || !e.IsBooked) &&
+                    (effectiveShowAvailable || e.IsBooked)  &&
                     (filter.SelectedLessonTypeIds.Count == 0 || (e.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value))) &&
                     (filter.SelectedResourceIds.Count  == 0 || filter.SelectedResourceIds.All(r => e.ResourceIds.Contains(r)))
                 ));
             }
+        }
+
+        // Post-filter: visa enbart fullbokade pass
+        if (filter.ShowOnlyFullyBooked)
+        {
+            result = result.Where(e =>
+            {
+                if (!e.IsBooked) return false;
+                var lt = e.LessonTypeId.HasValue
+                    ? LessonTypes.FirstOrDefault(l => l.Id == e.LessonTypeId.Value)
+                    : null;
+                // Grupplektion: full om bokade == MaxStudents
+                if (lt is { MaxStudents: > 1 })
+                    return e.AllStudentNames.Count() >= lt.MaxStudents;
+                // Individuell lektion räknas alltid som full när den är bokad
+                return true;
+            }).ToList();
         }
 
         return result.OrderBy(e => e.StartTime).ToList();
