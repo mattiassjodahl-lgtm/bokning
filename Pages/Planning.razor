@@ -148,6 +148,27 @@
                                         Clearable="true" Culture="_svCulture" AutoClose="false"
                                         PickerMonth="_pickerMonth"
                                         AdditionalDateClassesFunc="GetDateClass" />
+
+                    @* Befintliga perioder för samma lärare – visas som legend *@
+                    @if (_selectedTeacherId != null)
+                    {
+                        var otherTemplates = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+                            .Where(t => t.Id != _template.Id).ToList();
+                        @if (otherTemplates.Any())
+                        {
+                            <div class="plan-period-legend">
+                                @foreach (var ot in otherTemplates)
+                                {
+                                    var st = GetTemplateStatus(ot);
+                                    <div class="plan-period-legend-row">
+                                        <span class="plan-period-legend-dot" style="background:@StatusColor(st)"></span>
+                                        <span class="plan-period-legend-name">@ot.Name</span>
+                                        <span class="plan-period-legend-dates">@FormatDateRange(ot)</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
                 </div>
                 <div class="plan-step" style="flex-direction:row; align-items:flex-end; padding-bottom:1px">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
