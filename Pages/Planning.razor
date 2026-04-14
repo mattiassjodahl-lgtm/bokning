@@ -534,8 +534,8 @@
         if (_selectedTeacherId == null || _template == null) return "";
         var d = DateOnly.FromDateTime(date);
 
-        // Visa det egna schemats period i en "nuläge"-färg (Id > 0 = sparat schema)
-        if (_template.Id > 0)
+        // Visa det egna schemats period i en "nuläge"-färg (bara om mallen har datum satta)
+        if (_template.Id > 0 && (_template.StartDate != null || _template.EndDate != null))
         {
             bool afterStart = _template.StartDate == null || d >= _template.StartDate;
             bool beforeEnd  = _template.EndDate   == null || d <= _template.EndDate;
