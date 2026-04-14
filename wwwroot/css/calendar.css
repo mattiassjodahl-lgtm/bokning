@@ -1176,9 +1176,29 @@
 
 .plan-schema-chip-delete:hover { background: #ffebee; color: #f44336; }
 
-/* ── Markering av upptagna datum i MudDateRangePicker ───────────────────── */
+/* ── Markering av datum i MudDateRangePicker ────────────────────────────── */
 /* AdditionalDateClassesFunc lägger klassen direkt på <button>-elementet    */
 
+/* Det aktuella schemats egna period – blå ton */
+button.plan-date-current {
+    background: #e3f2fd !important;
+    color: #1565c0 !important;
+    position: relative;
+}
+
+button.plan-date-current::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #1976d2;
+}
+
+/* Andra schemans period – orange ton (blockerad) */
 button.plan-date-occupied {
     background: #fff3e0 !important;
     color: #e65100 !important;

@@ -526,11 +526,23 @@
 
     // ── Datum-klass för MudDateRangePicker (markera upptagna perioder) ────────
 
-    /// Returnerar CSS-klass för datum som täcks av ett ANNAT schema för samma lärare.
+    /// Returnerar CSS-klass för datum i datumpickern:
+    ///   plan-date-current  = det valda schemats egna period (blå ton)
+    ///   plan-date-occupied = annan lärares schema täcker datumet (orange ton)
     private string GetDateClass(DateTime date)
     {
         if (_selectedTeacherId == null || _template == null) return "";
         var d = DateOnly.FromDateTime(date);
+
+        // Visa det egna schemats period i en "nuläge"-färg (Id > 0 = sparat schema)
+        if (_template.Id > 0)
+        {
+            bool afterStart = _template.StartDate == null || d >= _template.StartDate;
+            bool beforeEnd  = _template.EndDate   == null || d <= _template.EndDate;
+            if (afterStart && beforeEnd) return "plan-date-current";
+        }
+
+        // Visa andra scheman för samma lärare som blockerade
         var others = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
             .Where(t => t.Id != _template.Id);
         foreach (var t in others)
