@@ -87,7 +87,7 @@
         @* ── Toolbar: tre steg ───────────────────────────────────────────── *@
         <div class="plan-toolbar">
 
-            @* Steg 1: Välj lärare *@
+            @* Steg 1: Välj lärare (eller redigera globala mallar) *@
             <div class="plan-step">
                 <span class="plan-step-label">1 · Lärare</span>
                 <MudSelect T="int?" Value="_selectedTeacherId"
@@ -98,6 +98,7 @@
                     {
                         <MudSelectItem T="int?" Value="@((int?)t.Id)">@t.Name</MudSelectItem>
                     }
+                    <MudSelectItem T="int?" Value="@((int?)null)">⬡ Globala mallar</MudSelectItem>
                 </MudSelect>
             </div>
 
@@ -110,12 +111,24 @@
                            ValueChanged="OnTemplatePickerChanged"
                            Variant="Variant.Outlined" Margin="Margin.Dense"
                            Style="min-width:200px" AnchorOrigin="Origin.BottomLeft"
-                           Placeholder="Välj eller skapa…"
-                           Disabled="@(_selectedTeacherId == null)">
+                           Placeholder="Välj eller skapa…">
                     <MudSelectItem T="int?" Value="@((int?)null)">— Välj schemamall —</MudSelectItem>
-                    @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId ?? 0))
+                    @* Lärarens egna mallar *@
+                    @if (_selectedTeacherId != null)
                     {
-                        <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">@tmpl.Name</MudSelectItem>
+                        @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value))
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">@tmpl.Name</MudSelectItem>
+                        }
+                    }
+                    @* Globala mallar (visas alltid; väljs för lärare → laddas som kopia) *@
+                    @if (BookingService.GetGlobalTemplates().Any())
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)null)" Disabled="true">── Globala mallar ──</MudSelectItem>
+                        @foreach (var tmpl in BookingService.GetGlobalTemplates())
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)tmpl.Id)">⬡ @tmpl.Name</MudSelectItem>
+                        }
                     }
                     <MudSelectItem T="int?" Value="@((int?)0)">✦ Ny schemamall…</MudSelectItem>
                 </MudSelect>
@@ -148,11 +161,16 @@
 
             <MudSpacer />
 
-            @* Aktiva scheman för vald lärare *@
-            @if (_selectedTeacherId != null)
+            @* Aktiva scheman för vald lärare ELLER globala mallar *@
+            @{
+                var overviewTemplates = _selectedTeacherId != null
+                    ? BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+                    : BookingService.GetGlobalTemplates();
+            }
+            @if (overviewTemplates.Any())
             {
                 <div class="plan-schema-overview">
-                    @foreach (var tmpl in BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value))
+                    @foreach (var tmpl in overviewTemplates)
                     {
                         var st      = GetTemplateStatus(tmpl);
                         var isCurrent = tmpl.Id == _template?.Id;
@@ -406,6 +424,7 @@
                 .FirstOrDefault();
             _pickerMonth = earliest?.StartDate?.ToDateTime(TimeOnly.MinValue);
         }
+        // Global mall: ingen period att navigera till
     }
 
     private void OnDateRangeChanged(DateRange range)
@@ -433,11 +452,39 @@
         _saveError = null;
         _conflicts.Clear();
 
-        if (id == null)   { _template = null; return; }
-        if (id == 0)      { CreateNewTemplate(); return; }
+        if (id == null) { _template = null; return; }
+        if (id == 0)    { CreateNewTemplate(); return; }
 
         var src = BookingService.ScheduleTemplates.FirstOrDefault(t => t.Id == id);
-        if (src != null) LoadTemplate(src);
+        if (src == null) return;
+
+        // Global mall vald för en specifik lärare → ladda som kopia (ny mall för läraren)
+        if (src.TeacherId == null && _selectedTeacherId != null)
+        {
+            _template = new ScheduleTemplate
+            {
+                Id         = 0,
+                Name       = src.Name,
+                CycleWeeks = src.CycleWeeks,
+                TeacherId  = _selectedTeacherId,
+                TimeBlocks = src.TimeBlocks.Select(b => new ScheduleTimeBlock
+                {
+                    Id           = BookingService.GetNextBlockId(),
+                    WeekNumber   = b.WeekNumber,
+                    DayOfWeek    = b.DayOfWeek,
+                    StartTime    = b.StartTime,
+                    LessonTypeId = b.LessonTypeId
+                }).ToList()
+            };
+            _activeWeek = 1;
+            _dateRange  = new DateRange();
+            _conflicts.Clear();
+            SyncPickerMonth();
+            _selectedTemplateId = 0; // markera som ny (osparad)
+            return;
+        }
+
+        LoadTemplate(src);
     }
 
     // ── Template loading ──────────────────────────────────────────────────────
@@ -476,7 +523,7 @@
             Id         = 0,
             Name       = "Nytt schema",
             CycleWeeks = 1,
-            TeacherId  = _selectedTeacherId ?? 1
+            TeacherId  = _selectedTeacherId   // null = global mall
         };
         _activeWeek = 1;
         _saveError  = null;
@@ -493,7 +540,7 @@
         ValidateConflicts();
         if (_conflicts.Any()) return;
 
-        _template.TeacherId = _selectedTeacherId ?? _template.TeacherId;
+        _template.TeacherId = _selectedTeacherId;   // null = global mall
 
         // Om datum ändrats på ett befintligt schema → skapa ny period istället för att skriva över
         bool datesChanged = _template.Id > 0 &&

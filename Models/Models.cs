@@ -83,7 +83,8 @@ public class ScheduleTemplate
     public string Name { get; set; } = "";
     /// <summary>Length of repeating cycle: 1–4 weeks.</summary>
     public int CycleWeeks { get; set; } = 1;
-    public int TeacherId { get; set; }
+    /// <summary>null = global mall (tillgänglig för alla lärare).</summary>
+    public int? TeacherId { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public List<ScheduleTimeBlock> TimeBlocks { get; set; } = new();

@@ -1685,14 +1685,22 @@ public class BookingService
         }
     };
 
-    /// Returns all templates for a teacher sorted by start date.
+    /// Returns teacher-specific templates sorted by start date (excludes global templates).
     public List<ScheduleTemplate> GetTemplatesForTeacher(int teacherId)
         => ScheduleTemplates
             .Where(t => t.TeacherId == teacherId)
             .OrderBy(t => t.StartDate ?? DateOnly.MaxValue)
             .ToList();
 
+    /// Returns global templates (TeacherId == null), usable as blueprints for any teacher.
+    public List<ScheduleTemplate> GetGlobalTemplates()
+        => ScheduleTemplates
+            .Where(t => t.TeacherId == null)
+            .OrderBy(t => t.Name)
+            .ToList();
+
     /// Returns true if the candidate's date range overlaps any other template for the same teacher.
+    /// Global templates (TeacherId == null) are checked against other global templates only.
     public bool HasTemplateOverlap(ScheduleTemplate candidate)
     {
         var cStart = candidate.StartDate ?? DateOnly.MinValue;
