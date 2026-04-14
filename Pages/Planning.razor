@@ -133,6 +133,7 @@
                                         Variant="Variant.Outlined" Margin="Margin.Dense"
                                         DateFormat="d MMM yyyy" Style="min-width:270px"
                                         Clearable="true" Culture="_svCulture" AutoClose="false"
+                                        PickerMonth="_pickerMonth"
                                         AdditionalDateClassesFunc="GetDateClass" />
                 </div>
                 <div class="plan-step" style="flex-direction:row; align-items:flex-end; padding-bottom:1px">
@@ -161,6 +162,7 @@
                              title="Klicka för att redigera">
                             <span class="plan-schema-chip-dot" style="background:@StatusColor(st)"></span>
                             <span class="plan-schema-chip-name">@tmpl.Name</span>
+                            <span class="plan-schema-chip-status" style="color:@StatusColor(st)">@StatusLabel(st)</span>
                             <span class="plan-schema-chip-dates">@FormatDateRange(tmpl)</span>
                             <button class="plan-schema-chip-delete" title="Ta bort schema"
                                     @onclick:stopPropagation="true"
@@ -373,13 +375,37 @@
 
     // ── Date range picker ─────────────────────────────────────────────────────
 
-    private DateRange _dateRange = new();
+    private DateRange  _dateRange    = new();
+    private DateTime?  _pickerMonth  = null;
 
     private void SyncDateRange()
     {
         _dateRange = new DateRange(
             _template?.StartDate?.ToDateTime(TimeOnly.MinValue),
             _template?.EndDate?.ToDateTime(TimeOnly.MinValue));
+    }
+
+    /// Räknar ut vilken månad datumpickern ska öppna på:
+    /// befintlig mall → mallens startmånad, ny mall → den äldsta startmånaden bland övriga scheman.
+    private void SyncPickerMonth()
+    {
+        if (_template == null) { _pickerMonth = null; return; }
+
+        if (_template.Id > 0 && _template.StartDate != null)
+        {
+            _pickerMonth = _template.StartDate.Value.ToDateTime(TimeOnly.MinValue);
+            return;
+        }
+
+        // Ny mall: navigera till den tidligaste startmånaden för befintliga scheman
+        if (_selectedTeacherId != null)
+        {
+            var earliest = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+                .Where(t => t.StartDate != null)
+                .OrderBy(t => t.StartDate)
+                .FirstOrDefault();
+            _pickerMonth = earliest?.StartDate?.ToDateTime(TimeOnly.MinValue);
+        }
     }
 
     private void OnDateRangeChanged(DateRange range)
@@ -439,6 +465,7 @@
         _originalStartDate = source.StartDate;
         _originalEndDate   = source.EndDate;
         SyncDateRange();
+        SyncPickerMonth();
         ValidateConflicts();
     }
 
@@ -455,6 +482,7 @@
         _saveError  = null;
         _dateRange  = new DateRange();
         _conflicts.Clear();
+        SyncPickerMonth();
     }
 
     // ── Save ──────────────────────────────────────────────────────────────────
@@ -545,7 +573,7 @@
 
     private static string FormatDateRange(ScheduleTemplate t)
     {
-        var from = t.StartDate?.ToString("d MMM") ?? "–";
+        var from = t.StartDate?.ToString("d MMM yyyy") ?? "–";
         var to   = t.EndDate?.ToString("d MMM yyyy") ?? "–";
         return $"{from} → {to}";
     }

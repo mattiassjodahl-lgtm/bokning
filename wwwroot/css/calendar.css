@@ -1142,9 +1142,14 @@
 .plan-schema-chip-name {
     font-weight: 600;
     color: #37474f;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+.plan-schema-chip-status {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    opacity: .85;
 }
 
 .plan-schema-chip-dates {

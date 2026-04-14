@@ -1710,7 +1710,9 @@ public class BookingService
     /// Returns null on success, or an error message if the date range overlaps another template.
     public string? SaveScheduleTemplate(ScheduleTemplate template)
     {
-        if (HasTemplateOverlap(template))
+        // Odaterat schema → ingen periodkonflikt möjlig, spara direkt
+        bool undated = template.StartDate == null && template.EndDate == null;
+        if (!undated && HasTemplateOverlap(template))
             return "Datumintervallet överlappar med ett annat schema för denna lärare.";
 
         var existing = ScheduleTemplates.FirstOrDefault(t => t.Id == template.Id);
