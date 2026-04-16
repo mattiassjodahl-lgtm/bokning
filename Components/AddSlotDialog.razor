@@ -1,0 +1,139 @@
+@inject BookingService BookingService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Class="mr-1" Style="vertical-align:middle" />
+            Lägg till ledig tid – @TeacherName
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3">
+
+            @* Datum + tid (förval från klick, redigerbart) *@
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.End">
+                <MudDatePicker Label="Datum"
+                               @bind-Date="_date"
+                               Variant="Variant.Outlined"
+                               Culture="@_sv"
+                               Class="flex-1" />
+                <MudTimePicker Label="Starttid"
+                               @bind-Time="_start"
+                               Variant="Variant.Outlined"
+                               AmPm="false"
+                               Class="flex-1" />
+                <MudTimePicker Label="Sluttid"
+                               @bind-Time="_end"
+                               Variant="Variant.Outlined"
+                               AmPm="false"
+                               Class="flex-1" />
+            </MudStack>
+
+            @* Lektionstyp *@
+            <MudSelect T="int?" Label="Lektionstyp"
+                       Value="@_lessonTypeId"
+                       ValueChanged="@OnLessonTypeChanged"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       AdornmentIcon="@Icons.Material.Filled.School">
+                @foreach (var lt in BookingService.LessonTypes)
+                {
+                    <MudSelectItem T="int?" Value="@((int?)lt.Id)">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@lt.Icon" Size="Size.Small"
+                                     Style="@($"font-size:16px;color:{lt.Color}")" />
+                            <span>@lt.Name</span>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ml-1">
+                                (@lt.DefaultDurationMinutes min)
+                            </MudText>
+                        </MudStack>
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Konfliktvarning *@
+            @if (_hasConflict)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">
+                    Läraren har redan ett pass som överlappar den valda tiden.
+                </MudAlert>
+            }
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(!CanSave)"
+                   OnClick="OnSave">
+            Spara
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public int      TeacherId   { get; set; }
+    [Parameter] public string   TeacherName { get; set; } = "";
+    [Parameter] public DateTime PreselectedStart { get; set; }
+
+    private DateTime? _date;
+    private TimeSpan? _start;
+    private TimeSpan? _end;
+    private int?      _lessonTypeId;
+    private bool      _hasConflict;
+
+    private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
+
+    private bool CanSave => _date.HasValue && _start.HasValue && _end.HasValue
+                         && _end > _start && !_hasConflict;
+
+    protected override void OnInitialized()
+    {
+        _date  = PreselectedStart.Date;
+        _start = PreselectedStart.TimeOfDay;
+        _end   = PreselectedStart.TimeOfDay.Add(TimeSpan.FromHours(1));
+    }
+
+    private void OnLessonTypeChanged(int? id)
+    {
+        _lessonTypeId = id;
+        // Uppdatera sluttid utifrån lektionstyps standardlängd
+        if (id.HasValue && _start.HasValue)
+        {
+            var lt = BookingService.GetLessonType(id.Value);
+            if (lt != null)
+                _end = _start.Value.Add(TimeSpan.FromMinutes(lt.DefaultDurationMinutes));
+        }
+        CheckConflict();
+    }
+
+    private void CheckConflict()
+    {
+        if (!_date.HasValue || !_start.HasValue || !_end.HasValue || _end <= _start)
+        {
+            _hasConflict = false;
+            return;
+        }
+        var start = _date.Value.Add(_start.Value);
+        var end   = _date.Value.Add(_end.Value);
+        _hasConflict = BookingService.HasEventConflict(TeacherId, start, end);
+    }
+
+    private void OnSave()
+    {
+        CheckConflict();
+        if (!CanSave) return;
+
+        var start = _date!.Value.Add(_start!.Value);
+        var end   = _date!.Value.Add(_end!.Value);
+        BookingService.AddAvailableSlot(TeacherId, start, end, _lessonTypeId);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Close() => MudDialog.Cancel();
+}

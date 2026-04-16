@@ -48,14 +48,17 @@
                     <div class="tcw-days">
                         @foreach (var day in DisplayDays)
                         {
-                            var d       = day;
-                            var dayEvts = events.Where(e => e.StartTime.Date == d.Date).ToList();
-                            var isToday = d.Date == DateTime.Today.Date;
+                            var d              = day;
+                            var dayEvts        = events.Where(e => e.StartTime.Date == d.Date).ToList();
+                            var isToday        = d.Date == DateTime.Today.Date;
+                            var dateOnly       = DateOnly.FromDateTime(d);
+                            var holidayBlocked = BookingService.IsHolidayBlocked(t.Id, dateOnly);
+                            var holidayName    = holidayBlocked ? SwedishHolidays.GetName(dateOnly) : null;
 
                             <div class="tcw-day-col">
 
                                 @* Dagheader (sticky top:TeacherHeaderH) — format: 16/2 *@
-                                <div class="tcw-day-header @(isToday ? "tcw-day-today" : "")"
+                                <div class="tcw-day-header @(isToday ? "tcw-day-today" : "") @(holidayBlocked ? "tcw-day-holiday" : "")"
                                      style="height:@(DayHeaderH)px; top:@(TeacherHeaderH)px">
                                     <span class="tcw-day-num">@d.Day/@d.Month</span>
                                 </div>
@@ -74,7 +77,7 @@
                                         }
                                     }
 
-                                    @* Droppbara 30-min slots (för drag-och-släpp av template-slots) *@
+                                    @* Droppbara 30-min slots *@
                                     @for (int h = StartHour; h < EndHour; h++)
                                     {
                                         for (int m = 0; m < 60; m += 30)
@@ -86,9 +89,18 @@
                                             <div class="tcw-drop-slot"
                                                  style="top:@(dropTop)px; height:@(PixelsPerHour / 2)px"
                                                  @ondragover:preventDefault="true"
-                                                 @ondrop="@(() => OnSlotDrop(t.Id, dropDt))">
+                                                 @ondrop="@(() => OnSlotDrop(t.Id, dropDt))"
+                                                 @onclick="@(() => OnEmptySlotClick(t, dropDt))">
                                             </div>
                                         }
+                                    }
+
+                                    @* Visuellt helgdagsöverlager (pointer-events:none – bokning fortfarande möjlig) *@
+                                    @if (holidayBlocked)
+                                    {
+                                        <div class="cal-holiday-overlay" title="@holidayName">
+                                            <span class="cal-holiday-label">@holidayName</span>
+                                        </div>
                                     }
 
                                     @* Lediga pass (template-slots) *@
@@ -107,6 +119,7 @@
                                              draggable="true"
                                              @ondragstart="@(() => _draggingEvent = e)"
                                              @ondragend="@(() => _draggingEvent = null)"
+                                             @onclick:stopPropagation="true"
                                              @onclick="@(() => OnAvailableSlotClick(t.Id, e))"
                                              title="@(lt?.Name ?? "Ledigt") @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm") · dra för att flytta">
                                             <button class="cal-slot-delete-btn" title="Ta bort detta pass"
@@ -131,6 +144,7 @@
                                              style="top:@(topPx)px; height:@(htPx)px;
                                                     background:@(lt?.LightColor ?? "#e3f2fd");
                                                     border-left-color:@(lt?.Color ?? "#1565c0")"
+                                             @onclick:stopPropagation="true"
                                              @onclick="@(() => OnBookedEventClick(e))"
                                              title="@e.StudentName – @(lt?.Name) @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")">
 
@@ -198,7 +212,7 @@
     // ── Layoutkonstanter ──────────────────────────────────────────────────────
     private const int StartHour       = 7;
     private const int EndHour         = 20;
-    private const int PixelsPerHour   = 50;
+    private const int PixelsPerHour   = 60;
     private const int TeacherHeaderH  = 30;
     private const int DayHeaderH      = 32;
     private const int TotalHeight     = (EndHour - StartHour) * PixelsPerHour;
@@ -282,18 +296,56 @@
         }
     }
 
+    private async Task OnEmptySlotClick(Teacher teacher, DateTime slotTime)
+    {
+        // Ignorera om det redan finns ett event på denna tid
+        if (BookingService.HasEventConflict(teacher.Id, slotTime, slotTime.AddMinutes(1)))
+            return;
+
+        var parameters = new DialogParameters<AddSlotDialog>
+        {
+            { x => x.TeacherId,        teacher.Id   },
+            { x => x.TeacherName,      teacher.Name },
+            { x => x.PreselectedStart, slotTime     },
+        };
+        var dialog = await DialogService.ShowAsync<AddSlotDialog>(
+            "", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            await OnBookingChanged.InvokeAsync();
+            StateHasChanged();
+        }
+    }
+
     private void OnSlotDrop(int teacherId, DateTime slotTime)
     {
         if (_draggingEvent == null || _draggingEvent.TeacherId != teacherId) return;
-        var evt           = _draggingEvent;
-        _draggingEvent    = null;
-        if (evt.LessonTypeId == null) return;
+        var evt        = _draggingEvent;
+        _draggingEvent = null;
 
-        var date          = DateOnly.FromDateTime(evt.StartTime);
-        var originalStart = evt.TemplateOriginalStart ?? TimeOnly.FromDateTime(evt.StartTime);
-        var newStart      = TimeOnly.FromDateTime(slotTime);
+        if (evt.TemplateOriginalStart.HasValue && evt.LessonTypeId.HasValue)
+        {
+            // Template-slot: flytta via ScheduleException (samma dag, ny tid)
+            var date         = DateOnly.FromDateTime(evt.StartTime);
+            var originalStart = evt.TemplateOriginalStart.Value;
+            var newStart      = TimeOnly.FromDateTime(slotTime);
 
-        BookingService.MoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value, newStart);
+            // Konfliktkontroll för template-slots (exkludera eventet självt via ephemeral id < 0)
+            var newStartDt = slotTime.Date.Add(newStart.ToTimeSpan());
+            var duration   = evt.EndTime - evt.StartTime;
+            if (BookingService.HasEventConflict(teacherId, newStartDt, newStartDt + duration))
+                return;
+
+            BookingService.MoveTemplateSlot(evt.TeacherId, date, originalStart, evt.LessonTypeId.Value, newStart);
+        }
+        else
+        {
+            // Direktskapad slot: flytta event direkt (alla dagar tillåtna)
+            BookingService.MoveAvailableSlot(evt.Id, slotTime);
+        }
+
         StateHasChanged();
     }
 

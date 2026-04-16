@@ -170,7 +170,16 @@
                         }
                     }
                 </div>
-                <div class="plan-step" style="flex-direction:row; align-items:flex-end; padding-bottom:1px">
+                <div class="plan-step" style="gap:6px">
+                    <MudTooltip Text="@(_template.BlockPublicHolidays ? "Inga lediga pass genereras på röda dagar" : "Lediga pass genereras även på röda dagar")">
+                        <MudSwitch T="bool"
+                                   Value="@_template.BlockPublicHolidays"
+                                   ValueChanged="@(v => _template.BlockPublicHolidays = v)"
+                                   Color="Color.Error"
+                                   Label="Blockera helgdagar"
+                                   Dense="true"
+                                   Style="white-space:nowrap;font-size:12px" />
+                    </MudTooltip>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Save"
                                OnClick="SaveTemplate"
@@ -303,7 +312,28 @@
                     {
                         var dayIndex = d;
                         <div class="plan-day-col-wrapper">
-                            <div class="plan-day-header">@DayName(dayIndex)</div>
+
+                            @* ── Dagheader med kopiera-meny ── *@
+                            <div class="plan-day-header">
+                                @DayName(dayIndex)
+                                @if (GetBlocksForDay(dayIndex).Any())
+                                {
+                                    <MudMenu Icon="@Icons.Material.Outlined.ContentCopy"
+                                             Size="Size.Small" Dense="true"
+                                             title="Kopiera dag till…"
+                                             Class="plan-day-copy-menu">
+                                        @for (int td = 1; td <= 7; td++)
+                                        {
+                                            var targetDay = td;
+                                            if (targetDay == dayIndex) continue;
+                                            <MudMenuItem OnClick="@(() => CopyDay(dayIndex, targetDay))">
+                                                @DayName(targetDay)
+                                            </MudMenuItem>
+                                        }
+                                    </MudMenu>
+                                }
+                            </div>
+
                             <div class="plan-day-col" style="height:@(TotalHeight)px"
                                  @onclick="@(() => OnDayColClick(dayIndex, null))">
 
@@ -318,18 +348,18 @@
                                     }
                                 }
 
-                                @* Clickable slots (15 min resolution) *@
+                                @* Clickable slots (5 min resolution) *@
                                 @for (int h = StartHour; h < EndHour; h++)
                                 {
-                                    for (int m = 0; m < 60; m += 15)
+                                    for (int m = 0; m < 60; m += 5)
                                     {
                                         var slotHour = h;
                                         var slotMin  = m;
                                         var slotTop  = (h - StartHour) * PixelsPerHour + m * PixelsPerHour / 60;
                                         var slotTime = new TimeOnly(slotHour, slotMin);
-                                        var covered  = IsSlotCovered(dayIndex, slotTime);
+                                        var covered  = IsSlotCovered(dayIndex, slotTime, _draggingBlock?.Id);
                                         <div class="@(covered ? "plan-slot-covered" : (_pickedLessonTypeId.HasValue || _isDragging ? "plan-slot-droppable" : "plan-slot"))"
-                                             style="top:@(slotTop)px; height:@(PixelsPerHour / 4)px"
+                                             style="top:@(slotTop)px; height:@(PixelsPerHour / 12)px"
                                              @onclick:stopPropagation="true"
                                              @onclick="@(() => OnSlotClick(dayIndex, slotTime))"
                                              @ondragover:preventDefault="true"
@@ -346,13 +376,39 @@
                                                  + block.StartTime.Minute * PixelsPerHour / 60;
                                     var heightPx = (lt?.DefaultDurationMinutes ?? 60) * PixelsPerHour / 60;
                                     var blockId  = block.Id;
-                                    <div class="plan-block @(lt?.IsBookable == false ? "plan-block-nonbookable" : "")"
+                                    var blockRef = block;
+                                    <div class="plan-block @(lt?.IsBookable == false ? "plan-block-nonbookable" : "") @(_draggingBlock?.Id == blockId ? "plan-block-dragging" : "")"
                                          style="top:@(topPx)px; height:@(heightPx)px;
                                                 background-color:@(lt?.LightColor ?? "#E3F2FD");
-                                                border-left-color:@(lt?.Color ?? "#1565C0")">
+                                                border-left-color:@(lt?.Color ?? "#1565C0")"
+                                         draggable="true"
+                                         @ondragstart="@(() => OnBlockDragStart(blockRef))"
+                                         @ondragstart:stopPropagation="true"
+                                         @ondragend="OnDragEnd">
+                                        <div class="plan-block-drag-handle" title="Dra för att flytta">
+                                            <MudIcon Icon="@Icons.Material.Filled.DragHandle"
+                                                     Style="font-size:14px;color:#aaa;display:block" />
+                                        </div>
                                         <div class="plan-block-inner">
                                             <span>@lt?.Name</span>
-                                            <span class="plan-block-time">@block.StartTime.ToString("HH:mm")</span>
+                                            @if (_editingBlockId == blockId)
+                                            {
+                                                <input class="plan-block-time-edit"
+                                                       value="@_editingTime"
+                                                       @oninput="@(e => _editingTime = e.Value?.ToString() ?? "")"
+                                                       @onblur="@(() => CommitEditTime(blockId))"
+                                                       @onkeydown="@(e => OnTimeEditKey(e, blockId))"
+                                                       @onclick:stopPropagation="true" />
+                                            }
+                                            else
+                                            {
+                                                <span class="plan-block-time plan-block-time-editable"
+                                                      title="Klicka för att ändra starttid"
+                                                      @onclick:stopPropagation="true"
+                                                      @onclick="@(() => StartEditTime(blockId, block.StartTime))">
+                                                    @block.StartTime.ToString("HH:mm")
+                                                </span>
+                                            }
                                         </div>
                                         <button class="plan-block-delete" title="Ta bort"
                                                 @onclick:stopPropagation="true"
@@ -386,22 +442,29 @@
 @* Code                                                                        *@
 @* ════════════════════════════════════════════════════════════════════════════ *@
 @code {
-    private const int StartHour      = 7;
-    private const int EndHour        = 20;
-    private const int PixelsPerHour  = 80;
+    private const int StartHour       = 7;
+    private const int EndHour         = 20;
+    private const int PixelsPerHour   = 120;   // 5-min slot = 10px
     private const int DayHeaderHeight = 36;
-    private const int TotalHeight    = (EndHour - StartHour) * PixelsPerHour;
+    private const int TotalHeight     = (EndHour - StartHour) * PixelsPerHour;
 
     private static readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
 
-    private int?              _selectedTeacherId  = 1;
-    private int?              _selectedTemplateId = null;
-    private int?              _pickedLessonTypeId = null;
-    private bool              _isDragging         = false;
-    private int               _activeWeek         = 1;
-    private ScheduleTemplate? _template           = null;
-    private List<string>      _conflicts          = new();
-    private string?           _saveError          = null;
+    private int?                _selectedTeacherId  = 1;
+    private int?                _selectedTemplateId = null;
+    private int?                _pickedLessonTypeId = null;
+    private bool                _isDragging         = false;
+    private int                 _activeWeek         = 1;
+    private ScheduleTemplate?   _template           = null;
+    private List<string>        _conflicts          = new();
+    private string?             _saveError          = null;
+
+    // Block drag-and-drop
+    private ScheduleTimeBlock? _draggingBlock = null;
+
+    // Inline tidsedit
+    private int?   _editingBlockId = null;
+    private string _editingTime    = "";
 
     // Originalvärden för att avgöra om datum ändrats (→ ny period)
     private DateOnly? _originalStartDate;
@@ -597,29 +660,37 @@
     /// Returnerar CSS-klass för datum i datumpickern:
     ///   plan-date-current  = det valda schemats egna period (blå ton)
     ///   plan-date-occupied = annan lärares schema täcker datumet (orange ton)
+    ///   plan-date-holiday  = svensk röd dag (röd markering, alltid synlig)
     private string GetDateClass(DateTime date)
     {
-        if (_selectedTeacherId == null || _template == null) return "";
-        var d = DateOnly.FromDateTime(date);
+        var d        = DateOnly.FromDateTime(date);
+        var classes  = new System.Text.StringBuilder();
+        var holiday  = SwedishHolidays.GetHolidays(d.Year).Contains(d);
 
-        // Visa det egna schemats period i en "nuläge"-färg (bara om mallen har datum satta)
-        if (_template.Id > 0 && (_template.StartDate != null || _template.EndDate != null))
+        if (holiday) classes.Append("plan-date-holiday ");
+
+        if (_selectedTeacherId != null && _template != null)
         {
-            bool afterStart = _template.StartDate == null || d >= _template.StartDate;
-            bool beforeEnd  = _template.EndDate   == null || d <= _template.EndDate;
-            if (afterStart && beforeEnd) return "plan-date-current";
+            // Egna schemats period
+            if (_template.Id > 0 && (_template.StartDate != null || _template.EndDate != null))
+            {
+                bool afterStart = _template.StartDate == null || d >= _template.StartDate;
+                bool beforeEnd  = _template.EndDate   == null || d <= _template.EndDate;
+                if (afterStart && beforeEnd) classes.Append("plan-date-current ");
+            }
+
+            // Andra lärarens scheman
+            var others = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+                .Where(t => t.Id != _template.Id);
+            foreach (var t in others)
+            {
+                bool afterStart = t.StartDate == null || d >= t.StartDate;
+                bool beforeEnd  = t.EndDate   == null || d <= t.EndDate;
+                if (afterStart && beforeEnd) { classes.Append("plan-date-occupied "); break; }
+            }
         }
 
-        // Visa andra scheman för samma lärare som blockerade
-        var others = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
-            .Where(t => t.Id != _template.Id);
-        foreach (var t in others)
-        {
-            bool afterStart = t.StartDate == null || d >= t.StartDate;
-            bool beforeEnd  = t.EndDate   == null || d <= t.EndDate;
-            if (afterStart && beforeEnd) return "plan-date-occupied";
-        }
-        return "";
+        return classes.ToString().TrimEnd();
     }
 
     // ── Schema status helpers ─────────────────────────────────────────────────
@@ -678,6 +749,33 @@
         ValidateConflicts();
     }
 
+    // ── Copy day to other days ────────────────────────────────────────────────
+
+    private void CopyDay(int sourceDayIndex, int targetDayIndex)
+    {
+        if (_template == null) return;
+        var toCopy = _template.TimeBlocks
+            .Where(b => b.WeekNumber == _activeWeek && b.DayOfWeek == sourceDayIndex)
+            .ToList();
+        foreach (var src in toCopy)
+        {
+            bool exists = _template.TimeBlocks.Any(b =>
+                b.WeekNumber == _activeWeek &&
+                b.DayOfWeek  == targetDayIndex &&
+                b.StartTime  == src.StartTime);
+            if (!exists)
+                _template.TimeBlocks.Add(new ScheduleTimeBlock
+                {
+                    Id           = BookingService.GetNextBlockId(),
+                    WeekNumber   = _activeWeek,
+                    DayOfWeek    = targetDayIndex,
+                    StartTime    = src.StartTime,
+                    LessonTypeId = src.LessonTypeId,
+                });
+        }
+        ValidateConflicts();
+    }
+
     // ── Copy previous week ────────────────────────────────────────────────────
 
     private void CopyPreviousWeek()
@@ -713,7 +811,7 @@
             new DialogParameters<LessonTypeDialog> { { x => x.ExistingType, null } },
             new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
         var result = await dialog.Result;
-        if (!result.Canceled) StateHasChanged();
+        if (result is { Canceled: false }) StateHasChanged();
     }
 
     private async Task OpenEditLessonTypeDialog(LessonType lt)
@@ -723,7 +821,7 @@
             new DialogParameters<LessonTypeDialog> { { x => x.ExistingType, lt } },
             new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
         var result = await dialog.Result;
-        if (!result.Canceled) StateHasChanged();
+        if (result is { Canceled: false }) StateHasChanged();
     }
 
     // ── Lesson type picking ───────────────────────────────────────────────────
@@ -747,18 +845,58 @@
     private void OnDragStart(int ltId)
     {
         _pickedLessonTypeId = ltId;
-        _isDragging = true;
+        _draggingBlock      = null;
+        _isDragging         = true;
+    }
+
+    private void OnBlockDragStart(ScheduleTimeBlock block)
+    {
+        _draggingBlock      = block;
+        _pickedLessonTypeId = null;
+        _isDragging         = true;
     }
 
     private void OnDragEnd()
     {
-        _isDragging = false;
+        _isDragging    = false;
+        _draggingBlock = null;
     }
 
     private void OnSlotDrop(int dayIndex, TimeOnly slotTime)
     {
+        if (_draggingBlock != null)
+        {
+            MoveBlock(_draggingBlock, dayIndex, slotTime);
+            _draggingBlock = null;
+            _isDragging    = false;
+            return;
+        }
         OnSlotClick(dayIndex, slotTime);
         _isDragging = false;
+    }
+
+    private void MoveBlock(ScheduleTimeBlock block, int targetDay, TimeOnly newTime)
+    {
+        if (_template == null) return;
+        var snapped = SnapTo5(newTime);
+        var lt      = GetLessonType(block.LessonTypeId);
+        var endTime = snapped.AddMinutes(lt?.DefaultDurationMinutes ?? 60);
+        if (endTime > new TimeOnly(EndHour, 0)) return;
+
+        // Konfliktkontroll, exkludera blocket självt
+        bool conflict = _template.TimeBlocks
+            .Where(b => b.WeekNumber == _activeWeek && b.DayOfWeek == targetDay && b.Id != block.Id)
+            .Any(b =>
+            {
+                var bLt  = GetLessonType(b.LessonTypeId);
+                var bEnd = b.StartTime.AddMinutes(bLt?.DefaultDurationMinutes ?? 60);
+                return snapped < bEnd && endTime > b.StartTime;
+            });
+        if (conflict) return;
+
+        block.DayOfWeek = targetDay;
+        block.StartTime = snapped;
+        ValidateConflicts();
     }
 
     // ── Slot / block interaction ──────────────────────────────────────────────
@@ -774,7 +912,7 @@
         if (lt == null) return;
 
         // Snap to nearest 15 min
-        var snapped = SnapTo15(slotTime);
+        var snapped = SnapTo5(slotTime);
 
         // Check if block would extend past end of grid
         var endTime = snapped.AddMinutes(lt.DefaultDurationMinutes);
@@ -844,11 +982,12 @@
             });
     }
 
-    private bool IsSlotCovered(int dayIndex, TimeOnly slotTime)
+    private bool IsSlotCovered(int dayIndex, TimeOnly slotTime, int? excludeBlockId = null)
     {
         if (_template == null) return false;
         return _template.TimeBlocks
-            .Where(b => b.WeekNumber == _activeWeek && b.DayOfWeek == dayIndex)
+            .Where(b => b.WeekNumber == _activeWeek && b.DayOfWeek == dayIndex
+                     && (excludeBlockId == null || b.Id != excludeBlockId))
             .Any(b =>
             {
                 var lt  = GetLessonType(b.LessonTypeId);
@@ -868,10 +1007,47 @@
     private LessonType? GetLessonType(int id)
         => BookingService.LessonTypes.FirstOrDefault(l => l.Id == id);
 
-    private static TimeOnly SnapTo15(TimeOnly t)
+    private static TimeOnly SnapTo5(TimeOnly t)
     {
-        var mins = (t.Hour * 60 + t.Minute) / 15 * 15;
+        var mins = (t.Hour * 60 + t.Minute) / 5 * 5;
         return new TimeOnly(mins / 60, mins % 60);
+    }
+
+    // ── Inline tidsedit ───────────────────────────────────────────────────────
+
+    private void StartEditTime(int blockId, TimeOnly currentTime)
+    {
+        _editingBlockId = blockId;
+        _editingTime    = currentTime.ToString("HH:mm");
+    }
+
+    private void CommitEditTime(int blockId)
+    {
+        if (_template != null)
+        {
+            var block = _template.TimeBlocks.FirstOrDefault(b => b.Id == blockId);
+            if (block != null &&
+                TimeOnly.TryParseExact(_editingTime, "HH:mm",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var parsed))
+            {
+                var snapped = SnapTo5(parsed);
+                var lt      = GetLessonType(block.LessonTypeId);
+                var endTime = snapped.AddMinutes(lt?.DefaultDurationMinutes ?? 60);
+                if (endTime <= new TimeOnly(EndHour, 0))
+                {
+                    block.StartTime = snapped;
+                    ValidateConflicts();
+                }
+            }
+        }
+        _editingBlockId = null;
+    }
+
+    private void OnTimeEditKey(KeyboardEventArgs e, int blockId)
+    {
+        if (e.Key == "Enter")  CommitEditTime(blockId);
+        if (e.Key == "Escape") _editingBlockId = null;
     }
 
     private static string DayName(int d) => d switch

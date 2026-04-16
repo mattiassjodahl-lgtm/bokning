@@ -631,6 +631,20 @@
     white-space: nowrap;
 }
 
+/* I TeacherWeekView: dölj klockslagen inuti korten */
+.tcw-evt-booked .cal-event-time,
+.tcw-evt-available .tcw-evt-time { display: none; }
+
+/* I TeacherWeekView (smala kolumner): badge absolut i nedre högra hörnet */
+.tcw-evt-booked .cal-capacity-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 9px;
+    padding: 0 4px;
+    margin-top: 0;
+}
+
 /* (Score slider styling moved to app.css as .sc-score-slider) */
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1179,6 +1193,25 @@
 /* ── Markering av datum i MudDateRangePicker ────────────────────────────── */
 /* AdditionalDateClassesFunc lägger klassen direkt på <button>-elementet    */
 
+/* Röd dag (helgdag) – röd ton, alltid synlig */
+button.plan-date-holiday {
+    color: #c62828 !important;
+    font-weight: 700;
+    position: relative;
+}
+
+button.plan-date-holiday::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #c62828;
+}
+
 /* Det aktuella schemats egna period – blå ton */
 button.plan-date-current {
     background: #e3f2fd !important;
@@ -1425,6 +1458,21 @@ button.plan-date-occupied::after {
 
 .plan-slot-covered { cursor: default; pointer-events: none; }
 
+/* ── Dag-header kopiera-meny ────────────────────────────────────────────────── */
+
+.plan-day-header { position: relative; }
+
+.plan-day-copy-menu {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity .15s;
+}
+
+.plan-day-col-wrapper:hover .plan-day-copy-menu { opacity: 1; }
+
 /* ── Placed blocks ─────────────────────────────────────────────────────────── */
 
 .plan-block {
@@ -1469,10 +1517,49 @@ button.plan-date-occupied::after {
     color: #1a237e;
 }
 
+/* ── Drag handle ── */
+.plan-block-drag-handle {
+    cursor: grab;
+    padding: 0 2px;
+    flex-shrink: 0;
+    line-height: 0;
+    opacity: 0;
+    transition: opacity .15s;
+}
+.plan-block:hover .plan-block-drag-handle { opacity: 1; }
+.plan-block-drag-handle:active { cursor: grabbing; }
+
+/* Block under drag */
+.plan-block-dragging {
+    opacity: .45;
+    outline: 2px dashed #1565c0;
+}
+
+/* ── Tid i block ── */
 .plan-block-time {
     font-size: 10px;
     color: #546e7a;
     white-space: nowrap;
+}
+
+.plan-block-time-editable {
+    cursor: pointer;
+    border-bottom: 1px dotted transparent;
+    transition: border-color .1s;
+}
+.plan-block-time-editable:hover { border-bottom-color: #546e7a; }
+
+.plan-block-time-edit {
+    width: 46px;
+    font-size: 10px;
+    color: #1565c0;
+    font-weight: 600;
+    border: none;
+    border-bottom: 1px solid #1565c0;
+    background: transparent;
+    padding: 0;
+    outline: none;
+    font-family: inherit;
 }
 
 .plan-block-delete {
@@ -1686,7 +1773,7 @@ button.plan-date-occupied::after {
 }
 
 .tcw-day-col {
-    width: 80px;          /* fast bredd – kompakt, 6 lärare × 5 dagar = 2 400 px */
+    width: 50px;          /* fast bredd – kompakt, 6 lärare × 5 dagar = 1 500 px */
     flex-shrink: 0;
     border-right: 1px solid #e0e0e0;
 }
@@ -1730,10 +1817,16 @@ button.plan-date-occupied::after {
     z-index: 1;
 }
 
-.tcw-drop-slot:hover,
-.tcw-drop-slot[dragover] {
-    background: rgba(33,150,243,.12);
-    outline: 1px dashed #42a5f5;
+.tcw-drop-slot:hover {
+    background: rgba(33,150,243,.08);
+    outline: 1px dashed #90caf9;
+    cursor: pointer;
+}
+
+.tcw-drop-slot[dragover],
+.tcw-drop-slot.drag-over {
+    background: rgba(33,150,243,.2);
+    outline: 2px dashed #1565c0;
 }
 
 /* ── Ledigt pass (template-slot) ─────────────────────────────────────────── */
@@ -1972,4 +2065,93 @@ button.plan-date-occupied::after {
     font-weight: 600;
     color: white;
     cursor: pointer;
+}
+
+/* ── Helgdagsöverlager i kalendervyer ──────────────────────────────────────── */
+
+/* Överlager i tidskolumn — visuellt, påverkar ej klick på händelser */
+.cal-holiday-overlay {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(198, 40, 40, 0.06),
+        rgba(198, 40, 40, 0.06) 6px,
+        rgba(198, 40, 40, 0.02) 6px,
+        rgba(198, 40, 40, 0.02) 12px
+    );
+    border-left: 3px solid rgba(198, 40, 40, 0.35);
+    pointer-events: none;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 8px;
+}
+
+.cal-holiday-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #c62828;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    opacity: 0.7;
+    user-select: none;
+}
+
+/* Dag-header — röd accent när helgdag är aktivt blockerad */
+.tcw-day-holiday {
+    background: #ffebee !important;
+    color: #c62828 !important;
+}
+
+.tcw-day-holiday .tcw-day-num {
+    color: #c62828;
+    font-weight: 700;
+}
+
+/* WeekView header – helgdag */
+.cal-hdr-holiday {
+    background: #ffebee !important;
+}
+
+.cal-hdr-holiday .cal-day-name,
+.cal-hdr-holiday .cal-day-number {
+    color: #c62828 !important;
+    font-weight: 700 !important;
+}
+
+.cal-hdr-holiday-name {
+    font-size: 9px;
+    color: #c62828;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.1;
+    padding: 1px 2px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* MobileWeekView header – helgdag */
+.mob-wk-hdr-holiday {
+    background: #ffebee !important;
+}
+
+.mob-wk-hdr-holiday .mob-wk-day-name,
+.mob-wk-hdr-holiday .mob-wk-day-num {
+    color: #c62828 !important;
+    font-weight: 700 !important;
+}
+
+.mob-wk-hol-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c62828;
+    margin: 1px auto 0;
+    flex-shrink: 0;
 }

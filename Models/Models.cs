@@ -88,6 +88,8 @@ public class ScheduleTemplate
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public List<ScheduleTimeBlock> TimeBlocks { get; set; } = new();
+    /// <summary>Om true genereras inga lediga pass på svenska röda dagar.</summary>
+    public bool BlockPublicHolidays { get; set; } = true;
 }
 
 // ── Resources ─────────────────────────────────────────────────────────────────

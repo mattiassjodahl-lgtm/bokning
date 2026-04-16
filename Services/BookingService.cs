@@ -1416,6 +1416,18 @@ public class BookingService
             .OrderByDescending(t => t.StartDate ?? DateOnly.MinValue)
             .FirstOrDefault();
 
+    /// Returns true if the teacher's active template blocks public holidays AND the date is a holiday.
+    public bool IsHolidayBlocked(int teacherId, DateOnly date)
+    {
+        var tmpl = GetActiveTemplate(teacherId, date);
+        return tmpl is { BlockPublicHolidays: true }
+            && SwedishHolidays.GetHolidays(date.Year).Contains(date);
+    }
+
+    /// Returns true if ANY active template among the selected teachers blocks holidays on the given date.
+    public bool IsHolidayBlockedForAnyTeacher(DateOnly date, IEnumerable<int> teacherIds)
+        => teacherIds.Any(id => IsHolidayBlocked(id, date));
+
     /// Determines which week of the cycle a given Monday belongs to (1-based).
     private static int GetCycleWeek(ScheduleTemplate tmpl, DateOnly weekMonday)
     {
@@ -1493,6 +1505,8 @@ public class BookingService
                     if (blockDate < rangeStart || blockDate >= rangeEnd)           continue;
                     if (tmpl.StartDate != null && blockDateOnly < tmpl.StartDate)  continue;
                     if (tmpl.EndDate   != null && blockDateOnly > tmpl.EndDate)    continue;
+                    if (tmpl.BlockPublicHolidays &&
+                        SwedishHolidays.GetHolidays(blockDateOnly.Year).Contains(blockDateOnly)) continue;
 
                     var lt            = GetLessonType(block.LessonTypeId);
                     var originalStart = block.StartTime;
@@ -1580,15 +1594,23 @@ public class BookingService
         return evt;
     }
 
-    public CalendarEvent AddAvailableSlot(int teacherId, DateTime start, DateTime end)
+    /// Returnerar true om läraren redan har ett event som överlappar [start, end).
+    public bool HasEventConflict(int teacherId, DateTime start, DateTime end, int? excludeId = null)
+        => _events.Any(e => e.TeacherId == teacherId
+                         && (excludeId == null || e.Id != excludeId)
+                         && e.StartTime < end
+                         && e.EndTime   > start);
+
+    public CalendarEvent AddAvailableSlot(int teacherId, DateTime start, DateTime end, int? lessonTypeId = null)
     {
         var evt = new CalendarEvent
         {
-            Id        = _nextEventId++,
-            TeacherId = teacherId,
-            StartTime = start,
-            EndTime   = end,
-            IsBooked  = false,
+            Id           = _nextEventId++,
+            TeacherId    = teacherId,
+            StartTime    = start,
+            EndTime      = end,
+            IsBooked     = false,
+            LessonTypeId = lessonTypeId,
         };
         _events.Add(evt);
         return evt;
@@ -1611,6 +1633,36 @@ public class BookingService
 
     public void DeleteEvent(int eventId)
         => _events.RemoveAll(e => e.Id == eventId);
+
+    /// Flyttar en direktskapad ledig slot till ny starttid (samma duration, valfri dag).
+    /// Returnerar false vid konflikt.
+    public bool MoveAvailableSlot(int eventId, DateTime newStart)
+    {
+        var evt = _events.FirstOrDefault(e => e.Id == eventId && !e.IsBooked);
+        if (evt is null) return false;
+        var duration = evt.EndTime - evt.StartTime;
+        var newEnd   = newStart + duration;
+        if (HasEventConflict(evt.TeacherId, newStart, newEnd, excludeId: eventId)) return false;
+        evt.StartTime = newStart;
+        evt.EndTime   = newEnd;
+        return true;
+    }
+
+    /// Lägger till en deltagare på en befintlig grupplektion.
+    /// Returnerar false om platsen är full eller deltagaren redan finns.
+    public bool AddParticipantToEvent(int eventId, string studentName)
+    {
+        if (string.IsNullOrWhiteSpace(studentName)) return false;
+        var evt = _events.FirstOrDefault(e => e.Id == eventId);
+        if (evt is null) return false;
+        var lt = GetLessonType(evt.LessonTypeId ?? 0);
+        if (lt is null || lt.MaxStudents <= 1) return false;
+        if (evt.AllStudentNames.Count() >= lt.MaxStudents) return false;
+        if (evt.AllStudentNames.Any(n => n.Equals(studentName, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        evt.ExtraStudents.Add(studentName.Trim());
+        return true;
+    }
 
     // ── Lesson type CRUD ──────────────────────────────────────────────────────
 

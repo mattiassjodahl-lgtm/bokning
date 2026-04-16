@@ -15,15 +15,23 @@
         <div class="cal-days-header" style="@HeaderGridStyle">
             @for (int i = 0; i < DisplayDays.Count; i++)
             {
-                var day     = DisplayDays[i];
-                var idx     = i;
-                var isToday = day.Date == DateTime.Today;
+                var day        = DisplayDays[i];
+                var idx        = i;
+                var isToday    = day.Date == DateTime.Today;
+                var hdrDate    = DateOnly.FromDateTime(day);
+                var hdrHoliday = BookingService.IsHolidayBlockedForAnyTeacher(hdrDate, ActiveTeachers.Select(t => t.Id));
+                var hdrHolName = hdrHoliday ? SwedishHolidays.GetName(hdrDate) : null;
 
-                <div class="cal-day-header @(isToday ? "cal-today-header" : "")"
+                <div class="cal-day-header @(isToday ? "cal-today-header" : "") @(hdrHoliday ? "cal-hdr-holiday" : "")"
                      data-day-index="@idx"
-                     style="@GetColStyle(idx)">
+                     style="@GetColStyle(idx)"
+                     title="@hdrHolName">
                     <div class="cal-day-name">@day.ToString("ddd", _sv)</div>
                     <div class="cal-day-number @(isToday ? "cal-today-circle" : "")">@day.Day</div>
+                    @if (hdrHoliday)
+                    {
+                        <div class="cal-hdr-holiday-name">@hdrHolName</div>
+                    }
                     <div class="cal-resize-handle" title="Dra för att ändra bredd"></div>
                 </div>
             }
@@ -44,9 +52,13 @@
         <div class="cal-days-body" style="@HeaderGridStyle">
             @for (int i = 0; i < DisplayDays.Count; i++)
             {
-                var day     = DisplayDays[i];
-                var idx     = i;
-                var isToday = day.Date == DateTime.Today;
+                var day            = DisplayDays[i];
+                var idx            = i;
+                var isToday        = day.Date == DateTime.Today;
+                var dateOnly       = DateOnly.FromDateTime(day);
+                var teacherIds     = ActiveTeachers.Select(t => t.Id);
+                var holidayBlocked = BookingService.IsHolidayBlockedForAnyTeacher(dateOnly, teacherIds);
+                var holidayName    = holidayBlocked ? SwedishHolidays.GetName(dateOnly) : null;
 
                 <div class="cal-day-col @(isToday ? "cal-today-col" : "")"
                      data-day-index="@idx"
@@ -75,6 +87,14 @@
                                  @ondrop="@(() => OnSlotDrop(slotTime))">
                             </div>
                         }
+                    }
+
+                    @* Visuellt helgdagsöverlager *@
+                    @if (holidayBlocked)
+                    {
+                        <div class="cal-holiday-overlay" title="@holidayName">
+                            <span class="cal-holiday-label">@holidayName</span>
+                        </div>
                     }
 
                     @foreach (var pe in GetPositionedEvents(day))

@@ -12,10 +12,18 @@
         <div class="mob-wk-gutter"></div>
         @foreach (var day in DisplayDays)
         {
-            var isToday = day.Date == DateTime.Today;
-            <div class="mob-wk-day-hdr @(isToday ? "mob-wk-today-hdr" : "")">
+            var isToday      = day.Date == DateTime.Today;
+            var hdrD         = DateOnly.FromDateTime(day);
+            var hdrHol       = BookingService.IsHolidayBlockedForAnyTeacher(hdrD, ActiveTeachers.Select(t => t.Id));
+            var hdrHolName   = hdrHol ? SwedishHolidays.GetName(hdrD) : null;
+            <div class="mob-wk-day-hdr @(isToday ? "mob-wk-today-hdr" : "") @(hdrHol ? "mob-wk-hdr-holiday" : "")"
+                 title="@hdrHolName">
                 <div class="mob-wk-day-name">@day.ToString("ddd", _sv).Substring(0, 2)</div>
                 <div class="mob-wk-day-num @(isToday ? "mob-wk-today-circle" : "")">@day.Day</div>
+                @if (hdrHol)
+                {
+                    <div class="mob-wk-hol-dot" title="@hdrHolName"></div>
+                }
             </div>
         }
     </div>
@@ -36,7 +44,10 @@
         <div class="mob-wk-cols" style="grid-template-columns: repeat(@DisplayDays.Count, 1fr)">
             @foreach (var day in DisplayDays)
             {
-                var isToday = day.Date == DateTime.Today;
+                var isToday        = day.Date == DateTime.Today;
+                var colDate        = DateOnly.FromDateTime(day);
+                var colHoliday     = BookingService.IsHolidayBlockedForAnyTeacher(colDate, ActiveTeachers.Select(t => t.Id));
+                var colHolidayName = colHoliday ? SwedishHolidays.GetName(colDate) : null;
                 <div class="mob-wk-col @(isToday ? "mob-wk-today-col" : "")"
                      style="height:@(TotalHeight)px">
 
@@ -45,6 +56,14 @@
                     {
                         var top = (h - StartHour) * Pph;
                         <div class="mob-wk-gl-hour" style="top:@(top)px"></div>
+                    }
+
+                    @* Visuellt helgdagsöverlager *@
+                    @if (colHoliday)
+                    {
+                        <div class="cal-holiday-overlay" title="@colHolidayName">
+                            <span class="cal-holiday-label">@colHolidayName</span>
+                        </div>
                     }
 
                     @* Events *@

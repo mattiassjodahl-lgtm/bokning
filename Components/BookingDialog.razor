@@ -46,12 +46,30 @@
                 @if (ExistingEvent.IsBooked)
                 {
                     <div>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
-                            @(ExistingEvent.ExtraStudents.Any() ? "Elever" : "Elev")
-                        </MudText>
+                        @* ── Etikett + kapacitetsstatus för grupplektioner ── *@
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @(ViewLessonType is { MaxStudents: > 1 } ? "Deltagare" : ExistingEvent.ExtraStudents.Any() ? "Elever" : "Elev")
+                            </MudText>
+                            @if (ViewLessonType is { MaxStudents: > 1 })
+                            {
+                                var count   = ExistingEvent.AllStudentNames.Count();
+                                var max     = ViewLessonType.MaxStudents;
+                                var left    = max - count;
+                                var full    = left <= 0;
+                                var pct     = (double)count / max;
+                                var color   = full ? "color:#c62828" : pct >= 0.5 ? "color:#e65100" : "color:#2e7d32";
+                                var label   = full ? $"{count}/{max} · FULLBOKAD" : $"{count}/{max} platser · {left} lediga";
+                                <MudText Typo="Typo.caption" Style="@($"{color};font-weight:700")">
+                                    @label
+                                </MudText>
+                            }
+                        </MudStack>
+
+                        @* ── Deltagarlista ── *@
                         @foreach (var name in ExistingEvent.AllStudentNames)
                         {
-                            var n = name; // capture for lambda
+                            var n = name;
                             <MudStack Row="true" AlignItems="AlignItems.Center"
                                       Spacing="2" Class="mb-2"
                                       Style="background:#f5f7fa;border-radius:8px;padding:6px 10px">
@@ -68,6 +86,52 @@
                                     Elevkort
                                 </MudButton>
                             </MudStack>
+                        }
+
+                        @* ── Lägg till deltagare (endast grupplektioner med lediga platser) ── *@
+                        @if (ViewLessonType is { MaxStudents: > 1 } &&
+                             ExistingEvent.AllStudentNames.Count() < ViewLessonType.MaxStudents)
+                        {
+                            @if (_addingParticipant)
+                            {
+                                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1" Class="mt-1">
+                                    <MudAutocomplete T="string"
+                                                     Label="Sök elev"
+                                                     @bind-Value="_newParticipantName"
+                                                     SearchFunc="@SearchStudents"
+                                                     Variant="Variant.Outlined"
+                                                     Adornment="Adornment.Start"
+                                                     AdornmentIcon="@Icons.Material.Filled.PersonSearch"
+                                                     CoerceText="true" CoerceValue="true"
+                                                     Clearable="true"
+                                                     Dense="true"
+                                                     Class="flex-1" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.CheckCircle"
+                                                   Color="Color.Success" Size="Size.Medium"
+                                                   title="Lägg till"
+                                                   Disabled="@string.IsNullOrWhiteSpace(_newParticipantName)"
+                                                   OnClick="ConfirmAddParticipant" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                                                   Color="Color.Default" Size="Size.Medium"
+                                                   title="Avbryt"
+                                                   OnClick="@(() => { _addingParticipant = false; _newParticipantName = ""; })" />
+                                </MudStack>
+                                @if (_participantError != "")
+                                {
+                                    <MudText Color="Color.Error" Typo="Typo.caption">@_participantError</MudText>
+                                }
+                            }
+                            else
+                            {
+                                <MudButton Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.PersonAdd"
+                                           Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           Class="mt-1"
+                                           OnClick="@(() => _addingParticipant = true)">
+                                    Lägg till deltagare
+                                </MudButton>
+                            }
                         }
                     </div>
 
@@ -468,6 +532,11 @@
     private bool IsViewMode     => ExistingEvent != null;
     private bool IsSharedLesson => _request.LessonTypeId == SharedLessonTypeId;
 
+    // ── Lägg till deltagare (view mode, grupplektioner) ────────────────────────
+    private bool   _addingParticipant  = false;
+    private string _newParticipantName = "";
+    private string _participantError   = "";
+
 
     private readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
 
@@ -613,6 +682,23 @@
 
     private static StudentBalance? GetStudentBalance(string name) =>
         _mockBalances.TryGetValue(name.Trim(), out var b) ? b : new(0, 0m);
+
+    // ── Lägg till deltagare (grupplektion, view mode) ─────────────────────────
+
+    private void ConfirmAddParticipant()
+    {
+        _participantError = "";
+        var ok = BookingService.AddParticipantToEvent(ExistingEvent!.Id, _newParticipantName);
+        if (ok)
+        {
+            _newParticipantName = "";
+            _addingParticipant  = false;
+        }
+        else
+        {
+            _participantError = "Kunde inte lägga till — platsen kan vara full eller eleven redan bokad.";
+        }
+    }
 
     // ── Resource toggle ───────────────────────────────────────────────────────
 
