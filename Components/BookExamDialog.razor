@@ -62,6 +62,26 @@
                 }
             </MudSelect>
 
+            @* Resurser (valfritt) *@
+            <div>
+                <MudText Typo="Typo.subtitle2" Class="mb-1">Resurser (valfritt)</MudText>
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                    @foreach (var res in BookingService.Resources)
+                    {
+                        var rid      = res.Id;
+                        var selected = _selectedResourceIds.Contains(rid);
+                        <MudChip T="string" Icon="@res.Icon" Size="Size.Small"
+                                 Color="@(selected ? Color.Primary : Color.Default)"
+                                 Variant="@(selected ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => ToggleResource(rid))"
+                                 Disabled="@(!res.IsAvailable)"
+                                 Style="cursor:pointer">
+                            @res.Name @(!res.IsAvailable ? " (ej tillgänglig)" : "")
+                        </MudChip>
+                    }
+                </MudStack>
+            </div>
+
         </MudStack>
     </DialogContent>
 
@@ -89,8 +109,17 @@
     private DateTime? _date            = DateTime.Today.AddDays(7);
     private TimeSpan? _startTime       = new(9, 0, 0);
     private int       _teacherId;
+    private List<int> _selectedResourceIds = new();
 
     private List<string> _categories = new();
+
+    private void ToggleResource(int resourceId)
+    {
+        if (_selectedResourceIds.Contains(resourceId))
+            _selectedResourceIds.Remove(resourceId);
+        else
+            _selectedResourceIds.Add(resourceId);
+    }
 
     private bool CanSave =>
         _date.HasValue
@@ -114,12 +143,13 @@
 
         var evt = BookingService.AddBooking(new BookingRequest
         {
-            TeacherId       = _teacherId,
-            StartTime       = start,
-            EndTime         = end,
-            StudentName     = StudentName,
-            LessonTypeId    = _lessonTypeId,
-            LicenseCategory = _licenseCategory,
+            TeacherId           = _teacherId,
+            StartTime           = start,
+            EndTime             = end,
+            StudentName         = StudentName,
+            LessonTypeId        = _lessonTypeId,
+            LicenseCategory     = _licenseCategory,
+            SelectedResourceIds = _selectedResourceIds.ToList(),
         });
 
         Dialog.Close(DialogResult.Ok(evt));
