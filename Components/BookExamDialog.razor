@@ -82,6 +82,11 @@
                 </MudStack>
             </div>
 
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+
         </MudStack>
     </DialogContent>
 
@@ -110,6 +115,7 @@
     private TimeSpan? _startTime       = new(9, 0, 0);
     private int       _teacherId;
     private List<int> _selectedResourceIds = new();
+    private string    _error = "";
 
     private List<string> _categories = new();
 
@@ -137,9 +143,33 @@
 
     private void Save()
     {
+        _error = "";
+
         var start = _date!.Value.Date.Add(_startTime!.Value);
         var lt    = BookingService.GetLessonType(_lessonTypeId);
         var end   = start.AddMinutes(lt?.DefaultDurationMinutes ?? 50);
+
+        // Krock-kontroll: lärare
+        if (BookingService.HasEventConflict(_teacherId, start, end))
+        {
+            _error = "Läraren är redan bokad på denna tid.";
+            return;
+        }
+
+        // Krock-kontroll: resurser
+        if (_selectedResourceIds.Count > 0)
+        {
+            var clash = BookingService
+                .GetBookedEventsWithAnyResource(_selectedResourceIds, start, end)
+                .FirstOrDefault();
+            if (clash != null)
+            {
+                var busyIds = clash.ResourceIds.Intersect(_selectedResourceIds).ToList();
+                var names   = BookingService.GetResourcesById(busyIds).Select(r => r.Name);
+                _error = $"Resurs upptagen på denna tid: {string.Join(", ", names)}.";
+                return;
+            }
+        }
 
         var evt = BookingService.AddBooking(new BookingRequest
         {
