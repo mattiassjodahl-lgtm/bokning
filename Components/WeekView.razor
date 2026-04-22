@@ -172,9 +172,18 @@
                             }
                             @if (ActiveTeachers.Count > 1)
                             {
-                                <div class="cal-event-avatar" style="background-color:@teacher?.Color">
-                                    @teacher?.Initials
-                                </div>
+                                @if (teacher != null)
+                                {
+                                    <div class="cal-event-avatar" style="background-color:@teacher.Color">
+                                        @teacher.Initials
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="cal-event-avatar" style="background-color:#bdbdbd" title="Ingen lärare">
+                                        <MudIcon Icon="@Icons.Material.Filled.PersonOff" Style="font-size:12px" />
+                                    </div>
+                                }
                             }
                         </div>
                     }
