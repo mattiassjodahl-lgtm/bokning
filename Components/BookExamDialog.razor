@@ -55,7 +55,8 @@
             <MudSelect T="int" Label="Lärare"
                        Value="_teacherId"
                        ValueChanged="@((int v) => _teacherId = v)"
-                       Required="true" Variant="Variant.Outlined">
+                       Variant="Variant.Outlined">
+                <MudSelectItem Value="@0">Ingen lärare</MudSelectItem>
                 @foreach (var t in BookingService.Teachers)
                 {
                     <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
@@ -130,15 +131,14 @@
     private bool CanSave =>
         _date.HasValue
         && _startTime.HasValue
-        && !string.IsNullOrWhiteSpace(_licenseCategory)
-        && _teacherId > 0;
+        && !string.IsNullOrWhiteSpace(_licenseCategory);
 
     protected override void OnInitialized()
     {
         _categories   = (Categories ?? new[] { "B" }).ToList();
         _licenseCategory = PreselectedCategory ?? _categories.FirstOrDefault() ?? "B";
         _lessonTypeId = PreselectedLessonTypeId ?? 10;
-        _teacherId    = BookingService.Teachers.FirstOrDefault()?.Id ?? 0;
+        _teacherId    = 0; // "Ingen lärare" default
     }
 
     private void Save()
@@ -149,8 +149,8 @@
         var lt    = BookingService.GetLessonType(_lessonTypeId);
         var end   = start.AddMinutes(lt?.DefaultDurationMinutes ?? 50);
 
-        // Krock-kontroll: lärare
-        if (BookingService.HasEventConflict(_teacherId, start, end))
+        // Krock-kontroll: lärare (hoppa över om "Ingen lärare")
+        if (_teacherId > 0 && BookingService.HasEventConflict(_teacherId, start, end))
         {
             _error = "Läraren är redan bokad på denna tid.";
             return;

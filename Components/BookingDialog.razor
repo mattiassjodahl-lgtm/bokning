@@ -35,6 +35,7 @@
                            Value="@_editTeacherId"
                            ValueChanged="@((int v) => _editTeacherId = v)"
                            Variant="Variant.Outlined">
+                    <MudSelectItem Value="@0">Ingen lärare</MudSelectItem>
                     @foreach (var t in BookingService.Teachers)
                     {
                         <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
@@ -71,10 +72,20 @@
             @* ── View mode ──────────────────────────────────────────────────── *@
             <MudStack Spacing="2">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudAvatar Style="@($"background-color:{ViewTeacher?.Color};color:white")" Size="Size.Small">
-                        @ViewTeacher?.Initials
-                    </MudAvatar>
-                    <MudText Typo="Typo.subtitle1">@ViewTeacher?.Name</MudText>
+                    @if (ViewTeacher != null)
+                    {
+                        <MudAvatar Style="@($"background-color:{ViewTeacher.Color};color:white")" Size="Size.Small">
+                            @ViewTeacher.Initials
+                        </MudAvatar>
+                        <MudText Typo="Typo.subtitle1">@ViewTeacher.Name</MudText>
+                    }
+                    else
+                    {
+                        <MudAvatar Style="background-color:#bdbdbd;color:white" Size="Size.Small">
+                            <MudIcon Icon="@Icons.Material.Filled.PersonOff" Style="font-size:16px" />
+                        </MudAvatar>
+                        <MudText Typo="Typo.subtitle1" Style="color:#757575;font-style:italic">Ingen lärare</MudText>
+                    }
                 </MudStack>
 
                 <MudDivider />
@@ -258,8 +269,8 @@
                     <MudSelect T="int" Label="Lärare"
                                Value="@_request.TeacherId"
                                ValueChanged="@OnTeacherChanged"
-                               Required="true" RequiredError="Välj en lärare"
                                Variant="Variant.Outlined">
+                        <MudSelectItem Value="@0">Ingen lärare</MudSelectItem>
                         @foreach (var t in BookingService.Teachers)
                         {
                             <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
@@ -680,9 +691,7 @@
     {
         if (IsViewMode) return;
 
-        _request.TeacherId    = PreselectedTeacherId > 0
-                                    ? PreselectedTeacherId
-                                    : (BookingService.Teachers.FirstOrDefault()?.Id ?? 1);
+        _request.TeacherId    = PreselectedTeacherId > 0 ? PreselectedTeacherId : 0;
         _request.LessonTypeId = PreselectedLessonTypeId ?? 2;
 
         // Sätt default-kategori om prov-typ valts från start.

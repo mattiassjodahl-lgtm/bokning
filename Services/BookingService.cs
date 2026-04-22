@@ -1751,7 +1751,8 @@ public class BookingService
         var evt = _events.FirstOrDefault(e => e.Id == eventId && e.IsBooked);
         if (evt is null) return false;
 
-        if (newTeacherId != evt.TeacherId &&
+        // Krock-kontroll endast när vi faktiskt byter till en riktig lärare (0 = Ingen lärare).
+        if (newTeacherId > 0 && newTeacherId != evt.TeacherId &&
             HasEventConflict(newTeacherId, evt.StartTime, evt.EndTime, excludeId: eventId))
             return false;
 
