@@ -201,6 +201,98 @@
                     </div>
                 </div>
             }
+
+            @* ── Resurskolumner (en per vald resurs) ─────────────────────── *@
+            @foreach (var resource in ActiveResources)
+            {
+                var r      = resource;
+                var events = GetEventsForResource(r.Id);
+                var booked = events.Count;
+
+                <div class="tcw-section">
+
+                    @* Resursens rubrikrad – resursnamn i fokus, lärarinfo finns i bokningen *@
+                    <div class="tcw-section-header" style="height:@(TeacherHeaderH)px">
+                        <MudIcon Icon="@r.Icon"
+                                 Style="font-size:14px; color:#546e7a; flex-shrink:0" />
+                        <span class="tcw-teacher-name">@r.Name</span>
+                        <span class="tcw-section-stats">@booked bokningar</span>
+                    </div>
+
+                    @* Dagkolumner *@
+                    <div class="tcw-days">
+                        @foreach (var day in DisplayDays)
+                        {
+                            var d       = day;
+                            var dayEvts = events.Where(e => e.StartTime.Date == d.Date).ToList();
+                            var isToday = d.Date == DateTime.Today.Date;
+
+                            <div class="tcw-day-col">
+
+                                @* Dagheader *@
+                                <div class="tcw-day-header @(isToday ? "tcw-day-today" : "")"
+                                     style="height:@(DayHeaderH)px; top:@(TeacherHeaderH)px">
+                                    <span class="tcw-day-num">@d.Day/@d.Month</span>
+                                </div>
+
+                                @* Tidskolumn – inga droppable slots (resursens bokningar är inte teachtens mall) *@
+                                <div class="tcw-day-body" style="height:@(TotalHeight)px">
+
+                                    @* Timlinjer *@
+                                    @for (int h = StartHour; h <= EndHour; h++)
+                                    {
+                                        var top = (h - StartHour) * PixelsPerHour;
+                                        <div class="cal-gridline-hour" style="top:@(top)px"></div>
+                                        @if (h < EndHour)
+                                        {
+                                            <div class="cal-gridline-half" style="top:@(top + PixelsPerHour / 2)px"></div>
+                                        }
+                                    }
+
+                                    @* Bokade events där resursen används *@
+                                    @foreach (var evt in dayEvts)
+                                    {
+                                        var e      = evt;
+                                        var topPx  = (e.StartTime.Hour - StartHour) * PixelsPerHour
+                                                   + e.StartTime.Minute * PixelsPerHour / 60;
+                                        var durMin = (e.EndTime - e.StartTime).TotalMinutes;
+                                        var htPx   = Math.Max((int)(durMin * PixelsPerHour / 60), 14);
+                                        var lt     = BookingService.LessonTypes.FirstOrDefault(l => l.Id == e.LessonTypeId);
+
+                                        <div class="tcw-evt-booked @StudentFilterClass(e)"
+                                             style="top:@(topPx)px; height:@(htPx)px;
+                                                    background:@(lt?.LightColor ?? "#e3f2fd");
+                                                    border-left-color:@(lt?.Color ?? "#1565c0")"
+                                             @onclick:stopPropagation="true"
+                                             @onclick="@(() => OnBookedEventClick(e))"
+                                             title="@e.StudentName – @(lt?.Name) @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")">
+
+                                            @if (htPx >= 32)
+                                            {
+                                                <div class="cal-event-time">
+                                                    @e.StartTime.ToString("HH:mm")–@e.EndTime.ToString("HH:mm")
+                                                </div>
+                                            }
+                                            @if (htPx >= 48)
+                                            {
+                                                <div class="cal-event-title">@e.StudentName</div>
+                                                @if (lt != null && htPx >= 64)
+                                                {
+                                                    <div class="cal-event-sub">@lt.Name</div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="tcw-evt-label">@e.StudentName</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -239,6 +331,10 @@
 
     // ── Datahämtning ──────────────────────────────────────────────────────────
 
+    /// <summary>Resurser som är markerade i filtret – en kolumn per resurs.</summary>
+    private List<Resource> ActiveResources =>
+        BookingService.Resources.Where(r => Filter.SelectedResourceIds.Contains(r.Id)).ToList();
+
     private List<CalendarEvent> GetEventsForTeacher(int teacherId)
     {
         if (!DisplayDays.Any()) return new();
@@ -256,6 +352,20 @@
         };
 
         return BookingService.GetEventsForRange(start, end, f).ToList();
+    }
+
+    /// <summary>Bokade events där en viss resurs används, oavsett lärare. Respekterar lektionstypfilter.</summary>
+    private List<CalendarEvent> GetEventsForResource(int resourceId)
+    {
+        if (!DisplayDays.Any()) return new();
+        var start   = DisplayDays.First().Date;
+        var end     = DisplayDays.Last().Date.AddDays(1);
+        var typeIds = Filter.SelectedLessonTypeIds;
+
+        return BookingService
+            .GetBookedEventsWithAnyResource(new[] { resourceId }, start, end)
+            .Where(e => typeIds.Count == 0 || (e.LessonTypeId.HasValue && typeIds.Contains(e.LessonTypeId.Value)))
+            .ToList();
     }
 
     // ── Bokning ───────────────────────────────────────────────────────────────

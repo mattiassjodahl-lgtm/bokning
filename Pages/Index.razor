@@ -112,20 +112,28 @@
     <MudDrawerContainer>
         <MudStack Spacing="3" Class="px-4 pt-2 pb-4">
 
-            @* ── Personal – Grupp 1 & 2 ──────────────────────────────── *@
+            @* ── Personal – dynamiska grupper ──────────────────────────── *@
             <div>
-                <MudText Typo="Typo.caption"
-                         Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px">
-                    Personal
-                </MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Style="margin-bottom:8px">
+                    <MudText Typo="Typo.caption"
+                             Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;flex:1">
+                        Personal
+                    </MudText>
+                    <MudTooltip Text="Redigera grupper">
+                        <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                                       Size="Size.Small"
+                                       Style="padding:2px"
+                                       OnClick="OpenGroupEditor" />
+                    </MudTooltip>
+                </MudStack>
 
-                @foreach (var grp in new[] { 1, 2 })
+                @foreach (var tg in BookingService.TeacherGroups)
                 {
-                    var groupTeachers = BookingService.Teachers.Where(t => t.Group == grp).ToList();
-                    var allSel        = groupTeachers.All(t  => _selectedTeacherIds.Contains(t.Id));
-                    var anySel        = groupTeachers.Any(t  => _selectedTeacherIds.Contains(t.Id));
-                    var g             = grp;
-                    var expanded      = _groupExpanded.GetValueOrDefault(g, false);
+                    var g             = tg;
+                    var groupTeachers = BookingService.Teachers.Where(t => t.Group == g.Id).ToList();
+                    var allSel        = groupTeachers.Count > 0 && groupTeachers.All(t => _selectedTeacherIds.Contains(t.Id));
+                    var anySel        = groupTeachers.Any(t => _selectedTeacherIds.Contains(t.Id));
+                    var expanded      = _groupExpanded.GetValueOrDefault(g.Id, false);
 
                     <div style="margin-bottom:6px">
 
@@ -137,21 +145,26 @@
                                          Color="Color.Primary"
                                          Dense="true"
                                          StopClickPropagation="true"
-                                         ValueChanged="@(_ => ToggleGroupAll(g))" />
+                                         Disabled="@(groupTeachers.Count == 0)"
+                                         ValueChanged="@(_ => ToggleGroupAll(g.Id))" />
                             <span style="font-size:13px;font-weight:700;color:#333;user-select:none;flex:1;cursor:pointer"
-                                  @onclick="() => _groupExpanded[g] = !expanded">
-                                Grupp @g
+                                  @onclick="() => _groupExpanded[g.Id] = !expanded">
+                                @g.Name
                             </span>
                             <MudIconButton Icon="@(expanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
                                            Size="Size.Small"
                                            Style="padding:2px"
-                                           OnClick="() => _groupExpanded[g] = !expanded" />
+                                           OnClick="() => _groupExpanded[g.Id] = !expanded" />
                         </div>
 
                         @* Enskilda lärare – visas bara när gruppen är expanderad *@
                         @if (expanded)
                         {
                             <div style="margin-left:8px">
+                                @if (groupTeachers.Count == 0)
+                                {
+                                    <div style="font-size:12px;color:#999;padding:4px 0">Inga lärare i denna grupp</div>
+                                }
                                 @foreach (var teacher in groupTeachers)
                                 {
                                     var tc    = teacher;
@@ -176,32 +189,74 @@
                 }
             </div>
 
-            @* ── Resurser ─────────────────────────────────────────────── *@
-            <MudSelect T="int"
-                       Label="Resurser"
-                       MultiSelection="true"
-                       SelectedValues="_selectedResourceIds"
-                       SelectedValuesChanged="@OnResourcesChanged"
-                       Variant="Variant.Outlined"
-                       AnchorOrigin="Origin.BottomLeft"
-                       AdornmentIcon="@Icons.Material.Filled.DirectionsCar"
-                       Adornment="Adornment.Start"
-                       Dense="true"
-                       MultiSelectionTextFunc="@(s => PreviewText(s))">
-                @foreach (var r in BookingService.Resources)
+            @* ── Resurser – grupperade per ResourceType ───────────────── *@
+            <div>
+                <MudText Typo="Typo.caption"
+                         Style="font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px">
+                    Resurser
+                </MudText>
+
+                @foreach (var rg in ResourceGroups)
                 {
-                    <MudSelectItem T="int" Value="@r.Id" Text="@r.Name">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudIcon Icon="@r.Icon" Size="Size.Small" Style="font-size:16px" />
-                            <span>@r.Name</span>
-                            @if (!r.IsAvailable)
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Error">(ej tillgänglig)</MudText>
-                            }
-                        </MudStack>
-                    </MudSelectItem>
+                    var grp            = rg;
+                    var groupResources = BookingService.Resources.Where(r => r.Type == grp.Type).ToList();
+                    if (groupResources.Count == 0) continue;
+
+                    var allSel   = groupResources.All(r => _selectedResourceIds.Contains(r.Id));
+                    var anySel   = groupResources.Any(r => _selectedResourceIds.Contains(r.Id));
+                    var expanded = _resourceGroupExpanded.GetValueOrDefault(grp.Type, false);
+
+                    <div style="margin-bottom:6px">
+
+                        @* Grupphuvud *@
+                        <div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #e0e0e0;margin-bottom:4px">
+                            <MudCheckBox T="bool"
+                                         Value="@allSel"
+                                         Indeterminate="@(anySel && !allSel)"
+                                         Color="Color.Primary"
+                                         Dense="true"
+                                         StopClickPropagation="true"
+                                         ValueChanged="@(_ => ToggleResourceGroupAll(grp.Type))" />
+                            <span style="font-size:13px;font-weight:700;color:#333;user-select:none;flex:1;cursor:pointer"
+                                  @onclick="() => _resourceGroupExpanded[grp.Type] = !expanded">
+                                @grp.Label
+                            </span>
+                            <MudIconButton Icon="@(expanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                           Size="Size.Small"
+                                           Style="padding:2px"
+                                           OnClick="() => _resourceGroupExpanded[grp.Type] = !expanded" />
+                        </div>
+
+                        @* Enskilda resurser *@
+                        @if (expanded)
+                        {
+                            <div style="margin-left:8px">
+                                @foreach (var resource in groupResources)
+                                {
+                                    var r     = resource;
+                                    var isSel = _selectedResourceIds.Contains(r.Id);
+                                    <div style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer"
+                                         @onclick="() => ToggleResourceInDrawer(r.Id)">
+                                        <MudCheckBox T="bool"
+                                                     Value="@isSel"
+                                                     Color="Color.Primary"
+                                                     Dense="true"
+                                                     StopClickPropagation="true"
+                                                     ValueChanged="@(_ => ToggleResourceInDrawer(r.Id))" />
+                                        <MudIcon Icon="@r.Icon" Style="font-size:16px;color:#546e7a;flex-shrink:0" />
+                                        <span style="font-size:13px;user-select:none">@r.Name</span>
+                                        @if (!r.IsAvailable)
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Error" Style="margin-left:4px">(ej tillgänglig)</MudText>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                    </div>
                 }
-            </MudSelect>
+            </div>
 
             @* ── Lektionstyp (multi) ───────────────────────────────────── *@
             <MudSelect T="int"
@@ -328,8 +383,10 @@
                            Style="min-width:130px;background:white;border-radius:4px"
                            Class="mr-2">
                     <MudSelectItem T="int" Value="0">Alla grupper</MudSelectItem>
-                    <MudSelectItem T="int" Value="1">Grupp 1</MudSelectItem>
-                    <MudSelectItem T="int" Value="2">Grupp 2</MudSelectItem>
+                    @foreach (var g in BookingService.TeacherGroups)
+                    {
+                        <MudSelectItem T="int" Value="@g.Id">@g.Name</MudSelectItem>
+                    }
                 </MudSelect>
 
                 @* Teacher chips, filtered by group *@
@@ -414,8 +471,8 @@
     private bool _filterOpen;
     private bool _datePickerOpen;
 
-    // ── Grupper ihopfällda per default ────────────────────────────────────────
-    private Dictionary<int, bool> _groupExpanded = new() { { 1, false }, { 2, false } };
+    // ── Grupper ihopfällda per default (nyckel = TeacherGroup.Id) ─────────────
+    private Dictionary<int, bool> _groupExpanded = new();
 
     // ── Elevsökning ───────────────────────────────────────────────────────────
     private bool   _searchMode      = false;
@@ -456,22 +513,22 @@
         ShowBooked    = true,
     };
 
-    // ── Group filter for quick-chips in nav bar (0 = Alla, 1 = Grupp 1, 2 = Grupp 2)
+    // ── Group filter for quick-chips in nav bar (0 = Alla, annars TeacherGroup.Id)
     private int _activeGroupFilter = 0;
 
     // Multi-select dropdown state — initialised in OnInitialized
     private IEnumerable<int> _selectedTeacherIds    = new List<int>();
-    private IEnumerable<int> _selectedGroup1Ids     = new List<int>();
-    private IEnumerable<int> _selectedGroup2Ids     = new List<int>();
     private IEnumerable<int> _selectedResourceIds   = new List<int>();
     private IEnumerable<int> _selectedLessonTypeIds = new List<int>();
 
     protected override void OnInitialized()
     {
-        // Default: Grupp 1 selected, Grupp 2 unselected
-        _selectedGroup1Ids  = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
-        _selectedGroup2Ids  = new List<int>();
-        _selectedTeacherIds = _selectedGroup1Ids.ToList();
+        // Default: första gruppens lärare valda (matchar tidigare "Grupp 1"-beteende).
+        var firstGroupId    = BookingService.TeacherGroups.FirstOrDefault()?.Id ?? 0;
+        _selectedTeacherIds = BookingService.Teachers
+            .Where(t => t.Group == firstGroupId)
+            .Select(t => t.Id)
+            .ToList();
         foreach (var t in BookingService.Teachers)
             t.IsSelected = _selectedTeacherIds.Contains(t.Id);
     }
@@ -486,6 +543,23 @@
 
     private List<Teacher> ActiveTeachers =>
         BookingService.Teachers.Where(t => t.IsSelected).ToList();
+
+    // Resurs-grupper i filter-drawer (en rad per ResourceType som har resurser).
+    private static readonly (ResourceType Type, string Label)[] ResourceGroups = new[]
+    {
+        (ResourceType.Car,       "Bilar"),
+        (ResourceType.Classroom, "Klassrum"),
+        (ResourceType.Simulator, "Simulatorer"),
+        (ResourceType.Other,     "Övrigt"),
+    };
+
+    private Dictionary<ResourceType, bool> _resourceGroupExpanded = new()
+    {
+        { ResourceType.Car,       false },
+        { ResourceType.Classroom, false },
+        { ResourceType.Simulator, false },
+        { ResourceType.Other,     false },
+    };
 
     // ── Period helpers ────────────────────────────────────────────────────────
 
@@ -540,17 +614,17 @@
     private void PrevPeriod() =>
         _currentDate = _currentView switch
         {
-            "dag"   => _currentDate.AddDays(-1),
-            "vecka" => _currentDate.AddDays(-7),
-            _       => _currentDate.AddMonths(-1),
+            "dag"              => _currentDate.AddDays(-1),
+            "vecka" or "lärare" => _currentDate.AddDays(-7),
+            _                  => _currentDate.AddMonths(-1),
         };
 
     private void NextPeriod() =>
         _currentDate = _currentView switch
         {
-            "dag"   => _currentDate.AddDays(1),
-            "vecka" => _currentDate.AddDays(7),
-            _       => _currentDate.AddMonths(1),
+            "dag"              => _currentDate.AddDays(1),
+            "vecka" or "lärare" => _currentDate.AddDays(7),
+            _                  => _currentDate.AddMonths(1),
         };
 
     private void GoToToday() => _currentDate = DateTime.Today;
@@ -573,7 +647,6 @@
     {
         t.IsSelected = !t.IsSelected;
         _selectedTeacherIds = BookingService.Teachers.Where(x => x.IsSelected).Select(x => x.Id).ToList();
-        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
@@ -595,7 +668,6 @@
         _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
             t.IsSelected = sel.Contains(t.Id);
-        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
@@ -611,15 +683,7 @@
         _selectedTeacherIds = sel;
         foreach (var t in BookingService.Teachers)
             t.IsSelected = sel.Contains(t.Id);
-        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
-    }
-
-    private void SyncGroupSelectionsFromTeachers()
-    {
-        var sel = _selectedTeacherIds.ToHashSet();
-        _selectedGroup1Ids = BookingService.Teachers.Where(t => t.Group == 1 && sel.Contains(t.Id)).Select(t => t.Id).ToList();
-        _selectedGroup2Ids = BookingService.Teachers.Where(t => t.Group == 2 && sel.Contains(t.Id)).Select(t => t.Id).ToList();
     }
 
     private void OnTeachersChanged(IEnumerable<int> selected)
@@ -627,13 +691,34 @@
         _selectedTeacherIds = selected.ToList();
         foreach (var t in BookingService.Teachers)
             t.IsSelected = _selectedTeacherIds.Contains(t.Id);
-        SyncGroupSelectionsFromTeachers();
         RefreshFilter();
     }
 
     private void OnResourcesChanged(IEnumerable<int> selected)
     {
         _selectedResourceIds = selected.ToList();
+        RefreshFilter();
+    }
+
+    private void ToggleResourceInDrawer(int id)
+    {
+        var sel = _selectedResourceIds.ToHashSet();
+        if (sel.Contains(id)) sel.Remove(id);
+        else sel.Add(id);
+        _selectedResourceIds = sel;
+        RefreshFilter();
+    }
+
+    private void ToggleResourceGroupAll(ResourceType type)
+    {
+        var groupIds = BookingService.Resources.Where(r => r.Type == type).Select(r => r.Id).ToHashSet();
+        var sel      = _selectedResourceIds.ToHashSet();
+        bool allChosen = groupIds.Count > 0 && groupIds.All(id => sel.Contains(id));
+        if (allChosen)
+            foreach (var id in groupIds) sel.Remove(id);
+        else
+            foreach (var id in groupIds) sel.Add(id);
+        _selectedResourceIds = sel;
         RefreshFilter();
     }
 
@@ -677,16 +762,38 @@
 
     private void ResetFilter()
     {
-        _selectedGroup1Ids     = BookingService.Teachers.Where(t => t.Group == 1).Select(t => t.Id).ToList();
-        _selectedGroup2Ids     = new List<int>();
-        _selectedTeacherIds    = _selectedGroup1Ids.ToList();
+        // Återställer till första gruppens lärare valda – matchar tidigare "Grupp 1"-beteende.
+        var firstGroupId       = BookingService.TeacherGroups.FirstOrDefault()?.Id ?? 0;
+        _selectedTeacherIds    = BookingService.Teachers.Where(t => t.Group == firstGroupId).Select(t => t.Id).ToList();
         _selectedResourceIds   = new List<int>();
         _selectedLessonTypeIds = new List<int>();
         _activeGroupFilter     = 0;
         foreach (var t in BookingService.Teachers)
-            t.IsSelected = t.Group == 1;
+            t.IsSelected = t.Group == firstGroupId;
         _filter = new CalendarFilter { ShowAvailable = true, ShowBooked = true, HideWeekends = false, HideTeacherAvatars = false };
         StateHasChanged();
+    }
+
+    // ── Group editor dialog ───────────────────────────────────────────────────
+
+    private async Task OpenGroupEditor()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog  = await DialogService.ShowAsync<GroupEditDialog>("", options);
+        await dialog.Result;
+
+        // Synka urval efter eventuella ändringar: ta bort ids som inte längre finns
+        // eller hör till en raderad grupp, och uppdatera IsSelected.
+        var validTeacherIds = BookingService.Teachers.Select(t => t.Id).ToHashSet();
+        _selectedTeacherIds = _selectedTeacherIds.Where(id => validTeacherIds.Contains(id)).ToList();
+        foreach (var t in BookingService.Teachers)
+            t.IsSelected = _selectedTeacherIds.Contains(t.Id);
+
+        // Nollställ nav-bar-dropdown om aktivt filter pekar på en raderad grupp.
+        if (_activeGroupFilter != 0 && !BookingService.TeacherGroups.Any(g => g.Id == _activeGroupFilter))
+            _activeGroupFilter = 0;
+
+        RefreshFilter();
     }
 
     // ── Booking dialog ────────────────────────────────────────────────────────

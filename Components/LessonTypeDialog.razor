@@ -12,6 +12,22 @@
     <DialogContent>
         <MudStack Spacing="3" Style="min-width:320px">
 
+            @* Kopiera från befintlig mall – endast vid ny *@
+            @if (IsNew && BookingService.LessonTypes.Any())
+            {
+                <MudSelect T="int?" Value="_copyFromId" ValueChanged="ApplyTemplate"
+                           Label="Kopiera från..." Clearable="true"
+                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                           AnchorOrigin="Origin.BottomLeft"
+                           HelperText="Förifyll fält från en befintlig lektionsmall">
+                    <MudSelectItem T="int?" Value="@((int?)null)">— Tom mall —</MudSelectItem>
+                    @foreach (var lt in BookingService.LessonTypes)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)lt.Id)">@lt.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+
             <MudTextField @bind-Value="_model.Name"
                           Label="Namn" Required="true"
                           Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -119,6 +135,7 @@
 
     private LessonType _model = new();
     private bool IsNew => ExistingType == null;
+    private int? _copyFromId;
 
     private static readonly (string, string)[] _palette = new[]
     {
@@ -166,6 +183,43 @@
                 IsBookable  = true,
             };
         }
+    }
+
+    /// <summary>Kopierar fälten från en befintlig mall till _model. Null = töm.</summary>
+    private void ApplyTemplate(int? sourceId)
+    {
+        _copyFromId = sourceId;
+
+        if (sourceId == null)
+        {
+            _model = new LessonType
+            {
+                Color                  = "#1565C0",
+                LightColor             = "#BBDEFB",
+                DefaultDurationMinutes = 60,
+                MaxStudents            = 1,
+                IsBookable             = true,
+            };
+            return;
+        }
+
+        var src = BookingService.LessonTypes.FirstOrDefault(l => l.Id == sourceId.Value);
+        if (src == null) return;
+
+        _model = new LessonType
+        {
+            // Inget Id – sparas som ny
+            Name                   = $"Kopia av {src.Name}",
+            Description            = src.Description,
+            Icon                   = src.Icon,
+            DefaultDurationMinutes = src.DefaultDurationMinutes,
+            MaxStudents            = src.MaxStudents,
+            Color                  = src.Color,
+            LightColor             = src.LightColor,
+            IsBookable             = src.IsBookable,
+            RequiresIdCheck        = src.RequiresIdCheck,
+            ArticleId              = src.ArticleId,
+        };
     }
 
     private void Save()

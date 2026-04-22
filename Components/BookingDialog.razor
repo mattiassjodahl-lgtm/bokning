@@ -397,6 +397,21 @@
                                          Placeholder="Sök eller skriv namn…" />
                     }
 
+                    @* ── Körkortskategori (endast för prov) ─────────────── *@
+                    @if (IsExamType)
+                    {
+                        <MudSelect T="string" Label="Körkortskategori"
+                                   Value="@_request.LicenseCategory"
+                                   ValueChanged="@((string v) => _request.LicenseCategory = v)"
+                                   Required="true" RequiredError="Välj körkortskategori"
+                                   Variant="Variant.Outlined">
+                            @foreach (var cat in AvailableLicenseCategories)
+                            {
+                                <MudSelectItem T="string" Value="@cat">@cat</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+
                     @* ── Elevsaldo ──────────────────────────────────────── *@
                     @if (!string.IsNullOrWhiteSpace(_request.StudentName) && GetStudentBalance(_request.StudentName) is var bal && bal != null)
                     {
@@ -531,6 +546,20 @@
     private MudForm          _form         = default!;
     private bool IsViewMode     => ExistingEvent != null;
     private bool IsSharedLesson => _request.LessonTypeId == SharedLessonTypeId;
+    private bool IsExamType     => BookingService.IsExamLessonType(_request.LessonTypeId);
+
+    /// <summary>Elevens körkortskategorier, eller default ["B"] om elev saknas/okänd.</summary>
+    private IEnumerable<string> AvailableLicenseCategories
+    {
+        get
+        {
+            var profile = !string.IsNullOrWhiteSpace(_request.StudentName)
+                ? BookingService.GetStudentProfile(_request.StudentName)
+                : null;
+            var list = profile?.LicenseCategories;
+            return list is { Count: > 0 } ? list : new List<string> { "B" };
+        }
+    }
 
     // ── Lägg till deltagare (view mode, grupplektioner) ────────────────────────
     private bool   _addingParticipant  = false;
@@ -555,6 +584,10 @@
                                     ? PreselectedTeacherId
                                     : (BookingService.Teachers.FirstOrDefault()?.Id ?? 1);
         _request.LessonTypeId = PreselectedLessonTypeId ?? 2;
+
+        // Sätt default-kategori om prov-typ valts från start.
+        if (BookingService.IsExamLessonType(_request.LessonTypeId))
+            _request.LicenseCategory = AvailableLicenseCategories.FirstOrDefault();
 
         var start = PreselectedStart != default ? PreselectedStart : DateTime.Now;
         _rows.Add(new BookingRow
@@ -652,6 +685,17 @@
         _request.LessonTypeId = typeId;
         if (typeId != SharedLessonTypeId)
             _extraStudents.Clear();
+
+        // Auto-sätt default-kategori när man byter till prov-typ, nolla annars.
+        if (BookingService.IsExamLessonType(typeId))
+        {
+            if (string.IsNullOrWhiteSpace(_request.LicenseCategory))
+                _request.LicenseCategory = AvailableLicenseCategories.FirstOrDefault();
+        }
+        else
+        {
+            _request.LicenseCategory = null;
+        }
     }
 
     // ── Student search & shared-lesson helpers ────────────────────────────────
@@ -717,6 +761,20 @@
         await _form.Validate();
         if (!_isValid) return;
 
+        // Synka kategori mot den valda elevens faktiska kategorier vid prov-bokning.
+        // Skyddar mot att default-värdet "B" sparas om eleven faktiskt har A1/AM.
+        var licenseCategory = _request.LicenseCategory;
+        if (IsExamType)
+        {
+            var elevCats = AvailableLicenseCategories.ToList();
+            if (string.IsNullOrWhiteSpace(licenseCategory) || !elevCats.Contains(licenseCategory!))
+                licenseCategory = elevCats.FirstOrDefault();
+        }
+        else
+        {
+            licenseCategory = null;
+        }
+
         foreach (var row in _rows)
         {
             var date = row.Date ?? DateTime.Today;
@@ -733,6 +791,7 @@
                 SelectedResourceIds = _request.SelectedResourceIds.ToList(),
                 Notes               = _request.Notes,
                 PickupLocationId    = _request.PickupLocationId,
+                LicenseCategory     = licenseCategory,
             });
         }
 

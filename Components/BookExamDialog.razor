@@ -1,0 +1,129 @@
+@* Enkel dialog för att boka nytt prov (teori eller uppkörning) från elevkortet. *@
+@inject BookingService BookingService
+
+<MudDialog Style="max-width:440px;width:100%;">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.FactCheck" Class="mr-2" Style="vertical-align:middle" />
+            Boka prov – @StudentName
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width:380px;padding:4px 0">
+
+            @* Typ *@
+            <MudSelect T="int" Label="Typ av prov"
+                       Value="_lessonTypeId"
+                       ValueChanged="@((int v) => _lessonTypeId = v)"
+                       Required="true" Variant="Variant.Outlined">
+                <MudSelectItem Value="10">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.MenuBook" Size="Size.Small" />
+                        <span>Teoriprov</span>
+                    </MudStack>
+                </MudSelectItem>
+                <MudSelectItem Value="7">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" Size="Size.Small" />
+                        <span>Uppkörning</span>
+                    </MudStack>
+                </MudSelectItem>
+            </MudSelect>
+
+            @* Kategori *@
+            <MudSelect T="string" Label="Körkortskategori"
+                       Value="_licenseCategory"
+                       ValueChanged="@((string v) => _licenseCategory = v)"
+                       Required="true" Variant="Variant.Outlined">
+                @foreach (var cat in _categories)
+                {
+                    <MudSelectItem T="string" Value="@cat">@cat</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Datum *@
+            <MudDatePicker Label="Datum" @bind-Date="_date"
+                           MinDate="DateTime.Today"
+                           Required="true" Variant="Variant.Outlined" />
+
+            @* Tid *@
+            <MudTimePicker Label="Starttid" @bind-Time="_startTime"
+                           Required="true" Variant="Variant.Outlined" AmPm="false" />
+
+            @* Lärare *@
+            <MudSelect T="int" Label="Lärare"
+                       Value="_teacherId"
+                       ValueChanged="@((int v) => _teacherId = v)"
+                       Required="true" Variant="Variant.Outlined">
+                @foreach (var t in BookingService.Teachers)
+                {
+                    <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Avbryt</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(!CanSave)"
+                   OnClick="Save">
+            Boka prov
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance Dialog { get; set; } = default!;
+
+    [Parameter] public string StudentName              { get; set; } = "";
+    [Parameter] public IEnumerable<string>? Categories { get; set; }
+    [Parameter] public string? PreselectedCategory     { get; set; }
+    [Parameter] public int?    PreselectedLessonTypeId { get; set; }
+
+    private int       _lessonTypeId    = 10;                 // default: teoriprov
+    private string    _licenseCategory = "";
+    private DateTime? _date            = DateTime.Today.AddDays(7);
+    private TimeSpan? _startTime       = new(9, 0, 0);
+    private int       _teacherId;
+
+    private List<string> _categories = new();
+
+    private bool CanSave =>
+        _date.HasValue
+        && _startTime.HasValue
+        && !string.IsNullOrWhiteSpace(_licenseCategory)
+        && _teacherId > 0;
+
+    protected override void OnInitialized()
+    {
+        _categories   = (Categories ?? new[] { "B" }).ToList();
+        _licenseCategory = PreselectedCategory ?? _categories.FirstOrDefault() ?? "B";
+        _lessonTypeId = PreselectedLessonTypeId ?? 10;
+        _teacherId    = BookingService.Teachers.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private void Save()
+    {
+        var start = _date!.Value.Date.Add(_startTime!.Value);
+        var lt    = BookingService.GetLessonType(_lessonTypeId);
+        var end   = start.AddMinutes(lt?.DefaultDurationMinutes ?? 50);
+
+        var evt = BookingService.AddBooking(new BookingRequest
+        {
+            TeacherId       = _teacherId,
+            StartTime       = start,
+            EndTime         = end,
+            StudentName     = StudentName,
+            LessonTypeId    = _lessonTypeId,
+            LicenseCategory = _licenseCategory,
+        });
+
+        Dialog.Close(DialogResult.Ok(evt));
+    }
+
+    private void Cancel() => Dialog.Cancel();
+}

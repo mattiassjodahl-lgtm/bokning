@@ -16,7 +16,7 @@ builder.Services.AddSession(options =>
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
-builder.Services.AddScoped<BookingService>();
+builder.Services.AddSingleton<BookingService>();
 
 var app = builder.Build();
 

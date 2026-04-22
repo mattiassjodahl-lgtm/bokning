@@ -27,6 +27,46 @@ public class BookingService
         new() { Id =11, Name = "Kristin Fransson", Initials = "KF", Color = "#6D4C41", LightColor = "#EFEBE9", IsSelected = false, Group = 2 },
     };
 
+    // ── Teacher groups ────────────────────────────────────────────────────────
+
+    public List<TeacherGroup> TeacherGroups { get; } = new()
+    {
+        new() { Id = 1, Name = "Grupp 1" },
+        new() { Id = 2, Name = "Grupp 2" },
+    };
+
+    private int _nextGroupId = 3;
+
+    /// <summary>Skapar en ny tom grupp och returnerar den.</summary>
+    public TeacherGroup AddGroup(string name)
+    {
+        var g = new TeacherGroup { Id = _nextGroupId++, Name = string.IsNullOrWhiteSpace(name) ? $"Ny grupp {_nextGroupId - 1}" : name.Trim() };
+        TeacherGroups.Add(g);
+        return g;
+    }
+
+    public void RenameGroup(int id, string newName)
+    {
+        var g = TeacherGroups.FirstOrDefault(x => x.Id == id);
+        if (g != null && !string.IsNullOrWhiteSpace(newName)) g.Name = newName.Trim();
+    }
+
+    /// <summary>Raderar grupp. Lärare som tillhörde gruppen flyttas till Group = 0 (ingen grupp).</summary>
+    public void DeleteGroup(int id)
+    {
+        if (TeacherGroups.Count <= 1) return;                        // behåll minst en grupp
+        var g = TeacherGroups.FirstOrDefault(x => x.Id == id);
+        if (g == null) return;
+        foreach (var t in Teachers.Where(t => t.Group == id)) t.Group = 0;
+        TeacherGroups.Remove(g);
+    }
+
+    public void SetTeacherGroup(int teacherId, int groupId)
+    {
+        var t = Teachers.FirstOrDefault(x => x.Id == teacherId);
+        if (t != null) t.Group = groupId;
+    }
+
     // ── Articles (mock PIM data) ──────────────────────────────────────────────
 
     public List<Article> Articles { get; } = new()
@@ -40,6 +80,7 @@ public class BookingService
         new() { Id = 7,  ArticleNumber = "RISK-2",  Name = "Riskutbildning del 2 (teori/ALK)",  Price = 1_200m },
         new() { Id = 8,  ArticleNumber = "UPP-B",   Name = "Uppkörning B",                      Price = 1_500m },
         new() { Id = 9,  ArticleNumber = "DEL-060", Name = "Delad körlektion, 60 min (p. elev)",Price =  650m  },
+        new() { Id = 10, ArticleNumber = "TEO-B",   Name = "Teoriprov B",                       Price =   325m },
     };
 
     public Article? GetArticle(int? id)
@@ -56,6 +97,7 @@ public class BookingService
         new() { Id = 7, Name = "Uppkörning",           Description = "Körprov hos Trafikverket",                     Icon = Icons.Material.Filled.FactCheck,           DefaultDurationMinutes = 45,  Color = "#00695C", LightColor = "#B2DFDB", ArticleId = 8 },
         new() { Id = 8, Name = "Delad körlektion",     Description = "Flera elever delar på en lektion",              Icon = Icons.Material.Filled.Group,               DefaultDurationMinutes = 60,  Color = "#F57F17", LightColor = "#FFF9C4", ArticleId = 9 },
         new() { Id = 9, Name = "Lunch",                Description = "Lunchpaus",                                     Icon = Icons.Material.Filled.Restaurant,           DefaultDurationMinutes = 60,  Color = "#78909C", LightColor = "#ECEFF1", IsBookable = false },
+        new() { Id = 10,Name = "Teoriprov",            Description = "Kunskapsprov hos Trafikverket",                 Icon = Icons.Material.Filled.MenuBook,            DefaultDurationMinutes = 50,  Color = "#6A1B9A", LightColor = "#E1BEE7", ArticleId = 10 },
     };
 
     public List<Student> Students { get; } = new()
@@ -1325,62 +1367,136 @@ public class BookingService
             });
         }
 
+        // ── Mock prov-events (Teoriprov = LessonTypeId 10, Uppkörning = 7) ────────
+        // Alice: teoriprov godkänt i förrgår, uppkörning bokad om 6 dagar (pending)
+        _events.Add(new CalendarEvent
+        {
+            Id              = id++,
+            TeacherId       = 1,
+            StartTime       = today.AddDays(-2).AddHours(9),
+            EndTime         = today.AddDays(-2).AddHours(9).AddMinutes(50),
+            IsBooked        = true,
+            StudentName     = alice,
+            LessonTypeId    = 10,
+            LicenseCategory = "B",
+            ExamResult      = BookingDemo.Models.ExamResult.Passed,
+        });
+        _events.Add(new CalendarEvent
+        {
+            Id              = id++,
+            TeacherId       = 1,
+            StartTime       = today.AddDays(6).AddHours(10),
+            EndTime         = today.AddDays(6).AddHours(10).AddMinutes(45),
+            IsBooked        = true,
+            StudentName     = alice,
+            LessonTypeId    = 7,
+            LicenseCategory = "B",
+            ExamResult      = BookingDemo.Models.ExamResult.Pending,
+            ResourceIds     = new List<int> { 1 },
+        });
+
         _nextEventId = id;
+    }
+
+    // ── Exam events (Teoriprov = 10, Uppkörning = 7) ──────────────────────────
+    private const int TheoryExamLessonTypeId    = 10;
+    private const int PracticalExamLessonTypeId = 7;
+
+    /// <summary>
+    /// Alla prov-events (teori eller praktiskt) för en elev inom en körkortskategori,
+    /// sorterade med senaste datum överst. Inkluderar även event utan kategori (fallback
+    /// för bokningar gjorda innan LicenseCategory infördes).
+    /// </summary>
+    public IEnumerable<CalendarEvent> GetExamEvents(string studentName, string licenseCategory, bool theory)
+    {
+        var typeId = theory ? TheoryExamLessonTypeId : PracticalExamLessonTypeId;
+        return _events
+            .Where(e => e.LessonTypeId == typeId
+                     && e.AllStudentNames.Any(n => n.Equals(studentName, StringComparison.OrdinalIgnoreCase))
+                     && (string.Equals(e.LicenseCategory, licenseCategory, StringComparison.OrdinalIgnoreCase)
+                         || string.IsNullOrWhiteSpace(e.LicenseCategory)))
+            .OrderByDescending(e => e.StartTime);
+    }
+
+    /// <summary>Uppdaterar ExamResult på ett prov-event.</summary>
+    public void UpdateExamResult(int eventId, ExamResult result)
+    {
+        var ev = _events.FirstOrDefault(e => e.Id == eventId);
+        if (ev is not null) ev.ExamResult = result;
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
     public IEnumerable<CalendarEvent> GetEventsForRange(DateTime start, DateTime end, CalendarFilter filter)
     {
-        var selectedTeachers = filter.SelectedTeacherIds.Count > 0
+        var selectedTeachers = (filter.SelectedTeacherIds.Count > 0
             ? filter.SelectedTeacherIds
-            : Teachers.Where(t => t.IsSelected).Select(t => t.Id).ToList();
+            : Teachers.Where(t => t.IsSelected).Select(t => t.Id).ToList()).ToHashSet();
+
+        var selectedResources = filter.SelectedResourceIds.ToHashSet();
+
+        // ShowOnlyFullyBooked innebär implicit att bokade pass ska inkluderas
+        bool effectiveShowBooked    = filter.ShowBooked    || filter.ShowOnlyFullyBooked;
+        bool effectiveShowAvailable = filter.ShowAvailable && !filter.ShowOnlyFullyBooked;
+
+        bool MatchesLessonType(CalendarEvent e) =>
+            filter.SelectedLessonTypeIds.Count == 0
+            || (e.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value));
+
+        // Additiv matchning: en lärare ELLER en resurs som är vald räcker för att eventet syns.
+        bool MatchesTeacherOrResource(CalendarEvent e) =>
+            selectedTeachers.Contains(e.TeacherId)
+            || (selectedResources.Count > 0 && selectedResources.Any(r => e.ResourceIds.Contains(r)));
 
         var result = new List<CalendarEvent>();
+        var seen   = new HashSet<int>();
 
-        foreach (var teacherId in selectedTeachers)
+        // ── Bokade events: lärare ELLER resurs matchar ────────────────────────
+        if (effectiveShowBooked)
         {
-            bool hasAnyTemplate = ScheduleTemplates.Any(t => t.TeacherId == teacherId);
-
-            // ShowOnlyFullyBooked innebär implicit att bokade pass ska inkluderas
-            bool effectiveShowBooked    = filter.ShowBooked    || filter.ShowOnlyFullyBooked;
-            bool effectiveShowAvailable = filter.ShowAvailable && !filter.ShowOnlyFullyBooked;
-
-            if (hasAnyTemplate)
+            foreach (var e in _events)
             {
-                // Booked events from _events (real bookings always shown)
-                var booked = _events.Where(e =>
-                    e.TeacherId == teacherId &&
-                    e.StartTime < end && e.EndTime > start &&
-                    e.IsBooked && effectiveShowBooked &&
-                    (filter.SelectedLessonTypeIds.Count == 0 || (e.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value))) &&
-                    (filter.SelectedResourceIds.Count  == 0 || filter.SelectedResourceIds.All(r => e.ResourceIds.Contains(r)))
-                ).ToList();
-                result.AddRange(booked);
+                if (!e.IsBooked) continue;
+                if (e.StartTime >= end || e.EndTime <= start) continue;
+                if (!MatchesLessonType(e)) continue;
+                if (!MatchesTeacherOrResource(e)) continue;
+                if (seen.Add(e.Id)) result.Add(e);
+            }
+        }
 
-                // Available slots generated week-by-week from whichever template is active that week
-                if (effectiveShowAvailable)
+        // ── Lediga pass: bara för valda lärare (slottar är lärarbundna) ───────
+        if (effectiveShowAvailable)
+        {
+            foreach (var teacherId in selectedTeachers)
+            {
+                bool hasAnyTemplate = ScheduleTemplates.Any(t => t.TeacherId == teacherId);
+
+                if (hasAnyTemplate)
                 {
+                    var teacherBooked = _events.Where(ev =>
+                        ev.TeacherId == teacherId && ev.IsBooked
+                        && ev.StartTime < end && ev.EndTime > start).ToList();
+
                     foreach (var slot in GenerateTemplateSlotsForTeacher(teacherId, start, end))
                     {
-                        bool conflict = booked.Any(b => b.StartTime < slot.EndTime && b.EndTime > slot.StartTime);
-                        if (!conflict &&
-                            (filter.SelectedLessonTypeIds.Count == 0 || (slot.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(slot.LessonTypeId.Value))))
-                            result.Add(slot);
+                        bool conflict = teacherBooked.Any(b => b.StartTime < slot.EndTime && b.EndTime > slot.StartTime);
+                        if (conflict) continue;
+                        if (!MatchesLessonType(slot)) continue;
+                        if (seen.Add(slot.Id)) result.Add(slot);
                     }
                 }
-            }
-            else
-            {
-                // No template — fall back to hand-coded events
-                result.AddRange(_events.Where(e =>
-                    e.TeacherId == teacherId &&
-                    e.StartTime < end && e.EndTime > start &&
-                    (effectiveShowBooked    || !e.IsBooked) &&
-                    (effectiveShowAvailable || e.IsBooked)  &&
-                    (filter.SelectedLessonTypeIds.Count == 0 || (e.LessonTypeId.HasValue && filter.SelectedLessonTypeIds.Contains(e.LessonTypeId.Value))) &&
-                    (filter.SelectedResourceIds.Count  == 0 || filter.SelectedResourceIds.All(r => e.ResourceIds.Contains(r)))
-                ));
+                else
+                {
+                    // Ingen mall – fall tillbaka på handkodade lediga events
+                    foreach (var ev in _events)
+                    {
+                        if (ev.TeacherId != teacherId) continue;
+                        if (ev.IsBooked) continue;
+                        if (ev.StartTime >= end || ev.EndTime <= start) continue;
+                        if (!MatchesLessonType(ev)) continue;
+                        if (seen.Add(ev.Id)) result.Add(ev);
+                    }
+                }
             }
         }
 
@@ -1544,6 +1660,22 @@ public class BookingService
     public IEnumerable<CalendarEvent> GetEventsForDay(DateTime date, CalendarFilter filter)
         => GetEventsForRange(date.Date, date.Date.AddDays(1), filter);
 
+    /// <summary>
+    /// Bokade events i intervallet som innehåller minst en av de givna resurserna.
+    /// Används av lärarvyn för att räkna ut "implicita" lärarkolumner när man
+    /// tänder en resurs men ingen lärare.
+    /// </summary>
+    public IEnumerable<CalendarEvent> GetBookedEventsWithAnyResource(
+        IEnumerable<int> resourceIds, DateTime start, DateTime end)
+    {
+        var ids = resourceIds.ToHashSet();
+        if (ids.Count == 0) return Enumerable.Empty<CalendarEvent>();
+        return _events.Where(e => e.IsBooked
+                              && e.ResourceIds.Any(r => ids.Contains(r))
+                              && e.StartTime < end
+                              && e.EndTime   > start);
+    }
+
     /// Returns the first free (unbooked) slot for a teacher after the given point in time.
     public CalendarEvent? GetNextAvailableSlot(int teacherId, DateTime after)
         => _events
@@ -1576,6 +1708,9 @@ public class BookingService
 
     public CalendarEvent AddBooking(BookingRequest req)
     {
+        var isExam = req.LessonTypeId == TheoryExamLessonTypeId
+                  || req.LessonTypeId == PracticalExamLessonTypeId;
+
         var evt = new CalendarEvent
         {
             Id               = _nextEventId++,
@@ -1589,10 +1724,16 @@ public class BookingService
             ResourceIds      = req.SelectedResourceIds.ToList(),
             Notes            = req.Notes,
             PickupLocationId = req.PickupLocationId,
+            LicenseCategory  = req.LicenseCategory,
+            ExamResult       = isExam ? BookingDemo.Models.ExamResult.Pending : null,
         };
         _events.Add(evt);
         return evt;
     }
+
+    /// <summary>True om LessonTypeId motsvarar Teoriprov eller Uppkörning.</summary>
+    public static bool IsExamLessonType(int? lessonTypeId)
+        => lessonTypeId == TheoryExamLessonTypeId || lessonTypeId == PracticalExamLessonTypeId;
 
     /// Returnerar true om läraren redan har ett event som överlappar [start, end).
     public bool HasEventConflict(int teacherId, DateTime start, DateTime end, int? excludeId = null)
@@ -1600,6 +1741,24 @@ public class BookingService
                          && (excludeId == null || e.Id != excludeId)
                          && e.StartTime < end
                          && e.EndTime   > start);
+
+    /// <summary>
+    /// Uppdaterar lärare och/eller resurser på en befintlig bokning.
+    /// Returnerar false om den nya läraren redan har en krockande bokning.
+    /// </summary>
+    public bool UpdateBooking(int eventId, int newTeacherId, IEnumerable<int> newResourceIds)
+    {
+        var evt = _events.FirstOrDefault(e => e.Id == eventId && e.IsBooked);
+        if (evt is null) return false;
+
+        if (newTeacherId != evt.TeacherId &&
+            HasEventConflict(newTeacherId, evt.StartTime, evt.EndTime, excludeId: eventId))
+            return false;
+
+        evt.TeacherId   = newTeacherId;
+        evt.ResourceIds = newResourceIds.ToList();
+        return true;
+    }
 
     public CalendarEvent AddAvailableSlot(int teacherId, DateTime start, DateTime end, int? lessonTypeId = null)
     {
@@ -1700,7 +1859,8 @@ public class BookingService
         new()
         {
             Id = 1, Name = "Standard vecka", CycleWeeks = 1, TeacherId = 1,
-            StartDate = new DateOnly(2026, 1, 5), // Gäller fr.o.m. v.2 2026
+            StartDate = new DateOnly(2026, 1, 5),  // v.2 2026
+            EndDate   = new DateOnly(2026, 12, 31), // tidsbestämd för att testa markering i pickern
             TimeBlocks = new List<ScheduleTimeBlock>
             {
                 // Måndag

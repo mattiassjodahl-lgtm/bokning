@@ -1,0 +1,118 @@
+@inject BookingService BookingService
+
+@* ═══════════════════════════════════════════════════════════════════════════
+   GroupEditDialog – redigera lärargrupper
+   • Lista över grupper med inline-rename och radera
+   • Knapp "Ny grupp"
+   • För varje grupp: checkbox-lista över alla lärare (ingår / ingår inte)
+   En lärare kan bara tillhöra EN grupp. Bocka i en annan grupp flyttar läraren.
+   ═══════════════════════════════════════════════════════════════════════════ *@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-1" Style="vertical-align:middle" />
+            Redigera grupper
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width:380px">
+
+            @foreach (var group in BookingService.TeacherGroups.ToList())
+            {
+                var g         = group;
+                var members   = BookingService.Teachers.Where(t => t.Group == g.Id).ToList();
+                var canDelete = BookingService.TeacherGroups.Count > 1;
+
+                <MudPaper Class="pa-3" Elevation="1">
+
+                    @* Gruppnamn + radera-knapp *@
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudTextField T="string"
+                                      Value="@g.Name"
+                                      ValueChanged="@((string v) => BookingService.RenameGroup(g.Id, v))"
+                                      Immediate="false"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Class="flex-1" />
+                        <MudTooltip Text="@(canDelete ? "Radera grupp" : "Måste finnas minst en grupp")">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="@(!canDelete)"
+                                           OnClick="@(() => BookingService.DeleteGroup(g.Id))" />
+                        </MudTooltip>
+                    </MudStack>
+
+                    <MudText Typo="Typo.caption" Style="color:#757575;margin-top:4px">
+                        @members.Count lärare
+                    </MudText>
+
+                    @* Checkbox-lista över alla lärare *@
+                    <div style="margin-top:8px;max-height:180px;overflow-y:auto">
+                        @foreach (var teacher in BookingService.Teachers)
+                        {
+                            var tc       = teacher;
+                            var isMember = tc.Group == g.Id;
+                            <div style="display:flex;align-items:center;gap:6px;padding:2px 0">
+                                <MudCheckBox T="bool"
+                                             Value="@isMember"
+                                             Color="Color.Primary"
+                                             Dense="true"
+                                             StopClickPropagation="true"
+                                             ValueChanged="@((bool v) => OnMembershipChanged(tc.Id, g.Id, v))" />
+                                <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:9px;flex-shrink:0")"
+                                           Size="Size.Small">@tc.Initials</MudAvatar>
+                                <span style="font-size:13px">@tc.Name</span>
+                                @if (tc.Group != 0 && tc.Group != g.Id)
+                                {
+                                    var otherGroup = BookingService.TeacherGroups.FirstOrDefault(x => x.Id == tc.Group);
+                                    <span style="font-size:11px;color:#999;margin-left:auto">
+                                        (i @(otherGroup?.Name ?? "?"))
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                </MudPaper>
+            }
+
+            @* Ny grupp *@
+            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                       Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       OnClick="OnAddGroup">
+                Ny grupp
+            </MudButton>
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary">Klar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>
+    /// Bockar man i en ny grupp flyttas läraren dit. Bockar man ur nuvarande grupp
+    /// hamnar läraren i "ingen grupp" (Group = 0).
+    /// </summary>
+    private void OnMembershipChanged(int teacherId, int groupId, bool isMember)
+    {
+        BookingService.SetTeacherGroup(teacherId, isMember ? groupId : 0);
+        StateHasChanged();
+    }
+
+    private void OnAddGroup()
+    {
+        BookingService.AddGroup($"Ny grupp {BookingService.TeacherGroups.Count + 1}");
+        StateHasChanged();
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+}

@@ -84,8 +84,21 @@
     @* ── Right area: toolbar + grid ───────────────────────────────────── *@
     <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
 
-        @* ── Toolbar: tre steg ───────────────────────────────────────────── *@
+        @* ── Toolbar: lägestoggle + steg ─────────────────────────────────── *@
         <div class="plan-toolbar">
+
+            @* Lägestoggle – styr om Giltighetstid visas eller inte *@
+            <div class="plan-step">
+                <span class="plan-step-label">Läge</span>
+                <MudToggleGroup T="PlanMode" Value="_mode" ValueChanged="OnModeChanged"
+                                SelectionMode="SelectionMode.SingleSelection"
+                                Color="Color.Primary" CheckMark="false" Dense="true">
+                    <MudToggleItem T="PlanMode" Value="PlanMode.Build" Text="Bygg mallar" />
+                    <MudToggleItem T="PlanMode" Value="PlanMode.Plan"  Text="Planera" />
+                </MudToggleGroup>
+            </div>
+
+            <div class="plan-step-divider">›</div>
 
             @* Steg 1: Välj lärare (eller redigera globala mallar) *@
             <div class="plan-step">
@@ -134,57 +147,65 @@
                 </MudSelect>
             </div>
 
-            @* Steg 3: Giltighetstid + spara (visas när mall är vald) *@
+            @* Steg 3: olika beroende på läge (visas när mall är vald) *@
             @if (_template != null)
             {
                 <div class="plan-step-divider">›</div>
-                <div class="plan-step">
-                    <span class="plan-step-label">3 · Giltighetstid</span>
-                    <MudDateRangePicker DateRange="_dateRange"
-                                        DateRangeChanged="OnDateRangeChanged"
-                                        Label="@(_template.Id == 0 ? "Från – Till" : _template.Name)"
-                                        Variant="Variant.Outlined" Margin="Margin.Dense"
-                                        DateFormat="d MMM yyyy" Style="min-width:270px"
-                                        Clearable="true" Culture="_svCulture" AutoClose="false"
-                                        PickerMonth="_pickerMonth"
-                                        AdditionalDateClassesFunc="GetDateClass" />
 
-                    @* Befintliga perioder för samma lärare – visas som legend *@
-                    @if (_selectedTeacherId != null)
-                    {
-                        var otherTemplates = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
-                            .Where(t => t.Id != _template.Id).ToList();
-                        @if (otherTemplates.Any())
+                @if (_mode == PlanMode.Plan)
+                {
+                    <div class="plan-step">
+                        <span class="plan-step-label">3 · Giltighetstid</span>
+                        <MudDateRangePicker DateRange="_dateRange"
+                                            DateRangeChanged="OnDateRangeChanged"
+                                            Label="@(_template.Id == 0 ? "Från – Till" : _template.Name)"
+                                            Variant="Variant.Outlined" Margin="Margin.Dense"
+                                            DateFormat="d MMM yyyy" Style="min-width:270px"
+                                            Clearable="true" Culture="_svCulture" AutoClose="false"
+                                            PickerMonth="_pickerMonth"
+                                            AdditionalDateClassesFunc="GetDateClass" />
+
+                        @* Befintliga perioder för samma lärare – visas som legend *@
+                        @if (_selectedTeacherId != null)
                         {
-                            <div class="plan-period-legend">
-                                @foreach (var ot in otherTemplates)
-                                {
-                                    var st = GetTemplateStatus(ot);
-                                    <div class="plan-period-legend-row">
-                                        <span class="plan-period-legend-dot" style="background:@StatusColor(st)"></span>
-                                        <span class="plan-period-legend-name">@ot.Name</span>
-                                        <span class="plan-period-legend-dates">@FormatDateRange(ot)</span>
-                                    </div>
-                                }
-                            </div>
+                            var otherTemplates = BookingService.GetTemplatesForTeacher(_selectedTeacherId.Value)
+                                .Where(t => t.Id != _template.Id).ToList();
+                            @if (otherTemplates.Any())
+                            {
+                                <div class="plan-period-legend">
+                                    @foreach (var ot in otherTemplates)
+                                    {
+                                        var st = GetTemplateStatus(ot);
+                                        <div class="plan-period-legend-row">
+                                            <span class="plan-period-legend-dot" style="background:@StatusColor(st)"></span>
+                                            <span class="plan-period-legend-name">@ot.Name</span>
+                                            <span class="plan-period-legend-dates">@FormatDateRange(ot)</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         }
-                    }
-                </div>
+                    </div>
+                }
+
                 <div class="plan-step" style="gap:6px">
-                    <MudTooltip Text="@(_template.BlockPublicHolidays ? "Inga lediga pass genereras på röda dagar" : "Lediga pass genereras även på röda dagar")">
-                        <MudSwitch T="bool"
-                                   Value="@_template.BlockPublicHolidays"
-                                   ValueChanged="@(v => _template.BlockPublicHolidays = v)"
-                                   Color="Color.Error"
-                                   Label="Blockera helgdagar"
-                                   Dense="true"
-                                   Style="white-space:nowrap;font-size:12px" />
-                    </MudTooltip>
+                    @if (_mode == PlanMode.Plan)
+                    {
+                        <MudTooltip Text="@(_template.BlockPublicHolidays ? "Inga lediga pass genereras på röda dagar" : "Lediga pass genereras även på röda dagar")">
+                            <MudSwitch T="bool"
+                                       Value="@_template.BlockPublicHolidays"
+                                       ValueChanged="@(v => _template.BlockPublicHolidays = v)"
+                                       Color="Color.Error"
+                                       Label="Blockera helgdagar"
+                                       Dense="true"
+                                       Style="white-space:nowrap;font-size:12px" />
+                        </MudTooltip>
+                    }
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.Save"
                                OnClick="SaveTemplate"
                                Disabled="@(_conflicts.Any())">
-                        Spara
+                        @(_mode == PlanMode.Build ? "Spara mall" : "Spara")
                     </MudButton>
                 </div>
             }
@@ -450,6 +471,10 @@
 
     private static readonly System.Globalization.CultureInfo _svCulture = new("sv-SE");
 
+    // Bygg = fokus på att bygga mallens innehåll (inga datum). Planera = tilldela en datumperiod.
+    private enum PlanMode { Build, Plan }
+    private PlanMode            _mode               = PlanMode.Build;
+
     private int?                _selectedTeacherId  = 1;
     private int?                _selectedTemplateId = null;
     private int?                _pickedLessonTypeId = null;
@@ -517,6 +542,15 @@
         if (_template == null) return;
         _template.StartDate = range.Start.HasValue ? DateOnly.FromDateTime(range.Start.Value) : null;
         _template.EndDate   = range.End.HasValue   ? DateOnly.FromDateTime(range.End.Value)   : null;
+    }
+
+    // ── Mode change ───────────────────────────────────────────────────────────
+
+    /// <summary>Växlar mellan Bygg- och Planera-läge. Rör inte laddad mall – bara UI.</summary>
+    private void OnModeChanged(PlanMode mode)
+    {
+        _mode = mode;
+        _saveError = null;
     }
 
     // ── Teacher change ────────────────────────────────────────────────────────

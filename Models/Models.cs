@@ -14,8 +14,18 @@ public class Teacher
     /// <summary>Light background hex color for event blocks</summary>
     public string LightColor { get; set; } = "";
     public bool IsSelected { get; set; } = true;
-    /// <summary>Teacher group: 1 or 2.</summary>
+    /// <summary>Id på den TeacherGroup läraren tillhör. 0 = ingen grupp.</summary>
     public int Group { get; set; } = 1;
+}
+
+/// <summary>
+/// Namngiven grupp av lärare. Används i filter-drawer och quick-chip-dropdownen.
+/// En lärare kan bara tillhöra en grupp (via Teacher.Group).
+/// </summary>
+public class TeacherGroup
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
 }
 
 // ── Articles (from PIM) ───────────────────────────────────────────────────────
@@ -264,6 +274,21 @@ public class CalendarEvent
     /// Set on template-generated slots: the original start time from the block.
     /// Used to identify which exception to create/update when moving or deleting.
     public TimeOnly? TemplateOriginalStart { get; set; }
+
+    /// <summary>Körkortskategori för prov-event (B, A1, AM …). Null för vanliga lektioner.</summary>
+    public string? LicenseCategory { get; set; }
+
+    /// <summary>Resultat för prov-event (Teoriprov / Uppkörning). Null för vanliga lektioner.</summary>
+    public ExamResult? ExamResult { get; set; }
+}
+
+// ── Exam result ───────────────────────────────────────────────────────────────
+
+public enum ExamResult
+{
+    Pending = 0,
+    Passed  = 1,
+    Failed  = 2,
 }
 
 // ── Lesson moment (education plan item linked to a booking) ───────────────────
@@ -299,6 +324,8 @@ public class BookingRequest
     public List<int> SelectedResourceIds { get; set; } = new();
     public string Notes { get; set; } = "";
     public int? PickupLocationId { get; set; }
+    /// <summary>Körkortskategori (B, A1, AM …). Används vid prov-bokning.</summary>
+    public string? LicenseCategory { get; set; }
 }
 
 // ── Filter state ──────────────────────────────────────────────────────────────
