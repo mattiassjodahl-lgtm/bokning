@@ -131,7 +131,30 @@ html, body {
 
 /* Stack to single column on mobile */
 @media (max-width: 768px) {
-    html, body { height: auto; overflow: auto; }
+    /* Släpp ALLA höjd/overflow-lås så att sid-scrollen tar över */
+    html, body {
+        height: auto !important;
+        min-height: 100%;
+        overflow: visible !important;
+    }
+
+    /* MudBlazor layout-wrappers som sätter height:100vh + overflow:hidden */
+    .mud-layout,
+    .mud-main-content {
+        height: auto !important;
+        min-height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* MudTabs har interna höjdbegränsningar */
+    .mud-tabs,
+    .mud-tabs-panels,
+    .mud-tab-panel {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Student card-struktur */
     .sc-fullscreen { height: auto; overflow: visible; }
     .sc-body { flex-direction: column; overflow: visible; }
     .sc-sidebar-left {
