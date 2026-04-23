@@ -24,7 +24,7 @@ html, body {
     top: 0.5rem;
 }
 
-/* ── Full-screen student card layout ─────────────────────────────────────── */
+/* ── Elevkort-layout: full-screen desktop, natural flow på mobil ─────────── */
 .sc-fullscreen {
     height: 100vh;
     overflow: hidden;
@@ -32,95 +32,12 @@ html, body {
     flex-direction: column;
 }
 
-.sc-topbar {
-    background: #00695C;
-    color: white;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-shrink: 0;
-    border-bottom: 2px solid rgba(0,0,0,0.12);
-}
-
-.sc-body {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    min-height: 0;
-}
-
-.sc-sidebar-left {
-    width: 230px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    border-right: 1px solid #E0E0E0;
-    background: #FAFAFA;
-}
-
-.sc-center {
-    flex: 1;
-    overflow-y: auto;
-    min-width: 0;
-}
-
-.sc-sidebar-right {
-    width: 200px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    border-left: 1px solid #E0E0E0;
-    background: #FAFAFA;
-}
-
-/* ── Översikt tab 3-column grid ─────────────────────────────────────────── */
-.ov-grid {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-}
-
-.ov-col {
-    flex: 1;
-    min-width: 0;
-}
-
-.ov-section-title {
-    font-size: 10px;
-    font-weight: 700;
-    color: #757575;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    border-bottom: 2px solid #E0E0E0;
-}
-
-.ov-info-row {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 12px;
-}
-
-.ov-info-label { font-size: 10px; color: #9E9E9E; }
-.ov-info-value { font-size: 13px; color: #212121; }
-
-@media (max-width: 768px) {
-    .ov-grid { flex-direction: column; }
-}
-
-/* Hide right sidebar on smaller screens */
-@media (max-width: 1100px) {
-    .sc-sidebar-right { display: none; }
-}
-
-/* Scroll area inside student card (desktop: internal scroll, mobile: page scroll) */
 .sc-scroll-area {
     flex: 1;
     overflow-y: auto;
 }
 
-/* Översikt-fliken: 3 kolumner desktop, stack på mobil */
+/* ── Översikt-fliken: 3 kolumner desktop, 1 kolumn mobil ──────────────────── */
 .sc-overview-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -129,42 +46,45 @@ html, body {
     width: 100%;
 }
 
-/* Stack to single column on mobile */
+/* ── Mobilläge: släpp alla höjd/overflow-lås ─────────────────────────────── */
 @media (max-width: 768px) {
-    /* Släpp ALLA höjd/overflow-lås så att sid-scrollen tar över */
     html, body {
         height: auto !important;
         min-height: 100%;
-        overflow: visible !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
     }
 
-    /* MudBlazor layout-wrappers som sätter height:100vh + overflow:hidden */
+    /* MudBlazor wrappers (de sätter height:100vh + overflow:hidden internt) */
     .mud-layout,
-    .mud-main-content {
-        height: auto !important;
-        min-height: auto !important;
-        overflow: visible !important;
-    }
-
-    /* MudTabs har interna höjdbegränsningar */
+    .mud-main-content,
     .mud-tabs,
     .mud-tabs-panels,
-    .mud-tab-panel {
+    .mud-tab-panel,
+    .mud-tabs-panel-template {
         height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
         overflow: visible !important;
     }
 
-    /* Student card-struktur */
-    .sc-fullscreen { height: auto; overflow: visible; }
-    .sc-body { flex-direction: column; overflow: visible; }
-    .sc-sidebar-left {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #E0E0E0;
+    /* Egen struktur – gör om sc-fullscreen till vanligt block-flöde */
+    .sc-fullscreen {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
     }
-    .sc-center { overflow-y: visible; }
-    .sc-scroll-area { overflow-y: visible; flex: 0 1 auto; }
-    .sc-overview-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    .sc-scroll-area {
+        flex: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    .sc-overview-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
 }
 
 /* ── Custom score slider (plain HTML, no MudBlazor) ─────────────────────── */
