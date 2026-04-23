@@ -1,0 +1,348 @@
+@page "/admin/rapporter"
+@inject IReportAgent Agent
+@inject NavigationManager Nav
+
+<PageTitle>Adminrapporter</PageTitle>
+
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+@* App bar                                                                    *@
+@* ═══════════════════════════════════════════════════════════════════════════ *@
+<MudAppBar Color="Color.Primary" Fixed="true" Dense="true">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit"
+                   OnClick='() => Nav.NavigateTo("/")' Edge="Edge.Start" />
+    <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="mr-2" />
+    <MudText Typo="Typo.h6">Rapportagent</MudText>
+    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled" Class="ml-3">DEMO</MudChip>
+    <MudSpacer />
+    <MudText Typo="Typo.caption" Style="color:rgba(255,255,255,0.85)">Baserad på körskolans egna data</MudText>
+</MudAppBar>
+
+<MudMainContent>
+    <div class="rp-shell">
+
+        @* ── Vänster: chatten ───────────────────────────────────────────────── *@
+        <div class="rp-chat">
+            <div class="rp-chat-scroll">
+                @if (_messages.Count == 0)
+                {
+                    <div class="rp-empty">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Large" Style="color:#1565C0" />
+                        <MudText Typo="Typo.h6" Class="mt-2">Hej! Vad vill du veta?</MudText>
+                        <MudText Typo="Typo.body2" Style="color:#616161">Jag har tillgång till körskolans försäljning och bokningar.</MudText>
+                    </div>
+                }
+                @foreach (var m in _messages)
+                {
+                    <div class="@(m.Role == AgentRole.User ? "rp-msg rp-msg-user" : "rp-msg rp-msg-agent")">
+                        <div class="rp-bubble">
+                            @if (m.Role == AgentRole.Agent)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Style="color:#1565C0;margin-right:6px;vertical-align:middle" />
+                            }
+                            @((MarkupString)RenderBasicMarkdown(m.Text))
+                        </div>
+                    </div>
+                }
+                @if (_thinking)
+                {
+                    <div class="rp-msg rp-msg-agent">
+                        <div class="rp-bubble rp-thinking">
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                            <span style="margin-left:8px">Analyserar...</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Förslagschips *@
+            @if (_messages.Count == 0)
+            {
+                <div class="rp-suggestions">
+                    @foreach (var s in Agent.SuggestedQuestions)
+                    {
+                        <button type="button" class="rp-chip" @onclick="() => AskAsync(s)">@s</button>
+                    }
+                </div>
+            }
+
+            @* Input *@
+            <div class="rp-input">
+                <MudTextField @bind-Value="_input"
+                              Placeholder="Ställ en fråga..."
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Immediate="true"
+                              OnKeyDown="HandleKey"
+                              Disabled="_thinking"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Send"
+                              OnAdornmentClick="() => AskAsync(_input)" />
+            </div>
+        </div>
+
+        @* ── Höger: rapportvy ────────────────────────────────────────────── *@
+        <div class="rp-report">
+            @if (_currentReport is null)
+            {
+                <div class="rp-report-empty">
+                    <MudIcon Icon="@Icons.Material.Filled.Analytics" Size="Size.Large" Style="color:#BDBDBD" />
+                    <MudText Typo="Typo.body1" Style="color:#9E9E9E">Rapporten visas här</MudText>
+                </div>
+            }
+            else
+            {
+                <MudText Typo="Typo.h5" Style="margin-bottom:4px">@_currentReport.Title</MudText>
+                @if (!string.IsNullOrEmpty(_currentReport.Summary))
+                {
+                    <MudText Typo="Typo.caption" Style="color:#757575;margin-bottom:16px;display:block">@_currentReport.Summary</MudText>
+                }
+
+                @foreach (var block in _currentReport.Blocks)
+                {
+                    <MudPaper Class="pa-4 mb-3" Elevation="1" Style="border-radius:12px">
+                        @if (!string.IsNullOrEmpty(block.Heading))
+                        {
+                            <MudText Typo="Typo.subtitle2" Style="margin-bottom:12px;color:#424242">@block.Heading</MudText>
+                        }
+
+                        @switch (block.Kind)
+                        {
+                            case BlockKind.KeyFigures:
+                                <div class="rp-keyfigures">
+                                    @foreach (var kf in block.Figures)
+                                    {
+                                        <div class="rp-kf">
+                                            <div class="rp-kf-label">@kf.Label</div>
+                                            <div class="rp-kf-value">@kf.Value</div>
+                                            @if (!string.IsNullOrEmpty(kf.Trend))
+                                            {
+                                                <div class="rp-kf-trend">@kf.Trend</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                break;
+
+                            case BlockKind.BarChart:
+                                @RenderBarChart(block)
+                                break;
+
+                            case BlockKind.LineChart:
+                                <MudChart ChartType="ChartType.Line"
+                                          ChartSeries="@ToMudSeries(block)"
+                                          XAxisLabels="@block.Categories.ToArray()"
+                                          Height="260px" />
+                                break;
+
+                            case BlockKind.Table:
+                                <MudSimpleTable Dense="true" Hover="true" Style="width:100%">
+                                    <thead>
+                                        <tr>@foreach (var c in block.Columns) { <th>@c</th> }</tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in block.Rows)
+                                        {
+                                            <tr>@foreach (var cell in row) { <td>@cell</td> }</tr>
+                                        }
+                                    </tbody>
+                                </MudSimpleTable>
+                                break;
+                        }
+                    </MudPaper>
+                }
+            }
+        </div>
+
+    </div>
+</MudMainContent>
+
+@* ── Layout-styles lokalt på sidan (håller det lättviktigt) ─────────────── *@
+<style>
+    .rp-shell {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 16px;
+        height: calc(100vh - 64px);
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .rp-chat {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .rp-chat-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+    .rp-empty { text-align: center; padding: 40px 16px; color: #616161; }
+    .rp-msg { display: flex; margin-bottom: 10px; }
+    .rp-msg-user { justify-content: flex-end; }
+    .rp-msg-agent { justify-content: flex-start; }
+    .rp-bubble {
+        max-width: 88%;
+        padding: 8px 12px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+    .rp-msg-user .rp-bubble  { background: #1565C0; color: white; border-bottom-right-radius: 4px; }
+    .rp-msg-agent .rp-bubble { background: #F5F5F5; color: #212121; border-bottom-left-radius: 4px; }
+    .rp-thinking { display: inline-flex; align-items: center; }
+    .rp-suggestions { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid #F0F0F0; }
+    .rp-chip {
+        font-size: 12px; padding: 6px 12px; border-radius: 14px;
+        border: 1px solid #BBDEFB; background: #E3F2FD; color: #1565C0;
+        cursor: pointer;
+    }
+    .rp-chip:hover { background: #1565C0; color: white; }
+    .rp-input { padding: 10px 12px; border-top: 1px solid #F0F0F0; background: #FAFAFA; }
+
+    .rp-report {
+        background: #F5F5F5;
+        border-radius: 12px;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .rp-report-empty {
+        height: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 8px;
+    }
+
+    .rp-keyfigures {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+    }
+    .rp-kf { padding: 10px 12px; border: 1px solid #E0E0E0; border-radius: 8px; background: #FAFAFA; }
+    .rp-kf-label { font-size: 11px; color: #757575; text-transform: uppercase; letter-spacing: 0.5px; }
+    .rp-kf-value { font-size: 22px; font-weight: 700; color: #1565C0; margin-top: 2px; }
+    .rp-kf-trend { font-size: 11px; color: #388E3C; margin-top: 2px; }
+
+    @@media (max-width: 900px) {
+        .rp-shell {
+            grid-template-columns: 1fr;
+            height: auto;
+            min-height: calc(100vh - 64px);
+        }
+        .rp-chat { min-height: 50vh; }
+    }
+</style>
+
+@code {
+    private string _input = "";
+    private bool _thinking;
+    private readonly List<AgentMessage> _messages = new();
+    private AgentReport? _currentReport;
+
+    private async Task HandleKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_input))
+            await AskAsync(_input);
+    }
+
+    private async Task AskAsync(string question)
+    {
+        if (string.IsNullOrWhiteSpace(question) || _thinking) return;
+
+        _messages.Add(new AgentMessage { Role = AgentRole.User, Text = question });
+        _input = "";
+        _thinking = true;
+        StateHasChanged();
+
+        // Simulera lite tänketid så det känns mer agent-aktigt.
+        await Task.Delay(450);
+        var reply = await Agent.AskAsync(question);
+
+        _messages.Add(reply);
+        if (reply.Report is not null) _currentReport = reply.Report;
+        _thinking = false;
+        StateHasChanged();
+    }
+
+    // Minimal markdown: **bold** → <strong>, *italic* → <em>. Rensar HTML först.
+    private static string RenderBasicMarkdown(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        var escaped = System.Net.WebUtility.HtmlEncode(s);
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        escaped = System.Text.RegularExpressions.Regex.Replace(escaped, @"(?<!\*)\*(?!\*)(.+?)\*(?!\*)", "<em>$1</em>");
+        return escaped;
+    }
+
+    private static List<MudBlazor.ChartSeries> ToMudSeries(ReportBlock b)
+    {
+        return b.Series.Select(s => new MudBlazor.ChartSeries
+        {
+            Name = s.Name,
+            Data = s.Values.ToArray()
+        }).ToList();
+    }
+
+    // Enkel egen bar chart (MudChart.Bar ser inte jättebra ut med en serie → egen CSS-variant).
+    private RenderFragment RenderBarChart(ReportBlock block) => builder =>
+    {
+        var series = block.Series;
+        if (series.Count == 0 || block.Categories.Count == 0) return;
+
+        var max = series.SelectMany(s => s.Values).DefaultIfEmpty(1).Max();
+        if (max <= 0) max = 1;
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "rp-bars");
+        builder.AddAttribute(2, "style", "display:flex;align-items:flex-end;gap:8px;height:220px;padding:8px 0 28px 0;border-bottom:1px solid #E0E0E0;position:relative");
+
+        for (int ci = 0; ci < block.Categories.Count; ci++)
+        {
+            builder.OpenElement(3, "div");
+            builder.AddAttribute(4, "style", "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;height:100%");
+
+            // Bar group (en bar per serie)
+            builder.OpenElement(5, "div");
+            builder.AddAttribute(6, "style", "display:flex;align-items:flex-end;gap:2px;width:100%;justify-content:center;height:100%");
+
+            for (int si = 0; si < series.Count; si++)
+            {
+                var val = series[si].Values.ElementAtOrDefault(ci);
+                var h = (int)(val / max * 180);
+                var color = si == 0 ? "#1565C0" : "#00897B";
+
+                builder.OpenElement(7, "div");
+                builder.AddAttribute(8, "title", $"{series[si].Name}: {val:N0}");
+                builder.AddAttribute(9, "style", $"width:18px;height:{h}px;background:{color};border-radius:3px 3px 0 0");
+                builder.CloseElement();
+            }
+
+            builder.CloseElement(); // bar group
+
+            // Label under
+            builder.OpenElement(10, "div");
+            builder.AddAttribute(11, "style", "position:absolute;bottom:-22px;font-size:11px;color:#616161");
+            builder.AddContent(12, block.Categories[ci]);
+            builder.CloseElement();
+
+            builder.CloseElement(); // col
+        }
+
+        builder.CloseElement(); // rp-bars
+
+        if (series.Count > 1)
+        {
+            builder.OpenElement(20, "div");
+            builder.AddAttribute(21, "style", "display:flex;gap:16px;margin-top:8px;font-size:12px;color:#616161");
+            for (int si = 0; si < series.Count; si++)
+            {
+                var color = si == 0 ? "#1565C0" : "#00897B";
+                builder.OpenElement(22, "div");
+                builder.AddAttribute(23, "style", "display:flex;align-items:center;gap:6px");
+                builder.OpenElement(24, "span");
+                builder.AddAttribute(25, "style", $"width:12px;height:12px;background:{color};border-radius:2px;display:inline-block");
+                builder.CloseElement();
+                builder.AddContent(26, series[si].Name);
+                builder.CloseElement();
+            }
+            builder.CloseElement();
+        }
+    };
+}
