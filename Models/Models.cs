@@ -260,11 +260,6 @@ public class CalendarEvent
     public TimeSpan Duration => EndTime - StartTime;
     public double DurationHours => Duration.TotalHours;
 
-    /// Checkboxes for lesson assessment.
-    public bool Demonstrated { get; set; }
-    public bool Instructed   { get; set; }
-    public bool Independent  { get; set; }
-
     /// Free-text comment for the whole lesson.
     public string LessonComment { get; set; } = "";
 
@@ -302,6 +297,11 @@ public class LessonMoment
     /// <summary>Score 0–5. 0 = not started, 1–2 = in progress, 3–5 = approved.</summary>
     public int    Score    { get; set; } = 0;
     public string Comment  { get; set; } = "";
+
+    /// Checkboxes per delmoment: demonstrerat, instruerat, självständigt.
+    public bool Demonstrated { get; set; }
+    public bool Instructed   { get; set; }
+    public bool Independent  { get; set; }
 
     public string StatusLabel => Score switch
     {

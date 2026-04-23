@@ -114,8 +114,15 @@ html, body {
     .sc-sidebar-right { display: none; }
 }
 
+/* Scroll area inside student card (desktop: internal scroll, mobile: page scroll) */
+.sc-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+}
+
 /* Stack to single column on mobile */
 @media (max-width: 768px) {
+    html, body { height: auto; overflow: auto; }
     .sc-fullscreen { height: auto; overflow: visible; }
     .sc-body { flex-direction: column; overflow: visible; }
     .sc-sidebar-left {
@@ -124,6 +131,7 @@ html, body {
         border-bottom: 1px solid #E0E0E0;
     }
     .sc-center { overflow-y: visible; }
+    .sc-scroll-area { overflow-y: visible; flex: 0 1 auto; }
 }
 
 /* ── Custom score slider (plain HTML, no MudBlazor) ─────────────────────── */

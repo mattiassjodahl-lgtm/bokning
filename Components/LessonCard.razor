@@ -1,5 +1,4 @@
 @inject BookingService BookingService
-@inject IDialogService DialogService
 
 @{
     var isExp     = ExpandedLessonIds.Contains(Evt.Id);
@@ -54,6 +53,51 @@
     @if (isExp)
     {
         <div style="padding:12px 14px;@expandBorderTop;background:white">
+            @if (EduPlan != null)
+            {
+                <div style="border:1px solid #E0E0E0;border-radius:8px;margin-bottom:12px;overflow:hidden">
+                    <div style="padding:8px 10px;background:#FAFAFA;display:flex;flex-wrap:wrap;gap:4px">
+                        @for (int si = 0; si < EduPlan.Sections.Count; si++)
+                        {
+                            var idx      = si;
+                            var sec      = EduPlan.Sections[idx];
+                            var total    = sec.Items.Count;
+                            var selected = sec.Items.Count(i => Evt.LinkedMoments.Any(m => m.GlobalId == i.GlobalId));
+                            var active   = _activeSectionIdx == idx;
+                            var label    = !string.IsNullOrEmpty(sec.Mark) ? sec.Mark : sec.Title;
+                            <button type="button"
+                                    style="font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid @(active ? "#1565C0" : "#E0E0E0");background:@(active ? "#1565C0" : "white");color:@(active ? "white" : "#212121");cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+                                    @onclick="() => ToggleSection(idx)">
+                                @label
+                                @if (selected > 0)
+                                {
+                                    <span style="font-size:10px;font-weight:700;padding:0 5px;border-radius:8px;background:@(active ? "white" : "#1565C0");color:@(active ? "#1565C0" : "white")">@selected/@total</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                    @if (_activeSectionIdx is int activeIdx && activeIdx < EduPlan.Sections.Count)
+                    {
+                        var activeSec = EduPlan.Sections[activeIdx];
+                        <div style="padding:8px 12px;border-top:1px solid #E0E0E0;background:white">
+                            <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                                @if (!string.IsNullOrEmpty(activeSec.Mark)) { <span style="margin-right:4px">@activeSec.Mark</span> }
+                                @activeSec.Title
+                            </div>
+                            @foreach (var item in activeSec.Items)
+                            {
+                                var isSel = Evt.LinkedMoments.Any(m => m.GlobalId == item.GlobalId);
+                                <div style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer"
+                                     @onclick="() => ToggleMoment(item)">
+                                    <MudCheckBox T="bool" Value="@isSel" Size="Size.Small" Dense="true"
+                                                 Color="Color.Primary" Style="pointer-events:none;padding:2px" />
+                                    <span style="font-size:13px">@item.Title</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
             @if (mGroups.Count == 0)
             {
                 <div style="@emptyColor;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:6px">
@@ -82,11 +126,16 @@
                                 }
                                 <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:@MomentStatusColor(moc.Score);color:white;white-space:nowrap;flex-shrink:0">@MomentStatusLabel(moc.Score)</span>
                             </div>
-                            <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px 0">
+                            <div style="display:flex;align-items:center;gap:8px;margin:6px 0 6px 0">
                                 <input type="range" min="0" max="5" step="1" value="@moc.Score"
                                        class="sc-score-slider"
                                        @oninput="@(async (ChangeEventArgs e) => { moc.Score = int.Parse(e.Value?.ToString() ?? "0"); StateHasChanged(); })" />
                                 <span style="font-size:12px;font-weight:700;color:@ScoreButtonColor(moc.Score);min-width:18px;text-align:center">@(moc.Score == 0 ? "–" : moc.Score.ToString())</span>
+                            </div>
+                            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+                                <MudCheckBox T="bool" Value="@moc.Demonstrated" ValueChanged="@(v => { moc.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
+                                <MudCheckBox T="bool" Value="@moc.Instructed" ValueChanged="@(v => { moc.Instructed = v; StateHasChanged(); })" Label="Instruerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
+                                <MudCheckBox T="bool" Value="@moc.Independent" ValueChanged="@(v => { moc.Independent = v; StateHasChanged(); })" Label="Självständigt" Dense="true" Size="Size.Small" Color="Color.Primary" />
                             </div>
                             <div style="display:flex;align-items:center;gap:6px">
                                 <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ck)">
@@ -100,15 +149,6 @@
                     }
                 </div>
             }
-            @if (EduPlan != null)
-            {
-                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await OpenMomentDialog())">Lägg till utbildningsmoment</MudButton>
-            }
-            <div style="margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-                <MudCheckBox T="bool" Value="@Evt.Demonstrated" ValueChanged="@(v => { Evt.Demonstrated = v; StateHasChanged(); })" Label="Demonstrerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
-                <MudCheckBox T="bool" Value="@Evt.Instructed" ValueChanged="@(v => { Evt.Instructed = v; StateHasChanged(); })" Label="Instruerat" Dense="true" Size="Size.Small" Color="Color.Primary" />
-                <MudCheckBox T="bool" Value="@Evt.Independent" ValueChanged="@(v => { Evt.Independent = v; StateHasChanged(); })" Label="Självständigt" Dense="true" Size="Size.Small" Color="Color.Primary" />
-            </div>
             <div style="margin-top:8px">
                 <MudTextField T="string" Value="@Evt.LessonComment" ValueChanged="@(v => { Evt.LessonComment = v; StateHasChanged(); })"
                               Label="Lektionskommentar" Placeholder="Anteckningar för hela lektionen…"
@@ -128,7 +168,30 @@
     [Parameter] public EventCallback OnChanged { get; set; }
 
     private static readonly System.Globalization.CultureInfo _sv = new("sv-SE");
-    private static readonly string[] _sliderLabels = ["–", "1", "2", "3", "4", "5"];
+
+    private int? _activeSectionIdx;
+
+    private void ToggleSection(int idx)
+    {
+        _activeSectionIdx = _activeSectionIdx == idx ? null : idx;
+    }
+
+    private void ToggleMoment(EduPlanItem item)
+    {
+        var existing = Evt.LinkedMoments.FirstOrDefault(m => m.GlobalId == item.GlobalId);
+        if (existing != null)
+        {
+            Evt.LinkedMoments.Remove(existing);
+        }
+        else
+        {
+            Evt.LinkedMoments.Add(new LessonMoment
+            {
+                GlobalId = item.GlobalId,
+                Title    = item.Title,
+            });
+        }
+    }
 
     private void ToggleLessonExpand(int eventId)
     {
@@ -183,21 +246,4 @@
         return result;
     }
 
-    private async Task OpenMomentDialog()
-    {
-        if (EduPlan == null) return;
-        var parameters = new DialogParameters<LessonMomentDialog>
-        {
-            { x => x.Plan,            EduPlan              },
-            { x => x.ExistingMoments, Evt.LinkedMoments    },
-        };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
-        var dialog  = await DialogService.ShowAsync<LessonMomentDialog>("Utbildningsmoment", parameters, options);
-        var result  = await dialog.Result;
-        if (result is { Canceled: false, Data: List<LessonMoment> moments })
-        {
-            Evt.LinkedMoments = moments;
-            await OnChanged.InvokeAsync();
-        }
-    }
 }
