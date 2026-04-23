@@ -35,7 +35,7 @@
                            Value="@_editTeacherId"
                            ValueChanged="@((int v) => _editTeacherId = v)"
                            Variant="Variant.Outlined">
-                    <MudSelectItem Value="@0">Ingen lärare</MudSelectItem>
+                    <MudSelectItem Value="@(0)">Ingen lärare</MudSelectItem>
                     @foreach (var t in BookingService.Teachers)
                     {
                         <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
@@ -270,7 +270,7 @@
                                Value="@_request.TeacherId"
                                ValueChanged="@OnTeacherChanged"
                                Variant="Variant.Outlined">
-                        <MudSelectItem Value="@0">Ingen lärare</MudSelectItem>
+                        <MudSelectItem Value="@(0)">Ingen lärare</MudSelectItem>
                         @foreach (var t in BookingService.Teachers)
                         {
                             <MudSelectItem Value="@t.Id">@t.Name</MudSelectItem>
