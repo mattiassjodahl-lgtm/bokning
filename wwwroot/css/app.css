@@ -120,6 +120,15 @@ html, body {
     overflow-y: auto;
 }
 
+/* Översikt-fliken: 3 kolumner desktop, stack på mobil */
+.sc-overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+    width: 100%;
+}
+
 /* Stack to single column on mobile */
 @media (max-width: 768px) {
     html, body { height: auto; overflow: auto; }
@@ -132,6 +141,7 @@ html, body {
     }
     .sc-center { overflow-y: visible; }
     .sc-scroll-area { overflow-y: visible; flex: 0 1 auto; }
+    .sc-overview-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
 /* ── Custom score slider (plain HTML, no MudBlazor) ─────────────────────── */
