@@ -4,8 +4,10 @@ namespace BookingDemo.Services;
 
 /// <summary>
 /// Kontrakt för admin-rapporteringens "AI-agent".
-/// MockReportAgent implementerar detta via nyckelordsmatchning mot demo-data.
-/// Kan senare bytas mot en LLM-baserad implementation utan UI-ändringar.
+/// Två implementationer delar samma tool-uppsättning (<see cref="ReportTools"/>):
+///   - <see cref="TestLlmReportAgent"/> – deterministisk mock, används utan API-nyckel
+///   - <see cref="OpenAIReportAgent"/>  – riktig LLM med function-calling
+/// Vald automatiskt i Program.cs baserat på om OpenAI:ApiKey finns.
 /// </summary>
 public interface IReportAgent
 {

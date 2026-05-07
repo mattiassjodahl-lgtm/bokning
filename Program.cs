@@ -1,3 +1,4 @@
+using BookingDemo.Models;
 using BookingDemo.Services;
 using MudBlazor.Services;
 
@@ -17,7 +18,30 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<BookingService>();
-builder.Services.AddScoped<IReportAgent, MockReportAgent>();
+
+// Tools delas mellan TestLlmReportAgent och OpenAIReportAgent.
+builder.Services.AddSingleton<IReadOnlyList<AgentTool>>(sp =>
+    ReportTools.Create(sp.GetRequiredService<BookingService>()));
+
+// Auto-välj agent: OpenAI om nyckel finns, annars deterministisk TestLlm.
+// Ger samma användarupplevelse i båda fallen – samma tools, samma rapporter.
+var openAiKey = builder.Configuration["OpenAI:ApiKey"];
+if (string.IsNullOrWhiteSpace(openAiKey))
+    openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+
+if (!string.IsNullOrWhiteSpace(openAiKey))
+{
+    var model = builder.Configuration["OpenAI:Model"] ?? "gpt-4o-mini";
+    Console.WriteLine($"[ReportAgent] Using OpenAIReportAgent (model: {model})");
+    builder.Services.AddScoped<IReportAgent>(sp =>
+        new OpenAIReportAgent(openAiKey, sp.GetRequiredService<IReadOnlyList<AgentTool>>(), model));
+}
+else
+{
+    Console.WriteLine("[ReportAgent] Using TestLlmReportAgent (no OpenAI key configured)");
+    builder.Services.AddScoped<IReportAgent>(sp =>
+        new TestLlmReportAgent(sp.GetRequiredService<IReadOnlyList<AgentTool>>()));
+}
 
 var app = builder.Build();
 

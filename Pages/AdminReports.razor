@@ -13,6 +13,13 @@
     <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="mr-2" />
     <MudText Typo="Typo.h6">Rapportagent</MudText>
     <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled" Class="ml-3">DEMO</MudChip>
+    <MudTooltip Text="@AgentModeTooltip">
+        <MudChip T="string" Size="Size.Small"
+                 Color="@(IsLiveAgent ? Color.Success : Color.Warning)"
+                 Variant="Variant.Filled"
+                 Icon="@(IsLiveAgent ? Icons.Material.Filled.CloudDone : Icons.Material.Filled.CloudOff)"
+                 Class="ml-2">@AgentModeLabel</MudChip>
+    </MudTooltip>
     <MudSpacer />
     <MudText Typo="Typo.caption" Style="color:rgba(255,255,255,0.85)">Baserad på körskolans egna data</MudText>
 </MudAppBar>
@@ -235,6 +242,13 @@
     private bool _thinking;
     private readonly List<AgentMessage> _messages = new();
     private AgentReport? _currentReport;
+
+    // Visar i AppBar om rapportagenten kör mot OpenAI eller i offline-testläge.
+    private bool IsLiveAgent => Agent is OpenAIReportAgent;
+    private string AgentModeLabel => IsLiveAgent ? "Live · OpenAI" : "Offline · testläge";
+    private string AgentModeTooltip => IsLiveAgent
+        ? "Rapportagenten anropar OpenAI:s API för varje fråga."
+        : "Ingen OpenAI-nyckel konfigurerad. Deterministiskt testsvar används.";
 
     private async Task HandleKey(KeyboardEventArgs e)
     {

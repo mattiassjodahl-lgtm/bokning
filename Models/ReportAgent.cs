@@ -2,7 +2,7 @@ namespace BookingDemo.Models;
 
 // ── Agent DTOs ────────────────────────────────────────────────────────────────
 // Lättvikts-modeller för konversation mellan admin-användare och "AI-agent".
-// Designade så att dagens MockReportAgent kan bytas mot en riktig LLM-koppling
+// Designade så att TestLlmReportAgent och OpenAIReportAgent kan dela exakt samma DTO:er
 // utan att UI-koden behöver ändras.
 
 public enum AgentRole { User, Agent }
