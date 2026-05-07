@@ -552,18 +552,22 @@
     // Resurs-grupper i filter-drawer (en rad per ResourceType som har resurser).
     private static readonly (ResourceType Type, string Label)[] ResourceGroups = new[]
     {
-        (ResourceType.Car,       "Bilar"),
-        (ResourceType.Classroom, "Klassrum"),
-        (ResourceType.Simulator, "Simulatorer"),
-        (ResourceType.Other,     "Övrigt"),
+        (ResourceType.Car,        "Bilar"),
+        (ResourceType.Motorcycle, "Motorcyklar"),
+        (ResourceType.Trailer,    "Släp"),
+        (ResourceType.Classroom,  "Klassrum"),
+        (ResourceType.Simulator,  "Simulatorer"),
+        (ResourceType.Other,      "Övrigt"),
     };
 
     private Dictionary<ResourceType, bool> _resourceGroupExpanded = new()
     {
-        { ResourceType.Car,       false },
-        { ResourceType.Classroom, false },
-        { ResourceType.Simulator, false },
-        { ResourceType.Other,     false },
+        { ResourceType.Car,        false },
+        { ResourceType.Motorcycle, false },
+        { ResourceType.Trailer,    false },
+        { ResourceType.Classroom,  false },
+        { ResourceType.Simulator,  false },
+        { ResourceType.Other,      false },
     };
 
     // ── Period helpers ────────────────────────────────────────────────────────

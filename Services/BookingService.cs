@@ -670,13 +670,46 @@ public class BookingService
 
     public List<Resource> Resources { get; } = new()
     {
-        new() { Id = 1,  Name = "Volvo V60 (ARN 123)",  Type = ResourceType.Car,       IsAvailable = true  },
-        new() { Id = 2,  Name = "Ford Focus (BCK 456)",  Type = ResourceType.Car,       IsAvailable = true  },
-        new() { Id = 3,  Name = "Opel Astra (CDF 789)", Type = ResourceType.Car,       IsAvailable = true  },
-        new() { Id = 4,  Name = "Toyota Corolla (EGH 012)", Type = ResourceType.Car,   IsAvailable = false },
-        new() { Id = 5,  Name = "Sal 1",                Type = ResourceType.Classroom, IsAvailable = true  },
-        new() { Id = 6,  Name = "Sal 2",                Type = ResourceType.Classroom, IsAvailable = true  },
-        new() { Id = 7,  Name = "Simulator",            Type = ResourceType.Simulator, IsAvailable = true  },
+        // Bilar (klass B)
+        new() { Id = 1,  Name = "Volvo V60",        Type = ResourceType.Car, IsAvailable = true,
+                RegistrationNumber = "ARN 123", ModelYear = 2023, Mileage = 48_200,
+                LastServiceDate = new(2026, 02, 14), NextServiceDate = new(2026, 08, 14), HourlyCost = 165m },
+        new() { Id = 2,  Name = "Ford Focus",       Type = ResourceType.Car, IsAvailable = true,
+                RegistrationNumber = "BCK 456", ModelYear = 2022, Mileage = 71_500,
+                LastServiceDate = new(2026, 01, 20), NextServiceDate = new(2026, 07, 20), HourlyCost = 155m },
+        new() { Id = 3,  Name = "Opel Astra",       Type = ResourceType.Car, IsAvailable = true,
+                RegistrationNumber = "CDF 789", ModelYear = 2021, Mileage = 92_300,
+                LastServiceDate = new(2025, 11, 05), NextServiceDate = new(2026, 05, 15), HourlyCost = 170m },
+        new() { Id = 4,  Name = "Toyota Corolla",   Type = ResourceType.Car, IsAvailable = false,
+                RegistrationNumber = "EGH 012", ModelYear = 2024, Mileage = 24_800,
+                LastServiceDate = new(2026, 04, 28), NextServiceDate = new(2026, 10, 28), HourlyCost = 150m },
+
+        // Motorcyklar (klass A1/A2/A)
+        new() { Id = 8,  Name = "Yamaha MT-07",     Type = ResourceType.Motorcycle, IsAvailable = true,
+                RegistrationNumber = "MCY 100", ModelYear = 2024, Mileage = 8_400,
+                LastServiceDate = new(2026, 03, 10), NextServiceDate = new(2026, 09, 10), HourlyCost = 120m },
+        new() { Id = 9,  Name = "Honda CB500F",     Type = ResourceType.Motorcycle, IsAvailable = true,
+                RegistrationNumber = "MCY 200", ModelYear = 2023, Mileage = 14_200,
+                LastServiceDate = new(2026, 02, 18), NextServiceDate = new(2026, 08, 18), HourlyCost = 110m },
+        new() { Id = 10, Name = "Suzuki SV650",     Type = ResourceType.Motorcycle, IsAvailable = false,
+                RegistrationNumber = "MCY 300", ModelYear = 2022, Mileage = 22_900,
+                LastServiceDate = new(2026, 04, 30), NextServiceDate = new(2026, 10, 30), HourlyCost = 115m },
+
+        // Släp (klass BE)
+        new() { Id = 11, Name = "Brenderup 1205S",  Type = ResourceType.Trailer, IsAvailable = true,
+                RegistrationNumber = "REL 100", ModelYear = 2022, Mileage = 18_500,
+                LastServiceDate = new(2026, 01, 10), NextServiceDate = new(2027, 01, 10), HourlyCost = 60m },
+        new() { Id = 12, Name = "Variant 1304F",    Type = ResourceType.Trailer, IsAvailable = true,
+                RegistrationNumber = "REL 200", ModelYear = 2024, Mileage = 6_200,
+                LastServiceDate = new(2026, 03, 22), NextServiceDate = new(2027, 03, 22), HourlyCost = 65m },
+
+        // Lektionssalar
+        new() { Id = 5,  Name = "Sal 1",  Type = ResourceType.Classroom, IsAvailable = true, Capacity = 24, HourlyCost = 80m  },
+        new() { Id = 6,  Name = "Sal 2",  Type = ResourceType.Classroom, IsAvailable = true, Capacity = 16, HourlyCost = 65m  },
+        new() { Id = 13, Name = "Sal 3",  Type = ResourceType.Classroom, IsAvailable = true, Capacity = 8,  HourlyCost = 45m  },
+
+        // Simulator
+        new() { Id = 7,  Name = "Simulator", Type = ResourceType.Simulator, IsAvailable = true, HourlyCost = 95m },
     };
 
     private List<CalendarEvent> _events = new();

@@ -104,7 +104,7 @@ public class ScheduleTemplate
 
 // ── Resources ─────────────────────────────────────────────────────────────────
 
-public enum ResourceType { Car, Classroom, Simulator, Other }
+public enum ResourceType { Car, Motorcycle, Trailer, Classroom, Simulator, Other }
 
 public class Resource
 {
@@ -113,12 +113,28 @@ public class Resource
     public ResourceType Type { get; set; }
     public bool IsAvailable { get; set; } = true;
 
+    // ── Fordonsdata (null för salar/simulator) ──
+    public string?    RegistrationNumber { get; set; }
+    public int?       ModelYear          { get; set; }
+    public int?       Mileage            { get; set; } // km (fordon) eller h (släp)
+    public DateOnly?  LastServiceDate    { get; set; }
+    public DateOnly?  NextServiceDate    { get; set; }
+    public decimal?   HourlyCost         { get; set; } // rörlig driftkostnad kr/h
+
+    // ── Klassrumsdata (null för fordon) ──
+    public int?       Capacity           { get; set; } // antal platser
+
+    /// <summary>True om resursen är på service eller annars otillgänglig.</summary>
+    public bool InService => !IsAvailable;
+
     public string Icon => Type switch
     {
-        ResourceType.Car       => MudBlazor.Icons.Material.Filled.DirectionsCar,
-        ResourceType.Classroom => MudBlazor.Icons.Material.Filled.MeetingRoom,
-        ResourceType.Simulator => MudBlazor.Icons.Material.Filled.SportsEsports,
-        _                      => MudBlazor.Icons.Material.Filled.Category,
+        ResourceType.Car        => MudBlazor.Icons.Material.Filled.DirectionsCar,
+        ResourceType.Motorcycle => MudBlazor.Icons.Material.Filled.TwoWheeler,
+        ResourceType.Trailer    => MudBlazor.Icons.Material.Filled.RvHookup,
+        ResourceType.Classroom  => MudBlazor.Icons.Material.Filled.MeetingRoom,
+        ResourceType.Simulator  => MudBlazor.Icons.Material.Filled.SportsEsports,
+        _                       => MudBlazor.Icons.Material.Filled.Category,
     };
 }
 

@@ -111,6 +111,34 @@ public static class ReportTools
                 ParametersSchema = EmptyObjectSchema,
                 Execute = _ => BuildMarginPerTeacherReport(booking),
             },
+            new AgentTool
+            {
+                Name = "get_resource_inventory",
+                Description = "Resursinventarie: alla bilar, motorcyklar, släp, lektionssalar och simulator – med status, årsmodell, miltal och kapacitet.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildResourceInventoryReport(booking),
+            },
+            new AgentTool
+            {
+                Name = "get_resource_utilization",
+                Description = "Beläggning per resurs (bilar, MC, släp, salar) senaste 30 dagarna, sorterat fallande.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildResourceUtilizationReport(booking),
+            },
+            new AgentTool
+            {
+                Name = "get_resource_utilization_by_type",
+                Description = "Beläggning aggregerat per resurstyp: Bil, Motorcykel, Släp, Sal, Simulator.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildResourceUtilizationByTypeReport(booking),
+            },
+            new AgentTool
+            {
+                Name = "get_resource_costs",
+                Description = "Driftkostnader och kommande service per fordon. Visar rörlig kostnad, körda timmar och nästa servicetillfälle.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildResourceCostsReport(booking),
+            },
         };
     }
 
@@ -676,6 +704,265 @@ public static class ReportTools
                             $"{r.Cost:N0} kr",
                             $"{r.Margin:N0} kr",
                             $"{r.MarginPct:F0}%",
+                        }).ToList()
+                    }
+                }
+            }
+        };
+    }
+
+    // ── Resource-rapporter ────────────────────────────────────────────────────
+
+    /// <summary>Demo-beläggning per resurs (%) — deterministisk.</summary>
+    private static double UtilizationFor(Resource r) => r.Type switch
+    {
+        ResourceType.Car        => 88 - (r.Id * 4 % 20),     // 68–88%
+        ResourceType.Motorcycle => 58 - (r.Id * 3 % 18),     // 40–58% (säsong)
+        ResourceType.Trailer    => 32 - (r.Id * 5 % 12),     // 20–32%
+        ResourceType.Classroom  => 72 - (r.Id * 4 % 22),     // 50–72%
+        ResourceType.Simulator  => 35,
+        _                       => 50,
+    };
+
+    private static string TypeLabel(ResourceType t) => t switch
+    {
+        ResourceType.Car        => "Bil",
+        ResourceType.Motorcycle => "Motorcykel",
+        ResourceType.Trailer    => "Släp",
+        ResourceType.Classroom  => "Sal",
+        ResourceType.Simulator  => "Simulator",
+        _                       => "Övrigt",
+    };
+
+    private static AgentMessage BuildResourceInventoryReport(BookingService booking)
+    {
+        var resources = booking.Resources;
+        var available = resources.Count(r => r.IsAvailable);
+        var inService = resources.Count(r => !r.IsAvailable);
+
+        var byType = resources.GroupBy(r => r.Type)
+            .Select(g => new { Type = TypeLabel(g.Key), Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"Totalt **{resources.Count} resurser** ({available} tillgängliga, {inService} på service). Fördelning: {string.Join(", ", byType.Select(b => $"{b.Count} {b.Type.ToLower()}"))}.",
+            Report = new AgentReport
+            {
+                Title = "Resursinventarie",
+                Summary = "Alla fordon, salar och simulator",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Totalt antal", Value = $"{resources.Count}" },
+                            new() { Label = "Tillgängliga", Value = $"{available}" },
+                            new() { Label = "På service",   Value = $"{inService}", Trend = inService > 0 ? "bevaka" : "" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Antal per typ",
+                        Categories = byType.Select(b => b.Type).ToList(),
+                        Series = { new ChartSeries { Name = "Antal", Values = byType.Select(b => (double)b.Count).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Heading = "Detaljer",
+                        Columns = new() { "Resurs", "Typ", "Reg.nr / Plats", "År", "Mil/Kapacitet", "Status" },
+                        Rows = resources.Select(r => new List<string>
+                        {
+                            r.Name,
+                            TypeLabel(r.Type),
+                            r.RegistrationNumber ?? (r.Type == ResourceType.Classroom ? "—" : "—"),
+                            r.ModelYear?.ToString() ?? "—",
+                            r.Capacity is int c ? $"{c} platser"
+                                : r.Mileage is int m ? $"{m / 10:N0} mil"
+                                : "—",
+                            r.IsAvailable ? "I drift" : "På service",
+                        }).ToList(),
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildResourceUtilizationReport(BookingService booking)
+    {
+        var rows = booking.Resources
+            .Where(r => r.Type != ResourceType.Other)
+            .Select(r => new { r.Name, Type = TypeLabel(r.Type), Util = UtilizationFor(r), r.IsAvailable })
+            .OrderByDescending(x => x.Util)
+            .ToList();
+
+        var avg = rows.Average(x => x.Util);
+        var top = rows.First();
+        var bottom = rows.Last();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"**{top.Name}** har högst beläggning ({top.Util:F0}%). Snittet ligger på {avg:F0}%. Lägst belagd: **{bottom.Name}** ({bottom.Util:F0}%).",
+            Report = new AgentReport
+            {
+                Title = "Beläggning per resurs",
+                Summary = "Senaste 30 dagarna",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Beläggningsgrad (%)",
+                        Categories = rows.Select(r => r.Name).ToList(),
+                        Series = { new ChartSeries { Name = "Beläggning", Values = rows.Select(r => r.Util).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Resurs", "Typ", "Beläggning", "Status" },
+                        Rows = rows.Select(r => new List<string>
+                        {
+                            r.Name,
+                            r.Type,
+                            $"{r.Util:F0}%",
+                            r.IsAvailable
+                                ? (r.Util >= 85 ? "Mycket hög" : r.Util >= 70 ? "Hög" : r.Util >= 50 ? "Medel" : "Låg")
+                                : "På service",
+                        }).ToList()
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildResourceUtilizationByTypeReport(BookingService booking)
+    {
+        var byType = booking.Resources
+            .Where(r => r.Type != ResourceType.Other)
+            .GroupBy(r => r.Type)
+            .Select(g => new
+            {
+                Type = TypeLabel(g.Key),
+                Count = g.Count(),
+                AvgUtil = g.Average(UtilizationFor),
+            })
+            .OrderByDescending(x => x.AvgUtil)
+            .ToList();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"**{byType.First().Type}** har högst snittbeläggning ({byType.First().AvgUtil:F0}%). Släp ligger lågt — typiskt eftersom de bara används för BE-utbildning.",
+            Report = new AgentReport
+            {
+                Title = "Beläggning per resurstyp",
+                Summary = "Snitt senaste 30 dagarna, aggregerat per kategori",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Snittbeläggning per typ (%)",
+                        Categories = byType.Select(b => b.Type).ToList(),
+                        Series = { new ChartSeries { Name = "Beläggning", Values = byType.Select(b => b.AvgUtil).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Typ", "Antal", "Snittbeläggning" },
+                        Rows = byType.Select(b => new List<string>
+                        {
+                            b.Type,
+                            $"{b.Count}",
+                            $"{b.AvgUtil:F0}%",
+                        }).ToList()
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildResourceCostsReport(BookingService booking)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        // Estimera körda timmar senaste 30 dgr utifrån beläggning (8h arbetsdag * 22 dgr).
+        const double availableHours = 8.0 * 22.0;
+
+        var rows = booking.Resources
+            .Where(r => r.Type is ResourceType.Car or ResourceType.Motorcycle or ResourceType.Trailer)
+            .Select(r =>
+            {
+                var hours = availableHours * UtilizationFor(r) / 100.0;
+                var cost  = (double)(r.HourlyCost ?? 0m) * hours;
+                var daysToService = r.NextServiceDate.HasValue
+                    ? (r.NextServiceDate.Value.DayNumber - today.DayNumber)
+                    : (int?)null;
+                return new
+                {
+                    r.Name,
+                    Type = TypeLabel(r.Type),
+                    Hours = hours,
+                    Cost = cost,
+                    NextService = r.NextServiceDate?.ToString("yyyy-MM-dd") ?? "—",
+                    DaysToService = daysToService,
+                };
+            })
+            .OrderByDescending(x => x.Cost)
+            .ToList();
+
+        var totalCost = rows.Sum(x => x.Cost);
+        var soonService = rows.Where(x => x.DaysToService is int d && d <= 30).ToList();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = soonService.Count > 0
+                ? $"Total rörlig fordonskostnad senaste 30 dagarna: **{totalCost:N0} kr**. **{soonService.Count} fordon** har service inom 30 dagar."
+                : $"Total rörlig fordonskostnad senaste 30 dagarna: **{totalCost:N0} kr**. Inga fordon har service inom 30 dagar.",
+            Report = new AgentReport
+            {
+                Title = "Driftkostnad & service",
+                Summary = "Rörliga kostnader senaste 30 dgr + kommande service",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Total driftkostnad", Value = $"{totalCost:N0} kr", Trend = "senaste 30 dgr" },
+                            new() { Label = "Antal fordon",       Value = $"{rows.Count}" },
+                            new() { Label = "Service inom 30 dgr", Value = $"{soonService.Count}", Trend = soonService.Count > 0 ? "boka in" : "OK" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Driftkostnad per fordon (kr)",
+                        Categories = rows.Select(r => r.Name).ToList(),
+                        Series = { new ChartSeries { Name = "Kostnad", Values = rows.Select(r => r.Cost).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Heading = "Detaljer per fordon",
+                        Columns = new() { "Fordon", "Typ", "Körda h (30 dgr)", "Kostnad", "Nästa service", "Dgr kvar" },
+                        Rows = rows.Select(r => new List<string>
+                        {
+                            r.Name,
+                            r.Type,
+                            $"{r.Hours:F0} h",
+                            $"{r.Cost:N0} kr",
+                            r.NextService,
+                            r.DaysToService?.ToString() ?? "—",
                         }).ToList()
                     }
                 }
