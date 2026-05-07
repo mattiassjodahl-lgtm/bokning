@@ -75,12 +75,14 @@
             @* Input *@
             <div class="rp-input">
                 <MudTextField @bind-Value="_input"
-                              Placeholder="Ställ en fråga..."
+                              Placeholder="@InputPlaceholder"
                               Variant="Variant.Outlined"
                               Margin="Margin.Dense"
                               Immediate="true"
+                              MaxLength="MaxInputLength"
+                              Counter="MaxInputLength"
                               OnKeyDown="HandleKey"
-                              Disabled="_thinking"
+                              Disabled="_thinking || IsSessionExhausted"
                               Adornment="Adornment.End"
                               AdornmentIcon="@Icons.Material.Filled.Send"
                               OnAdornmentClick="() => AskAsync(_input)" />
@@ -238,10 +240,26 @@
 </style>
 
 @code {
+    // ── Guardrails (Nivå 1) ───────────────────────────────────────────────────
+    private const int MaxInputLength        = 500; // tecken per fråga
+    private const int MaxQuestionsPerSession = 30;  // anrop innan användaren får ladda om
+
+    // Enkel injection-detektor: blockerar de vanligaste mönstren. Lista byggs ut
+    // vid behov; tänkt som höjd ribba, inte vattentät garanti.
+    private static readonly System.Text.RegularExpressions.Regex InjectionPattern =
+        new(@"(ignore\s+(all\s+)?previous|disregard\s+(the\s+)?(above|prior|previous)|forget\s+(your\s+)?(instructions|rules)|system\s*[:>]|act\s+as\s+(if|a)|jailbreak|du\s+är\s+nu|glöm\s+(dina|alla)\s+instruktioner)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
     private string _input = "";
     private bool _thinking;
+    private int _questionCount;
     private readonly List<AgentMessage> _messages = new();
     private AgentReport? _currentReport;
+
+    private bool IsSessionExhausted => _questionCount >= MaxQuestionsPerSession;
+    private string InputPlaceholder => IsSessionExhausted
+        ? "Frågegränsen nådd – ladda om sidan för att börja om"
+        : $"Ställ en fråga... ({_questionCount}/{MaxQuestionsPerSession})";
 
     // Visar i AppBar om rapportagenten kör mot OpenAI eller i offline-testläge.
     private bool IsLiveAgent => Agent is OpenAIReportAgent;
@@ -260,8 +278,40 @@
     {
         if (string.IsNullOrWhiteSpace(question) || _thinking) return;
 
+        // Guardrail: session-tak
+        if (IsSessionExhausted)
+        {
+            _messages.Add(new AgentMessage
+            {
+                Role = AgentRole.Agent,
+                Text = $"Du har nått gränsen på {MaxQuestionsPerSession} frågor för denna session. Ladda om sidan för att börja om.",
+            });
+            StateHasChanged();
+            return;
+        }
+
+        // Guardrail: klipp till max längd (defense-in-depth utöver MaxLength i UI)
+        if (question.Length > MaxInputLength)
+            question = question[..MaxInputLength];
+
+        // Guardrail: kända injection-mönster
+        if (InjectionPattern.IsMatch(question))
+        {
+            _messages.Add(new AgentMessage { Role = AgentRole.User, Text = question });
+            _messages.Add(new AgentMessage
+            {
+                Role = AgentRole.Agent,
+                Text = "Den frågan kunde jag inte tolka. Formulera om så svarar jag gärna på något om körskolans rapporter.",
+            });
+            _input = "";
+            _questionCount++;
+            StateHasChanged();
+            return;
+        }
+
         _messages.Add(new AgentMessage { Role = AgentRole.User, Text = question });
         _input = "";
+        _questionCount++;
         _thinking = true;
         StateHasChanged();
 
