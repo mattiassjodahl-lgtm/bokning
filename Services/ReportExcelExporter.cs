@@ -10,7 +10,9 @@ namespace BookingDemo.Services;
 ///   • Flik "Översikt": titel, sammanfattning + samlade nyckeltal (KeyFigures-block).
 ///   • En flik per icke-KeyFigure-block (Tabell / BarChart / LineChart).
 ///     – Tabeller: kolumnrubriker + rader.
-///     – BarChart / LineChart: kategorier + en kolumn per serie, plus en Excel-graf.
+///     – BarChart / LineChart: kategorier + en kolumn per serie som data.
+///       Användaren kan markera datan i Excel och välja "Infoga diagram" för
+///       att rendera grafen — ClosedXML 0.104 har inte programmatiskt chart-stöd.
 ///
 /// Designat lättviktigt — ingen extra stylebibliotek, inga externa beroenden
 /// utöver ClosedXML (MIT-licens).
@@ -40,10 +42,8 @@ public class ReportExcelExporter
                     BuildTableSheet(ws, block);
                     break;
                 case BlockKind.BarChart:
-                    BuildChartSheet(ws, block, XLChartType.Column);
-                    break;
                 case BlockKind.LineChart:
-                    BuildChartSheet(ws, block, XLChartType.Line);
+                    BuildChartSheet(ws, block);
                     break;
             }
 
@@ -156,8 +156,11 @@ public class ReportExcelExporter
         ws.Columns().AdjustToContents();
     }
 
-    // ── Chart-flik (data + Excel-graf) ────────────────────────────────────
-    private static void BuildChartSheet(IXLWorksheet ws, ReportBlock block, XLChartType chartType)
+    // ── Chart-flik (data i tabellform) ────────────────────────────────────
+    // ClosedXML 0.104 har inte programmatiskt chart-stöd, så vi exporterar
+    // bara datan. Användaren kan markera tabellen i Excel och välja
+    // "Infoga > Diagram" för att rendera grafen själv (5 sek per chart).
+    private static void BuildChartSheet(IXLWorksheet ws, ReportBlock block)
     {
         int row = 1;
 
@@ -170,8 +173,14 @@ public class ReportExcelExporter
             row += 2;
         }
 
+        // Liten hint till användaren
+        var hint = ws.Cell(row, 1);
+        hint.Value = "Tips: markera tabellen nedan och välj Infoga > Diagram för att rendera grafen.";
+        hint.Style.Font.Italic = true;
+        hint.Style.Font.FontColor = XLColor.Gray;
+        row += 2;
+
         // Header-rad: "Kategori" + en kolumn per serie
-        int headerRow = row;
         ws.Cell(row, 1).Value = "Kategori";
         for (int s = 0; s < block.Series.Count; s++)
         {
@@ -181,7 +190,6 @@ public class ReportExcelExporter
         ws.Range(row, 1, row, block.Series.Count + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
         row++;
 
-        int dataStartRow = row;
         // Datarader
         for (int i = 0; i < block.Categories.Count; i++)
         {
@@ -194,41 +202,8 @@ public class ReportExcelExporter
             }
             row++;
         }
-        int dataEndRow = row - 1;
 
         ws.Columns().AdjustToContents();
-
-        // Excel-graf (ClosedXML stödjer detta via OpenXML — enkla chart-typer fungerar bra).
-        // Notera: vi använder Try/Catch eftersom chart-stöd i ClosedXML har varit lite ostadigt
-        // historiskt. Datan finns kvar på fliken oavsett.
-        try
-        {
-            if (dataEndRow >= dataStartRow && block.Series.Count > 0)
-            {
-                int chartTopRow = headerRow;
-                int chartLeftCol = block.Series.Count + 3;
-
-                var chart = ws.AddChart(chartType,
-                    chartTopRow, chartLeftCol,
-                    chartTopRow + 18, chartLeftCol + 9);
-
-                chart.SetTitle(string.IsNullOrWhiteSpace(block.Heading) ? "Diagram" : block.Heading);
-
-                var categoriesRange = ws.Range(dataStartRow, 1, dataEndRow, 1);
-                for (int s = 0; s < block.Series.Count; s++)
-                {
-                    var valuesRange = ws.Range(dataStartRow, s + 2, dataEndRow, s + 2);
-                    var series = chart.AddSeries(valuesRange);
-                    series.SetName(block.Series[s].Name);
-                    series.SetCategories(categoriesRange);
-                }
-            }
-        }
-        catch
-        {
-            // Datan finns ändå tillgänglig i tabellform — användaren kan skapa
-            // egen graf manuellt om något går snett med chart-renderingen.
-        }
     }
 
     // ── Hjälpare: Excel-flikar har begränsningar på namn ──────────────────
