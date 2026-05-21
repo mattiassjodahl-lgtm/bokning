@@ -18,6 +18,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<BookingService>();
+builder.Services.AddSingleton<ReportExcelExporter>();
 
 // Tools delas mellan TestLlmReportAgent och OpenAIReportAgent.
 builder.Services.AddSingleton<IReadOnlyList<AgentTool>>(sp =>

@@ -2,6 +2,7 @@
 @inject IReportAgent Agent
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject BookingDemo.Services.ReportExcelExporter ExcelExporter
 
 <PageTitle>Adminrapporter</PageTitle>
 
@@ -150,11 +151,23 @@
             }
             else
             {
-                <MudText Typo="Typo.h5" Style="margin-bottom:4px">@_currentReport.Title</MudText>
-                @if (!string.IsNullOrEmpty(_currentReport.Summary))
-                {
-                    <MudText Typo="Typo.caption" Style="color:#757575;margin-bottom:16px;display:block">@_currentReport.Summary</MudText>
-                }
+                <div class="rp-report-header">
+                    <div class="rp-report-title-wrap">
+                        <MudText Typo="Typo.h5" Style="margin-bottom:4px">@_currentReport.Title</MudText>
+                        @if (!string.IsNullOrEmpty(_currentReport.Summary))
+                        {
+                            <MudText Typo="Typo.caption" Style="color:#757575;display:block">@_currentReport.Summary</MudText>
+                        }
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.FileDownload"
+                               Size="Size.Small"
+                               Disabled="_downloading"
+                               OnClick="DownloadExcelAsync">
+                        @(_downloading ? "Skapar fil..." : "Ladda ner Excel")
+                    </MudButton>
+                </div>
 
                 @foreach (var block in _currentReport.Blocks)
                 {
@@ -321,6 +334,14 @@
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 8px;
     }
+    .rp-report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+    .rp-report-title-wrap { flex: 1; min-width: 0; }
 
     .rp-keyfigures {
         display: grid;
@@ -355,6 +376,7 @@
 
     private string _input = "";
     private bool _thinking;
+    private bool _downloading;
     private int _questionCount;
     private readonly List<AgentMessage> _messages = new();
     private AgentReport? _currentReport;
@@ -491,6 +513,50 @@
         if (reply.Report is not null) _currentReport = reply.Report;
         _thinking = false;
         StateHasChanged();
+    }
+
+    // Ladda ner aktuell rapport som Excel-fil. Genererar .xlsx pa servern och
+    // skickar till browsern via JS-helper (base64). Tyst skydd mot dubbelklick.
+    private async Task DownloadExcelAsync()
+    {
+        if (_currentReport is null || _downloading) return;
+
+        _downloading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Excel-genereringen kor synkront pa servern - kasta till threadpool
+            // sa UI-traden inte blockeras for stora rapporter.
+            var bytes = await Task.Run(() => ExcelExporter.Export(_currentReport));
+            var base64 = Convert.ToBase64String(bytes);
+
+            // Filnamn baserat pa rapporttitel + tidsstampel for unikhet
+            var safeTitle = string.IsNullOrWhiteSpace(_currentReport.Title)
+                ? "Rapport"
+                : System.Text.RegularExpressions.Regex.Replace(_currentReport.Title, @"[^\w\d-]+", "_");
+            var filename = $"{safeTitle}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+
+            await JS.InvokeAsync<bool>("fileDownload.fromBase64",
+                base64,
+                filename,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+        catch (Exception ex)
+        {
+            // Vid fel: visa ett kort meddelande i chatt-listan sa anvandaren forstar
+            // att nedladdningen misslyckats utan att tappa hela rapportvyn.
+            _messages.Add(new AgentMessage
+            {
+                Role = AgentRole.Agent,
+                Text = $"Kunde inte skapa Excel-filen: {ex.Message}",
+            });
+        }
+        finally
+        {
+            _downloading = false;
+            StateHasChanged();
+        }
     }
 
     // Minimal markdown: **bold** → <strong>, *italic* → <em>. Rensar HTML först.
