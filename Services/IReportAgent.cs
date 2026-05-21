@@ -11,8 +11,8 @@ namespace BookingDemo.Services;
 /// </summary>
 public interface IReportAgent
 {
-    /// <summary>Förslag som visas som chips i UI:t innan användaren skrivit något.</summary>
-    IReadOnlyList<string> SuggestedQuestions { get; }
+    /// <summary>Förslag som visas som chips i UI:t. Grupperas på kategori.</summary>
+    IReadOnlyList<SuggestedQuestion> SuggestedQuestions { get; }
 
     /// <summary>Svarar på en fritext-fråga. Returnerar både text och strukturerad rapport.</summary>
     Task<AgentMessage> AskAsync(string question, CancellationToken ct = default);

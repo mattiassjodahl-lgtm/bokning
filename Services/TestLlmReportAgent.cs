@@ -22,23 +22,28 @@ public class TestLlmReportAgent : IReportAgent
         _byName = tools.ToDictionary(t => t.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    public IReadOnlyList<string> SuggestedQuestions { get; } = new[]
+    public IReadOnlyList<SuggestedQuestion> SuggestedQuestions { get; } = new SuggestedQuestion[]
     {
-        "Hur mycket har vi sålt i år?",
-        "Visa intäkter per månad senaste halvåret",
-        "Vilken lärare omsätter mest?",
-        "Hur ser beläggningen ut kommande vecka?",
-        "Vilka tider är mest bokade?",
-        "Hur full är beläggningen per lärare?",
-        "Visa omsättning senaste 12 månaderna med prognos",
-        "Hur många nya elever har vi fått i år?",
-        "Vad är godkännandegraden på uppkörningen?",
-        "Hur ser avbokningsfrekvensen ut?",
-        "Vilken lektionstyp är mest lönsam?",
-        "Visa kostnader och marginal per lärare",
+        new("Ekonomi", "Hur mycket har vi sålt i år?"),
+        new("Ekonomi", "Visa intäkter per månad senaste halvåret"),
+        new("Ekonomi", "Visa omsättning senaste 12 månaderna med prognos"),
+        new("Ekonomi", "Vilken lektionstyp är mest lönsam?"),
+        new("Ekonomi", "Visa kostnader och marginal per lärare"),
+
+        new("Beläggning", "Hur ser beläggningen ut kommande vecka?"),
+        new("Beläggning", "Vilka tider är mest bokade?"),
+        new("Beläggning", "Hur full är beläggningen per lärare?"),
+
+        new("Lärare", "Vilken lärare omsätter mest?"),
+
+        new("Elever", "Hur många nya elever har vi fått i år?"),
+        new("Elever", "Vad är godkännandegraden på uppkörningen?"),
+
+        new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
+
         // Kombo-frågor (kör flera tools på en gång):
-        "Visa omsättning och beläggning för året",
-        "Hur är elevstatistik och avbokningsfrekvens?",
+        new("Kombinerade", "Visa omsättning och beläggning för året"),
+        new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
     };
 
     // Separatorer som indikerar att frågan kombinerar flera intents.

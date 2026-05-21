@@ -57,3 +57,10 @@ public class ChartSeries
     public string Name { get; set; } = "";
     public List<double> Values { get; set; } = new();
 }
+
+/// <summary>
+/// Frageforslag som visas i chip-rutan. Category anvands for att gruppera
+/// forslagen i UI (t.ex. "Ekonomi", "Belaggning"). Lagg till nya kategorier
+/// helt enkelt genom att skriva ett nytt Category-varde - inget enum behovs.
+/// </summary>
+public record SuggestedQuestion(string Category, string Text);

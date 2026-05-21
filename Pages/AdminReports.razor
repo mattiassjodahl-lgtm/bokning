@@ -1,6 +1,7 @@
 @page "/admin/rapporter"
 @inject IReportAgent Agent
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Adminrapporter</PageTitle>
 
@@ -41,6 +42,17 @@
                 @foreach (var m in _messages)
                 {
                     <div class="@(m.Role == AgentRole.User ? "rp-msg rp-msg-user" : "rp-msg rp-msg-agent")">
+                        @if (m.Role == AgentRole.User)
+                        {
+                            <button type="button"
+                                    class="rp-fav-btn"
+                                    title="@(IsFavorite(m.Text) ? "Ta bort fran favoriter" : "Spara som favorit")"
+                                    @onclick="() => ToggleFavoriteAsync(m.Text)">
+                                <MudIcon Icon="@(IsFavorite(m.Text) ? Icons.Material.Filled.Star : Icons.Material.Filled.StarBorder)"
+                                         Size="Size.Small"
+                                         Style="@(IsFavorite(m.Text) ? "color:#FFB300" : "color:#9E9E9E")" />
+                            </button>
+                        }
                         <div class="rp-bubble">
                             @if (m.Role == AgentRole.Agent)
                             {
@@ -61,16 +73,54 @@
                 }
             </div>
 
-            @* Förslagschips *@
-            @if (_messages.Count == 0)
-            {
-                <div class="rp-suggestions">
-                    @foreach (var s in Agent.SuggestedQuestions)
-                    {
-                        <button type="button" class="rp-chip" @onclick="() => AskAsync(s)">@s</button>
-                    }
-                </div>
-            }
+            @* Forslagschips - grupperade pa kategori, alltid synliga *@
+            <div class="rp-suggestions-wrap">
+                @if (_favorites.Count > 0)
+                {
+                    <div class="rp-cat">
+                        <button type="button" class="rp-cat-header rp-cat-fav" @onclick='() => ToggleCategoryExpand("Mina favoriter")'>
+                            <MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" Style="color:#FFB300" />
+                            <span>Mina favoriter</span>
+                            <span class="rp-cat-count">(@_favorites.Count)</span>
+                            <MudIcon Icon="@(IsCategoryExpanded("Mina favoriter") ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                     Size="Size.Small" Style="margin-left:auto;color:#757575" />
+                        </button>
+                        @if (IsCategoryExpanded("Mina favoriter"))
+                        {
+                            <div class="rp-chip-row">
+                                @foreach (var fav in _favorites)
+                                {
+                                    <div class="rp-chip-with-action">
+                                        <button type="button" class="rp-chip rp-chip-fav" @onclick="() => AskAsync(fav)">@fav</button>
+                                        <button type="button" class="rp-chip-x" title="Ta bort favorit" @onclick="() => ToggleFavoriteAsync(fav)">×</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                @foreach (var grp in Agent.SuggestedQuestions.GroupBy(q => q.Category))
+                {
+                    var cat = grp.Key;
+                    <div class="rp-cat">
+                        <button type="button" class="rp-cat-header" @onclick="() => ToggleCategoryExpand(cat)">
+                            <span>@cat</span>
+                            <span class="rp-cat-count">(@grp.Count())</span>
+                            <MudIcon Icon="@(IsCategoryExpanded(cat) ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                     Size="Size.Small" Style="margin-left:auto;color:#757575" />
+                        </button>
+                        @if (IsCategoryExpanded(cat))
+                        {
+                            <div class="rp-chip-row">
+                                @foreach (var q in grp)
+                                {
+                                    <button type="button" class="rp-chip" @onclick="() => AskAsync(q.Text)">@q.Text</button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
 
             @* Input *@
             <div class="rp-input">
@@ -198,13 +248,66 @@
     .rp-msg-user .rp-bubble  { background: #1565C0; color: white; border-bottom-right-radius: 4px; }
     .rp-msg-agent .rp-bubble { background: #F5F5F5; color: #212121; border-bottom-left-radius: 4px; }
     .rp-thinking { display: inline-flex; align-items: center; }
-    .rp-suggestions { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid #F0F0F0; }
+    .rp-suggestions-wrap {
+        border-top: 1px solid #F0F0F0;
+        max-height: 38vh;
+        overflow-y: auto;
+        background: #FAFAFA;
+    }
+    .rp-cat { border-bottom: 1px solid #EEEEEE; }
+    .rp-cat:last-child { border-bottom: none; }
+    .rp-cat-header {
+        width: 100%;
+        background: transparent;
+        border: none;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #424242;
+        cursor: pointer;
+        text-align: left;
+    }
+    .rp-cat-header:hover { background: #F5F5F5; }
+    .rp-cat-fav { background: #FFF8E1; }
+    .rp-cat-fav:hover { background: #FFECB3; }
+    .rp-cat-count { color: #9E9E9E; font-weight: 400; }
+    .rp-chip-row { padding: 4px 12px 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
     .rp-chip {
         font-size: 12px; padding: 6px 12px; border-radius: 14px;
         border: 1px solid #BBDEFB; background: #E3F2FD; color: #1565C0;
         cursor: pointer;
     }
     .rp-chip:hover { background: #1565C0; color: white; }
+    .rp-chip-fav {
+        border-color: #FFE082; background: #FFF8E1; color: #F57F17;
+    }
+    .rp-chip-fav:hover { background: #FFB300; color: white; }
+    .rp-chip-with-action { display: inline-flex; align-items: center; }
+    .rp-chip-x {
+        margin-left: -4px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        border: 1px solid #FFE082;
+        background: #FFF8E1;
+        color: #F57F17;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+    }
+    .rp-chip-x:hover { background: #F57F17; color: white; }
+    .rp-fav-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 4px;
+        align-self: flex-end;
+        margin-right: 4px;
+    }
+    .rp-fav-btn:hover { background: #F5F5F5; border-radius: 50%; }
     .rp-input { padding: 10px 12px; border-top: 1px solid #F0F0F0; background: #FAFAFA; }
 
     .rp-report {
@@ -255,6 +358,71 @@
     private int _questionCount;
     private readonly List<AgentMessage> _messages = new();
     private AgentReport? _currentReport;
+
+    // Favoriter (lagras i localStorage per browser)
+    private List<string> _favorites = new();
+
+    // Vilka kategorier ar utfallna. Tomt = "alla utfallna fram tills _messages > 0".
+    // Default: pa startvyn ar allt utfallt; nar man borjat chatta vill man komma at
+    // listan men inte att den tar over - da fall in pa explicit val per kategori.
+    private readonly HashSet<string> _expandedCategories = new() { "Mina favoriter" };
+
+    private bool IsCategoryExpanded(string cat)
+    {
+        // Startvy: visa allt utfallt direkt
+        if (_messages.Count == 0) return true;
+        // Annars: bara det anvandaren explicit fallt ut
+        return _expandedCategories.Contains(cat);
+    }
+
+    private void ToggleCategoryExpand(string cat)
+    {
+        if (_expandedCategories.Contains(cat)) _expandedCategories.Remove(cat);
+        else _expandedCategories.Add(cat);
+    }
+
+    private bool IsFavorite(string question)
+        => _favorites.Contains(question, StringComparer.OrdinalIgnoreCase);
+
+    private async Task ToggleFavoriteAsync(string question)
+    {
+        var existing = _favorites.FirstOrDefault(f =>
+            string.Equals(f, question, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+            _favorites.Remove(existing);
+        else
+            _favorites.Add(question);
+
+        // Spara till localStorage via JS-helper
+        try
+        {
+            await JS.InvokeAsync<bool>("reportFavorites.save", _favorites);
+        }
+        catch
+        {
+            // Tyst fail - favoriter overlever da inte sid-reload, men UI:t fungerar
+        }
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var loaded = await JS.InvokeAsync<List<string>>("reportFavorites.get");
+            if (loaded is { Count: > 0 })
+            {
+                _favorites = loaded;
+                StateHasChanged();
+            }
+        }
+        catch
+        {
+            // Forsta forsoket innan JS ar klart kan fela - inget kritiskt
+        }
+    }
 
     private bool IsSessionExhausted => _questionCount >= MaxQuestionsPerSession;
     private string InputPlaceholder => IsSessionExhausted

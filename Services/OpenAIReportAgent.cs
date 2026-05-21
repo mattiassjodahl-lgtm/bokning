@@ -39,19 +39,24 @@ public class OpenAIReportAgent : IReportAgent
         )).ToList();
     }
 
-    public IReadOnlyList<string> SuggestedQuestions { get; } = new[]
+    public IReadOnlyList<SuggestedQuestion> SuggestedQuestions { get; } = new SuggestedQuestion[]
     {
-        "Hur mycket har vi sålt i år?",
-        "Visa intäkter per månad senaste 12 mån",
-        "Vilken lärare omsätter mest?",
-        "Hur ser beläggningen ut kommande vecka?",
-        "Hur många nya elever har vi fått i år?",
-        "Hur ser avbokningsfrekvensen ut?",
-        "Vilken lektionstyp är mest lönsam?",
-        "Visa kostnader och marginal per lärare",
+        new("Ekonomi", "Hur mycket har vi sålt i år?"),
+        new("Ekonomi", "Visa intäkter per månad senaste 12 mån"),
+        new("Ekonomi", "Vilken lektionstyp är mest lönsam?"),
+        new("Ekonomi", "Visa kostnader och marginal per lärare"),
+
+        new("Beläggning", "Hur ser beläggningen ut kommande vecka?"),
+
+        new("Lärare", "Vilken lärare omsätter mest?"),
+
+        new("Elever", "Hur många nya elever har vi fått i år?"),
+
+        new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
+
         // Kombo-frågor (LLM väljer flera tools samtidigt):
-        "Visa omsättning och beläggning för året",
-        "Hur är elevstatistik och avbokningsfrekvens?",
+        new("Kombinerade", "Visa omsättning och beläggning för året"),
+        new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
     };
 
     public async Task<AgentMessage> AskAsync(string question, CancellationToken ct = default)
