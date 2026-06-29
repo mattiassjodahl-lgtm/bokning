@@ -7,10 +7,16 @@
 <section class="ps-section">
     <div class="ps-wrap">
         <h1>Prislista</h1>
-        <p class="ps-lead">Aktuella priser för våra webbpublicerade tjänster och produkter. Alla priser anges i kronor.</p>
+        <p class="ps-lead">Aktuella priser för våra webbpublicerade tjänster och produkter. Sök eller filtrera för att hitta rätt.</p>
 
         @* ── Filter ──────────────────────────────────────────────────────── *@
         <div class="ps-filterbar ps-mt">
+            <div class="ps-field" style="max-width:440px">
+                <label for="prissok">Sök produkt</label>
+                <input id="prissok" type="search" class="ps-input" placeholder="Sök på namn eller artikelnummer…"
+                       @bind="_search" @bind:event="oninput" />
+            </div>
+
             <fieldset class="ps-fieldset">
                 <legend>Kategori</legend>
                 <div class="ps-filters">
@@ -25,38 +31,55 @@
             </fieldset>
         </div>
 
-        @{ var rows = Web.WebProducts.Where(Matches).ToList(); }
-        @if (rows.Count == 0)
+        @{
+            var filtered = Web.WebProducts.Where(Matches).ToList();
+            var groups = WebsiteService.ProductCategories
+                .Select(c => (Cat: c, Items: filtered.Where(p => WebsiteService.ProductCategoryFor(p) == c).OrderBy(p => p.Name).ToList()))
+                .Where(g => g.Items.Count > 0)
+                .ToList();
+            var total = Web.WebProducts.Count();
+        }
+
+        <p class="ps-hint ps-mt" aria-live="polite" role="status">
+            Visar @filtered.Count av @total produkter@(FilterActive ? " (filtrerat)" : "").
+        </p>
+
+        @if (groups.Count == 0)
         {
-            <div class="ps-note ps-mt" role="status">Inga produkter matchar ditt val.</div>
+            <div class="ps-note" role="status">Inga produkter matchar din sökning. Prova ett annat ord eller ta bort filtret.</div>
         }
         else
         {
-            <div class="ps-table-wrap ps-mt">
-                <table class="ps-table">
-                    <caption>Webbpublicerade produkter och tjänster</caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Art.nr</th>
-                            <th scope="col">Produkt / tjänst</th>
-                            <th scope="col">Kategori</th>
-                            <th scope="col">Pris</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in rows)
-                        {
-                            <tr>
-                                <td>@p.ArticleNumber</td>
-                                <td>@p.Name</td>
-                                <td>@WebsiteService.ProductCategoryFor(p)</td>
-                                <td class="ps-price">@p.Price.ToString("N0", Sv) kr</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            @foreach (var g in groups)
+            {
+                <section class="ps-pricegroup">
+                    <h2>@g.Cat <span class="ps-count">@g.Items.Count</span></h2>
+                    <div class="ps-table-wrap">
+                        <table class="ps-table">
+                            <caption class="visually-hidden">@g.Cat</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Art.nr</th>
+                                    <th scope="col">Produkt / tjänst</th>
+                                    <th scope="col">Pris</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in g.Items)
+                                {
+                                    <tr>
+                                        <td>@p.ArticleNumber</td>
+                                        <td>@p.Name</td>
+                                        <td class="ps-price">@p.Price.ToString("N0", Sv) kr</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            }
         }
+
         <p class="ps-hint ps-mt">Endast produkter som är webbflaggade i affärssystemet visas här.</p>
     </div>
 </section>
@@ -65,13 +88,21 @@
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
 
     private readonly HashSet<string> _selected = new();
+    private string _search = "";
 
-    // Kategorier som faktiskt förekommer bland webbprodukterna (fast ordning).
+    private bool FilterActive => _selected.Count > 0 || !string.IsNullOrWhiteSpace(_search);
+
     private IEnumerable<string> PresentCategories =>
         WebsiteService.ProductCategories.Where(c => Web.WebProducts.Any(p => WebsiteService.ProductCategoryFor(p) == c));
 
-    private bool Matches(Article a) =>
-        _selected.Count == 0 || _selected.Contains(WebsiteService.ProductCategoryFor(a));
+    private bool Matches(Article a)
+    {
+        if (_selected.Count > 0 && !_selected.Contains(WebsiteService.ProductCategoryFor(a))) return false;
+        if (string.IsNullOrWhiteSpace(_search)) return true;
+        var q = _search.Trim();
+        return a.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
+            || a.ArticleNumber.Contains(q, StringComparison.OrdinalIgnoreCase);
+    }
 
     private void Toggle(string c)
     {

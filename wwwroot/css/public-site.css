@@ -291,6 +291,13 @@ body:has(.ps-site) {
 .ps-chip:hover { border-color: var(--ps-primary); }
 .ps-chip[aria-pressed="true"] { background: var(--ps-primary); border-color: var(--ps-primary); color: #fff; }
 .ps-filterbar { display: grid; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--ps-bg-soft); border: 1px solid var(--ps-line); border-radius: var(--ps-radius); }
+.ps-input { font: inherit; padding: .7rem .9rem; border: 2px solid var(--ps-line); border-radius: 10px; background: #fff; width: 100%; }
+.ps-input:hover { border-color: var(--ps-muted); }
+
+/* Prislista – kategorigrupper */
+.ps-pricegroup { margin-top: 1.75rem; }
+.ps-pricegroup h2 { display: flex; align-items: center; gap: .6rem; font-size: 1.25rem; margin-bottom: .6rem; }
+.ps-count { background: var(--ps-bg-soft); color: var(--ps-muted); font-size: .85rem; font-weight: 700; border-radius: 999px; padding: .1rem .65rem; }
 
 /* ── Info-banner (e-handel mock m.m.) ─────────────────────────────────── */
 .ps-note {

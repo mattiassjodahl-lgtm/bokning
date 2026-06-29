@@ -21,17 +21,38 @@
     @* ── Webbflaggade produkter (prislista) ────────────────────────────────── *@
     <MudItem xs="12" md="6">
         <MudText Typo="Typo.h6" GutterBottom="true">Produkter i prislistan</MudText>
-        <MudText Typo="Typo.caption" Style="color:#666">Bocka för de artiklar som ska visas på den publika prislistan.</MudText>
-        <div class="mt-3">
-            @foreach (var a in Web.AllArticles)
-            {
-                var id = a.Id;
-                <MudCheckBox T="bool" Dense="true"
-                             Value="@Web.Settings.WebFlaggedArticleIds.Contains(id)"
-                             ValueChanged="@(v => ToggleArticle(id, v))"
-                             Label="@($"{a.ArticleNumber} – {a.Name}")" />
-            }
-        </div>
+        <MudText Typo="Typo.caption" Style="color:#666">
+            Bocka för de artiklar som ska visas publikt. @SelectedCount av @Web.AllArticles.Count valda.
+        </MudText>
+        <MudTextField @bind-Value="_prodSearch" @bind-Value:event="oninput" Immediate="true"
+                      Placeholder="Sök artikel…" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Class="mt-2 mb-1" Clearable="true" />
+
+        @foreach (var cat in WebsiteService.ProductCategories)
+        {
+            var items = ArticlesIn(cat);
+            if (items.Count == 0) continue;
+            var allOn = items.All(a => IsFlagged(a.Id));
+            var anyOn = items.Any(a => IsFlagged(a.Id));
+            <div class="mt-2">
+                <MudCheckBox T="bool" Dense="true" Color="Color.Primary"
+                             Value="@allOn" Indeterminate="@(anyOn && !allOn)"
+                             ValueChanged="@(v => SetGroup(items, v))">
+                    <strong>@cat</strong> <span style="color:#888">(@items.Count(a => IsFlagged(a.Id))/@items.Count)</span>
+                </MudCheckBox>
+                <div style="margin-left:1.6rem">
+                    @foreach (var a in items)
+                    {
+                        var id = a.Id;
+                        <MudCheckBox T="bool" Dense="true"
+                                     Value="@IsFlagged(id)"
+                                     ValueChanged="@(v => ToggleArticle(id, v))"
+                                     Label="@($"{a.ArticleNumber} – {a.Name}")" />
+                    }
+                </div>
+            </div>
+        }
     </MudItem>
 
     @* ── Profil ────────────────────────────────────────────────────────────── *@
@@ -134,6 +155,25 @@
         (WebPageKey.Nyheter,  "Nyheter"),
         (WebPageKey.Kontakt,  "Kontakta oss"),
     };
+
+    private string _prodSearch = "";
+
+    private bool IsFlagged(int id) => Web.Settings.WebFlaggedArticleIds.Contains(id);
+
+    private int SelectedCount => Web.AllArticles.Count(a => IsFlagged(a.Id));
+
+    private List<Article> ArticlesIn(string category) =>
+        Web.AllArticles
+            .Where(a => WebsiteService.ProductCategoryFor(a) == category)
+            .Where(a => string.IsNullOrWhiteSpace(_prodSearch)
+                || a.Name.Contains(_prodSearch, StringComparison.OrdinalIgnoreCase)
+                || a.ArticleNumber.Contains(_prodSearch, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+    private void SetGroup(IEnumerable<Article> items, bool on)
+    {
+        foreach (var a in items) ToggleArticle(a.Id, on);
+    }
 
     private void ToggleArticle(int id, bool on)
     {
