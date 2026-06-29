@@ -13,7 +13,7 @@
                    Href="/" title="Till kalendern" />
 </MudAppBar>
 
-<MudMainContent>
+<MudMainContent Class="admin-page">
     <MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
 
         <MudText Typo="Typo.body2" Class="mb-4" Style="color:#666">
@@ -27,6 +27,9 @@
             </MudTabPanel>
             <MudTabPanel Text="Startsida" Icon="@Icons.Material.Filled.Home">
                 <AdminStartTab />
+            </MudTabPanel>
+            <MudTabPanel Text="Sektioner" Icon="@Icons.Material.Filled.ViewAgenda">
+                <AdminSectionsTab />
             </MudTabPanel>
             <MudTabPanel Text="Utbildningar" Icon="@Icons.Material.Filled.School">
                 <AdminEducationTab />

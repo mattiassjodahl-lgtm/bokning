@@ -112,6 +112,32 @@ public class EducationCard
     public bool HasPage => !string.IsNullOrEmpty(Slug);
 }
 
+/// <summary>Säljpunkt i USP-bandet på startsidan.</summary>
+public class UspItem
+{
+    /// <summary>Material Icons-namn, t.ex. "verified".</summary>
+    public string Icon  { get; set; } = "verified";
+    public string Title { get; set; } = "";
+    public string Text  { get; set; } = "";
+}
+
+/// <summary>Ett steg i "Så tar du körkort"-guiden.</summary>
+public class StepItem
+{
+    public string Title { get; set; } = "";
+    public string Text  { get; set; } = "";
+}
+
+/// <summary>En rad i "Kommande kurser"-tabellen på startsidan.</summary>
+public class CourseItem
+{
+    public DateOnly Date { get; set; }
+    public string   Name { get; set; } = "";
+    public decimal  Price { get; set; }
+    /// <summary>True = fullbokad (visas som "Fullt").</summary>
+    public bool     Full { get; set; }
+}
+
 /// <summary>Innehåll och inställningar för hela hemsidan (en körskola).</summary>
 public class WebsiteSettings
 {
@@ -133,6 +159,17 @@ public class WebsiteSettings
 
     public List<EducationCard> EducationCards { get; set; } = new();
     public List<NewsItem>      News           { get; set; } = new();
+
+    // ── Startsidans sektioner (på/av + innehåll) ──────────────────────────────
+    public bool ShowUsp     { get; set; } = true;
+    public bool ShowSteps   { get; set; } = true;
+    public bool ShowNews    { get; set; } = true;
+    public bool ShowCourses { get; set; } = true;
+
+    public List<UspItem>   Usp          { get; set; } = new();
+    public string          StepsHeading { get; set; } = "Så tar du körkort – fyra enkla steg";
+    public List<StepItem>  Steps        { get; set; } = new();
+    public List<CourseItem> Courses     { get; set; } = new();
 
     /// <summary>Artikel-ID:n (från affärssystemets PIM) som är webbflaggade → visas i prislistan.</summary>
     public List<int> WebFlaggedArticleIds { get; set; } = new();

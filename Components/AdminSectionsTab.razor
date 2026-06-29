@@ -1,0 +1,75 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Visa sektioner på startsidan</MudText>
+<MudText Typo="Typo.caption" Style="color:#666">Hero-bannern visas alltid. Övriga sektioner kan slås av och på.</MudText>
+<div class="mt-2 mb-4" style="display:flex; flex-wrap:wrap; gap:1.5rem">
+    <MudSwitch T="bool" Color="Color.Primary" @bind-Value="Web.Settings.ShowUsp"     Label="USP-band" />
+    <MudSwitch T="bool" Color="Color.Primary" @bind-Value="Web.Settings.ShowSteps"   Label="Steg-guide" />
+    <MudSwitch T="bool" Color="Color.Primary" @bind-Value="Web.Settings.ShowNews"    Label="Nyhetsblock" />
+    <MudSwitch T="bool" Color="Color.Primary" @bind-Value="Web.Settings.ShowCourses" Label="Kommande kurser" />
+</div>
+
+<MudDivider Class="my-4" />
+
+@* ── USP-band ─────────────────────────────────────────────────────────────── *@
+<MudText Typo="Typo.h6" GutterBottom="true">USP-band</MudText>
+@foreach (var usp in Web.Settings.Usp)
+{
+    var u = usp;
+    <div style="display:flex; gap:.5rem; align-items:flex-start; margin-bottom:.5rem; flex-wrap:wrap">
+        <MudTextField @bind-Value="u.Icon" Label="Ikon" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:150px"
+                      HelperText="Material Icons-namn" />
+        <MudTextField @bind-Value="u.Title" Label="Rubrik" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:220px" />
+        <MudTextField @bind-Value="u.Text" Label="Text" Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1; min-width:220px" />
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => Web.Settings.Usp.Remove(u))" />
+    </div>
+}
+<MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="@(() => Web.Settings.Usp.Add(new() { Icon = "star" }))">Lägg till punkt</MudButton>
+
+<MudDivider Class="my-4" />
+
+@* ── Steg-guide ───────────────────────────────────────────────────────────── *@
+<MudText Typo="Typo.h6" GutterBottom="true">Steg-guide</MudText>
+<MudTextField @bind-Value="Web.Settings.StepsHeading" Label="Rubrik" Variant="Variant.Outlined" Class="mb-3" />
+@foreach (var step in Web.Settings.Steps)
+{
+    var st = step;
+    <div style="display:flex; gap:.5rem; align-items:flex-start; margin-bottom:.5rem; flex-wrap:wrap">
+        <MudTextField @bind-Value="st.Title" Label="Stegrubrik" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:240px" />
+        <MudTextField @bind-Value="st.Text" Label="Text" Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1; min-width:240px" />
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => Web.Settings.Steps.Remove(st))" />
+    </div>
+}
+<MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="@(() => Web.Settings.Steps.Add(new()))">Lägg till steg</MudButton>
+
+<MudDivider Class="my-4" />
+
+@* ── Kommande kurser ──────────────────────────────────────────────────────── *@
+<MudText Typo="Typo.h6" GutterBottom="true">Kommande kurser</MudText>
+@foreach (var course in Web.Settings.Courses)
+{
+    var c = course;
+    <div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.5rem; flex-wrap:wrap">
+        <MudDatePicker Label="Start" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:170px"
+                       Date="@c.Date.ToDateTime(TimeOnly.MinValue)"
+                       DateChanged="@(d => c.Date = DateOnly.FromDateTime(d ?? DateTime.Today))" />
+        <MudTextField @bind-Value="c.Name" Label="Kurs" Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1; min-width:200px" />
+        <MudNumericField T="decimal" @bind-Value="c.Price" Label="Pris (kr)" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:130px" />
+        <MudSwitch T="bool" Color="Color.Error" @bind-Value="c.Full" Label="Fullt" />
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => Web.Settings.Courses.Remove(c))" />
+    </div>
+}
+<MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+           OnClick="@(() => Web.Settings.Courses.Add(new() { Date = DateOnly.FromDateTime(DateTime.Today) }))">Lägg till kurs</MudButton>
+
+<MudDivider Class="my-4" />
+<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="Save">Spara</MudButton>
+
+@code {
+    private void Save()
+    {
+        Web.Save();
+        Snackbar.Add("Sektioner sparade", Severity.Success);
+    }
+}

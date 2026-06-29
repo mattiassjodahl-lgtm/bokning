@@ -1,0 +1,206 @@
+{
+  "School": {
+    "Name": "V\u00E4gvisarens Trafikskola",
+    "LogoInitials": "VT",
+    "Tagline": "Din kompletta trafikskola i stan",
+    "Phone": "054-21 40 50",
+    "Email": "info@vagvisaren.se",
+    "VisitAddress": "Storgatan 12, 652 25 Karlstad",
+    "PostalAddress": "Box 1234, 651 11 Karlstad",
+    "OrgNumber": "556714-4356",
+    "OpeningHours": [
+      {
+        "Days": "M\u00E5ndag\u2013Torsdag",
+        "Hours": "08.00\u201316.30"
+      },
+      {
+        "Days": "Fredag",
+        "Hours": "08.00\u201316.00"
+      },
+      {
+        "Days": "L\u00F6rdag\u2013S\u00F6ndag",
+        "Hours": "St\u00E4ngt"
+      }
+    ],
+    "Social": [
+      {
+        "Platform": "facebook",
+        "Label": "Facebook",
+        "Url": "#"
+      },
+      {
+        "Platform": "instagram",
+        "Label": "Instagram",
+        "Url": "#"
+      },
+      {
+        "Platform": "youtube",
+        "Label": "YouTube",
+        "Url": "#"
+      }
+    ]
+  },
+  "Settings": {
+    "Layout": "FocusNews",
+    "PageVisibility": {
+      "Ehandel": true,
+      "Kalender": true,
+      "Prislista": true,
+      "Personal": true,
+      "Nyheter": true,
+      "Kontakt": true
+    },
+    "HeroHeading": "Ta k\u00F6rkort hos V\u00E4gvisarens Trafikskola",
+    "HeroIngress": "Vi utbildar f\u00F6r bil, sl\u00E4p, moped och MC \u2013 med erfarna l\u00E4rare och en trygg, modern utbildning hela v\u00E4gen till uppk\u00F6rningen.",
+    "HeroImage": "/Img/Webb/michael-kahn-Hfyrh5vUhuY-unsplash.jpg",
+    "PrimaryCtaText": "Boka utbildning",
+    "PrimaryCtaHref": "/webb/kalender",
+    "SecondaryCtaText": "Kontakta oss",
+    "SecondaryCtaHref": "/webb/kontakt",
+    "EducationCards": [
+      {
+        "Title": "Personbil (B)",
+        "Description": "Manuell och automat. Hela v\u00E4gen till uppk\u00F6rning.",
+        "Icon": "directions_car",
+        "Image": "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg",
+        "Slug": "personbil-b",
+        "LongText": "B-k\u00F6rkortet ger dig friheten att k\u00F6ra personbil. Hos oss f\u00E5r du en utbildning anpassad efter din niv\u00E5 \u2013 oavsett om du \u00E4r nyb\u00F6rjare eller har k\u00F6rt f\u00F6rut. Du v\u00E4ljer manuell eller automat, och vi planerar uppl\u00E4gget tillsammans s\u00E5 att du \u00E4r trygg hela v\u00E4gen till uppk\u00F6rningen.",
+        "Highlights": [
+          "Introduktionslektion och niv\u00E5bed\u00F6mning",
+          "Manuell eller automatv\u00E4xlad bil",
+          "Teori varvat med k\u00F6rning",
+          "F\u00F6rberedelse inf\u00F6r kunskapsprov och uppk\u00F6rning"
+        ],
+        "PriceFrom": "Fr\u00E5n 950 kr/lektion",
+        "HasPage": true
+      },
+      {
+        "Title": "Sl\u00E4p (BE/B96)",
+        "Description": "K\u00F6r lagligt med tyngre sl\u00E4p och husvagn.",
+        "Icon": "rv_hookup",
+        "Image": "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg",
+        "Slug": "slap-be-b96",
+        "LongText": "Med B96 eller BE f\u00E5r du dra tyngre sl\u00E4p, husvagn eller h\u00E4sttransport. Vi g\u00E5r igenom koppling, lasts\u00E4kring och backning med sl\u00E4p s\u00E5 att du k\u00E4nner dig s\u00E4ker \u00E4ven med last bakom bilen.",
+        "Highlights": [
+          "Koppling och lasts\u00E4kring",
+          "Backning och man\u00F6vrering med sl\u00E4p",
+          "Anpassat f\u00F6r B96 eller fullt BE",
+          "F\u00F6rberedelse inf\u00F6r uppk\u00F6rning"
+        ],
+        "PriceFrom": "Fr\u00E5n 1 200 kr/lektion",
+        "HasPage": true
+      },
+      {
+        "Title": "Moped \u0026 EU-moped",
+        "Description": "AM-kurs f\u00F6r dig som vill ut p\u00E5 v\u00E4garna.",
+        "Icon": "two_wheeler",
+        "Image": "/Img/Webb/martin-nano-yOcUZn6jILI-unsplash.jpg",
+        "Slug": "moped-am",
+        "LongText": "AM-k\u00F6rkortet l\u00E5ter dig k\u00F6ra EU-moped fr\u00E5n 15 \u00E5rs \u00E5lder. V\u00E5r kurs ger dig b\u00E5de teorin och den praktiska k\u00F6rningen du beh\u00F6ver f\u00F6r att klara provet och k\u00F6ra s\u00E4kert i trafiken.",
+        "Highlights": [
+          "Teori om trafikregler och s\u00E4kerhet",
+          "Praktisk k\u00F6rning i trafikmilj\u00F6",
+          "Kursmaterial ing\u00E5r",
+          "Sm\u00E5 grupper"
+        ],
+        "PriceFrom": "9 995 kr (helkurs)",
+        "HasPage": true
+      },
+      {
+        "Title": "Riskutbildning",
+        "Description": "Risk 1 och Risk 2 \u2013 obligatoriskt inf\u00F6r k\u00F6rkort.",
+        "Icon": "warning",
+        "Image": "/Img/Webb/bas-peperzak-tyhpK_QelPo-unsplash.jpg",
+        "Slug": "riskutbildning",
+        "LongText": "Riskutbildningen \u00E4r obligatorisk f\u00F6r B-k\u00F6rkort. Risk 1 handlar om alkohol, droger, tr\u00F6tthet och riskfaktorer. Risk 2 \u00E4r den praktiska halkbanan d\u00E4r du tr\u00E4nar p\u00E5 att hantera sv\u00E5ra situationer.",
+        "Highlights": [
+          "Risk 1 \u2013 teori om riskfaktorer",
+          "Risk 2 \u2013 praktisk halkbana",
+          "Kr\u00E4vs innan uppk\u00F6rning",
+          "Boka flera tillf\u00E4llen via kalendern"
+        ],
+        "PriceFrom": "Fr\u00E5n 1 200 kr",
+        "HasPage": true
+      }
+    ],
+    "News": [
+      {
+        "Slug": "sommarkurser-2026",
+        "Title": "Sommarens intensivkurser \u00E4r \u00F6ppna",
+        "Summary": "Ta k\u00F6rkortet snabbt i sommar \u2013 boka en intensivkurs med start i juli. Begr\u00E4nsat antal platser.",
+        "Body": "Nu \u00F6ppnar vi anm\u00E4lan till sommarens intensivkurser. Under tv\u00E5 till tre veckor kombinerar vi t\u00E4t k\u00F6rtr\u00E4ning med teori s\u00E5 att du kan ta k\u00F6rkortet p\u00E5 kortare tid. Kurserna passar dig som har m\u00F6jlighet att fokusera helhj\u00E4rtat under en period.\n\nVi har ett begr\u00E4nsat antal platser per kurs f\u00F6r att h\u00E5lla h\u00F6g kvalitet och individuell uppf\u00F6ljning. Boka tidigt f\u00F6r att s\u00E4kra din plats \u2013 kontakta oss s\u00E5 hj\u00E4lper vi dig att hitta r\u00E4tt uppl\u00E4gg.",
+        "Date": "2026-06-15",
+        "Image": "/Img/Webb/foto-k-FYhEP1UMfcY-unsplash.jpg"
+      },
+      {
+        "Slug": "nya-automatbilar",
+        "Title": "Nya automatbilar i flottan",
+        "Summary": "Vi har ut\u00F6kat med tv\u00E5 nya automatv\u00E4xlade bilar f\u00F6r en bekv\u00E4mare k\u00F6rupplevelse.",
+        "Body": "Vi forts\u00E4tter att modernisera v\u00E5r fordonsflotta och har nu tagit in tv\u00E5 nya automatv\u00E4xlade bilar. Automat \u00E4r ett popul\u00E4rt val f\u00F6r m\u00E5nga elever eftersom du kan l\u00E4gga mer fokus p\u00E5 trafiken och mindre p\u00E5 v\u00E4xling.\n\nV\u00E4lkommen att prova en lektion i n\u00E5gon av v\u00E5ra nya bilar \u2013 prata med din l\u00E4rare om vad som passar dig b\u00E4st.",
+        "Date": "2026-05-28",
+        "Image": "/Img/Webb/sara-kurfess-bHNip8GaOso-unsplash.jpg"
+      },
+      {
+        "Slug": "halkbana-extra-tider",
+        "Title": "Risk 2 (halkbana) \u2013 extra tillf\u00E4llen",
+        "Summary": "Vi l\u00E4gger till fler tider f\u00F6r halkbana under h\u00F6sten. Boka via kalendern.",
+        "Body": "P\u00E5 grund av h\u00F6g efterfr\u00E5gan l\u00E4gger vi till fler tillf\u00E4llen f\u00F6r Risk 2 (halkbana) under h\u00F6sten. Riskutbildning del 2 \u00E4r obligatorisk innan du f\u00E5r g\u00F6ra uppk\u00F6rning, s\u00E5 passa p\u00E5 att boka in den i god tid.\n\nDe nya tiderna syns i bokningskalendern. Filtrera p\u00E5 beh\u00F6righeten \u201DRiskutbildning\u201D f\u00F6r att hitta dem snabbt.",
+        "Date": "2026-05-10",
+        "Image": "/Img/Webb/mira-kireeva-GXA2XiAsko8-unsplash.jpg"
+      }
+    ],
+    "WebFlaggedArticleIds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      7
+    ]
+  },
+  "Employees": [
+    {
+      "Id": 1,
+      "Name": "Anna Lindgren",
+      "Role": "Trafikl\u00E4rare \u0026 VD",
+      "Bio": "Driver skolan sedan 2009 och brinner f\u00F6r trygg, modern k\u00F6rkortsutbildning.",
+      "ShowOnWeb": true,
+      "Initials": "AL"
+    },
+    {
+      "Id": 2,
+      "Name": "Johan Berg",
+      "Role": "Trafikl\u00E4rare (B, BE)",
+      "Bio": "Specialist p\u00E5 sl\u00E4p och landsv\u00E4gsk\u00F6rning. Lugn och pedagogisk.",
+      "ShowOnWeb": true,
+      "Initials": "JB"
+    },
+    {
+      "Id": 3,
+      "Name": "Sara Ek",
+      "Role": "Trafikl\u00E4rare (A, AM)",
+      "Bio": "MC- och mopedutbildning. Trygg start f\u00F6r nya f\u00F6rare.",
+      "ShowOnWeb": true,
+      "Initials": "SE"
+    },
+    {
+      "Id": 4,
+      "Name": "Mehmet Demir",
+      "Role": "Administration",
+      "Bio": "Sk\u00F6ter bokningar och fakturor \u2013 syns ej p\u00E5 webben.",
+      "ShowOnWeb": false,
+      "Initials": "MD"
+    }
+  ],
+  "Theme": {
+    "PresetName": "Egen",
+    "BannerColor": "#8a1f3d",
+    "ButtonColor": "#2a7d6f",
+    "HeaderBg": "#ffffff",
+    "FooterBg": "#221016"
+  }
+}

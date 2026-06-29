@@ -68,35 +68,26 @@
 </section>
 
 @* ── USP-band ───────────────────────────────────────────────────────────── *@
-<section class="ps-section ps-usp">
-    <div class="ps-wrap">
-        <div class="ps-usp__grid">
-            <div>
-                <span class="material-icons" aria-hidden="true">verified</span>
-                <h2 style="font-size:1.1rem">Ansluten till STR</h2>
-                <p>Kvalitetssäkrad utbildning enligt STR:s krav.</p>
-            </div>
-            <div>
-                <span class="material-icons" aria-hidden="true">school</span>
-                <h2 style="font-size:1.1rem">Erfarna lärare</h2>
-                <p>Behöriga trafiklärare med lång erfarenhet.</p>
-            </div>
-            <div>
-                <span class="material-icons" aria-hidden="true">directions_car</span>
-                <h2 style="font-size:1.1rem">Moderna bilar</h2>
-                <p>Manuellt och automat – trygga, nya fordon.</p>
-            </div>
-            <div>
-                <span class="material-icons" aria-hidden="true">thumb_up</span>
-                <h2 style="font-size:1.1rem">Hög andel godkända</h2>
-                <p>Vi förbereder dig hela vägen till uppkörningen.</p>
+@if (s.ShowUsp && s.Usp.Count > 0)
+{
+    <section class="ps-section ps-usp">
+        <div class="ps-wrap">
+            <div class="ps-usp__grid">
+                @foreach (var u in s.Usp)
+                {
+                    <div>
+                        <span class="material-icons" aria-hidden="true">@u.Icon</span>
+                        <h2 style="font-size:1.1rem">@u.Title</h2>
+                        <p>@u.Text</p>
+                    </div>
+                }
             </div>
         </div>
-    </div>
-</section>
+    </section>
+}
 
-@* ── Nyheter – endast Layout A ──────────────────────────────────────────── *@
-@if (layoutA)
+@* ── Nyheter ─────────────────────────────────────────────────────────────── *@
+@if (s.ShowNews && s.News.Count > 0)
 {
     <section class="ps-section ps-section--soft ps-news">
         <div class="ps-wrap">
@@ -128,80 +119,64 @@
 }
 
 @* ── Så går det till (steg-guide) ───────────────────────────────────────── *@
-<section class="ps-section">
-    <div class="ps-wrap">
-        <h2>Så tar du körkort – fyra enkla steg</h2>
-        <ol class="ps-steps ps-mt">
-            <li class="ps-step">
-                <div class="ps-step__num" aria-hidden="true">1</div>
-                <h3>Boka introduktion</h3>
-                <p>Vi går igenom dina mål och lägger upp en plan som passar dig.</p>
-            </li>
-            <li class="ps-step">
-                <div class="ps-step__num" aria-hidden="true">2</div>
-                <h3>Övningskör</h3>
-                <p>Körlektioner i din takt, varvat med teori och riskutbildning.</p>
-            </li>
-            <li class="ps-step">
-                <div class="ps-step__num" aria-hidden="true">3</div>
-                <h3>Risk 1 &amp; 2</h3>
-                <p>Obligatorisk riskutbildning – halkbana och trafiksäkerhet.</p>
-            </li>
-            <li class="ps-step">
-                <div class="ps-step__num" aria-hidden="true">4</div>
-                <h3>Prov &amp; körkort</h3>
-                <p>Vi förbereder dig inför kunskapsprov och uppkörning.</p>
-            </li>
-        </ol>
-    </div>
-</section>
+@if (s.ShowSteps && s.Steps.Count > 0)
+{
+    <section class="ps-section">
+        <div class="ps-wrap">
+            <h2>@s.StepsHeading</h2>
+            <ol class="ps-steps ps-mt">
+                @for (var i = 0; i < s.Steps.Count; i++)
+                {
+                    var step = s.Steps[i];
+                    <li class="ps-step">
+                        <div class="ps-step__num" aria-hidden="true">@(i + 1)</div>
+                        <h3>@step.Title</h3>
+                        <p>@step.Text</p>
+                    </li>
+                }
+            </ol>
+        </div>
+    </section>
+}
 
 @* ── Kommande kurser ────────────────────────────────────────────────────── *@
-<section class="ps-section @(layoutA ? "" : "ps-section--soft")">
-    <div class="ps-wrap">
-        <h2>Kommande kurser</h2>
-        <div class="ps-table-wrap ps-mt">
-            <table class="ps-table">
-                <caption>Kursstarter de närmaste månaderna</caption>
-                <thead>
-                    <tr><th scope="col">Start</th><th scope="col">Kurs</th><th scope="col">Pris</th><th scope="col">Status</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var k in UpcomingCourses)
-                    {
-                        <tr>
-                            <td>@k.Start.ToString("d MMM yyyy", Sv)</td>
-                            <td>@k.Name</td>
-                            <td class="ps-price">@k.Price.ToString("N0", Sv) kr</td>
-                            <td>
-                                @if (k.Full)
-                                {
-                                    <span class="ps-badge ps-badge--full"><span class="material-icons" aria-hidden="true" style="font-size:16px">block</span> Fullt</span>
-                                }
-                                else
-                                {
-                                    <span class="ps-badge ps-badge--open"><span class="material-icons" aria-hidden="true" style="font-size:16px">event_available</span> Platser kvar</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+@if (s.ShowCourses && s.Courses.Count > 0)
+{
+    <section class="ps-section ps-section--soft">
+        <div class="ps-wrap">
+            <h2>Kommande kurser</h2>
+            <div class="ps-table-wrap ps-mt">
+                <table class="ps-table">
+                    <caption>Kursstarter de närmaste månaderna</caption>
+                    <thead>
+                        <tr><th scope="col">Start</th><th scope="col">Kurs</th><th scope="col">Pris</th><th scope="col">Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var k in s.Courses.OrderBy(c => c.Date))
+                        {
+                            <tr>
+                                <td>@k.Date.ToString("d MMM yyyy", Sv)</td>
+                                <td>@k.Name</td>
+                                <td class="ps-price">@k.Price.ToString("N0", Sv) kr</td>
+                                <td>
+                                    @if (k.Full)
+                                    {
+                                        <span class="ps-badge ps-badge--full"><span class="material-icons" aria-hidden="true" style="font-size:16px">block</span> Fullt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ps-badge ps-badge--open"><span class="material-icons" aria-hidden="true" style="font-size:16px">event_available</span> Platser kvar</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+}
 
 @code {
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
-
-    private record Course(DateTime Start, string Name, decimal Price, bool Full);
-
-    // Mockade kursstarter (motsvarar "Kommande kurser" på exempelsajterna).
-    private static readonly Course[] UpcomingCourses =
-    {
-        new(new DateTime(2026, 7, 2),  "Moped AM",            9995, false),
-        new(new DateTime(2026, 7, 6),  "Riskutbildning 2 MC", 3800, true),
-        new(new DateTime(2026, 7, 14), "Handledarutbildning",  550, false),
-        new(new DateTime(2026, 8, 10), "Intensivkurs B",     14900, false),
-    };
 }

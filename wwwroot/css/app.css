@@ -5,6 +5,13 @@ html, body {
     overflow: hidden;
 }
 
+/* Admin-sidor (t.ex. hemsideadministration): tillåt normal sidscroll –
+   annars låser overflow:hidden ovan hela sidan på desktop. */
+html:has(.admin-page), body:has(.admin-page) {
+    height: auto !important;
+    overflow-y: auto !important;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

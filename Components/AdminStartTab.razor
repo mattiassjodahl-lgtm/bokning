@@ -76,7 +76,6 @@
             if (string.IsNullOrWhiteSpace(s.HeroIngress)) m.Add("ingress");
             if (string.IsNullOrWhiteSpace(s.PrimaryCtaText)) m.Add("knapp 1-text");
             if (string.IsNullOrWhiteSpace(s.HeroImage)) m.Add("hero-bild");
-            if (s.Layout == StartLayout.FocusNews && s.News.Count == 0) m.Add("minst 1 nyhet");
             if (s.Layout == StartLayout.BroadAction)
             {
                 if (string.IsNullOrWhiteSpace(s.SecondaryCtaText)) m.Add("knapp 2-text");

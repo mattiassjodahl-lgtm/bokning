@@ -261,6 +261,28 @@ public class WebsiteService
                     Body = "På grund av hög efterfrågan lägger vi till fler tillfällen för Risk 2 (halkbana) under hösten. Riskutbildning del 2 är obligatorisk innan du får göra uppkörning, så passa på att boka in den i god tid.\n\nDe nya tiderna syns i bokningskalendern. Filtrera på behörigheten ”Riskutbildning” för att hitta dem snabbt.",
                     Date = new DateOnly(2026, 5, 10), Image = "/Img/Webb/mira-kireeva-GXA2XiAsko8-unsplash.jpg" },
             },
+            Usp = new()
+            {
+                new() { Icon = "verified",        Title = "Ansluten till STR",     Text = "Kvalitetssäkrad utbildning enligt STR:s krav." },
+                new() { Icon = "school",          Title = "Erfarna lärare",        Text = "Behöriga trafiklärare med lång erfarenhet." },
+                new() { Icon = "directions_car",  Title = "Moderna bilar",         Text = "Manuellt och automat – trygga, nya fordon." },
+                new() { Icon = "thumb_up",        Title = "Hög andel godkända",    Text = "Vi förbereder dig hela vägen till uppkörningen." },
+            },
+            StepsHeading = "Så tar du körkort – fyra enkla steg",
+            Steps = new()
+            {
+                new() { Title = "Boka introduktion", Text = "Vi går igenom dina mål och lägger upp en plan som passar dig." },
+                new() { Title = "Övningskör",        Text = "Körlektioner i din takt, varvat med teori och riskutbildning." },
+                new() { Title = "Risk 1 & 2",        Text = "Obligatorisk riskutbildning – halkbana och trafiksäkerhet." },
+                new() { Title = "Prov & körkort",    Text = "Vi förbereder dig inför kunskapsprov och uppkörning." },
+            },
+            Courses = new()
+            {
+                new() { Date = new DateOnly(2026, 7, 2),  Name = "Moped AM",            Price = 9995,  Full = false },
+                new() { Date = new DateOnly(2026, 7, 6),  Name = "Riskutbildning 2 MC", Price = 3800,  Full = true  },
+                new() { Date = new DateOnly(2026, 7, 14), Name = "Handledarutbildning",  Price = 550,   Full = false },
+                new() { Date = new DateOnly(2026, 8, 10), Name = "Intensivkurs B",       Price = 14900, Full = false },
+            },
         },
     };
 }
