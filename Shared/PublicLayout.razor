@@ -35,16 +35,17 @@
             <a class="ps-brand" href="/webb/start">
                 @if (!string.IsNullOrEmpty(Web.School.LogoImage))
                 {
+                    @* Logga ersätter text-namnet (namnet bärs av alt-texten). *@
                     <img class="ps-logo-img" src="@Web.School.LogoImage" alt="@Web.School.Name" />
                 }
                 else
                 {
                     <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                    <span>
+                        <span class="ps-brand__name">@Web.School.Name</span>
+                        <span class="ps-brand__tag">@Web.School.Tagline</span>
+                    </span>
                 }
-                <span>
-                    <span class="ps-brand__name">@Web.School.Name</span>
-                    <span class="ps-brand__tag">@Web.School.Tagline</span>
-                </span>
             </a>
 
             @* Desktop-nav *@
@@ -92,13 +93,14 @@
             <div class="ps-footer__brand">
                 @if (!string.IsNullOrEmpty(Web.School.LogoImage))
                 {
+                    @* Logga ersätter text-namnet. *@
                     <span class="ps-footer__logochip"><img src="@Web.School.LogoImage" alt="@Web.School.Name" /></span>
                 }
                 else
                 {
                     <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                    <strong>@Web.School.Name</strong>
                 }
-                <strong>@Web.School.Name</strong>
             </div>
 
             <div class="ps-footer__cols">

@@ -94,6 +94,8 @@ public class NewsItem
     public DateOnly Date  { get; set; }
     /// <summary>Sökväg till bild under wwwroot. Tom = ingen bild.</summary>
     public string Image   { get; set; } = "";
+    /// <summary>Alt-text för bilden. Tom = faller tillbaka på rubriken.</summary>
+    public string ImageAlt { get; set; } = "";
 }
 
 /// <summary>Utbildningskort på startsidan + innehåll för dess behörighetssida.</summary>
@@ -105,6 +107,8 @@ public class EducationCard
     public string Icon        { get; set; } = "directions_car";
     /// <summary>Sökväg till kort-bild under wwwroot, t.ex. "/Img/Webb/bil.jpg". Tom = visa ikon.</summary>
     public string Image       { get; set; } = "";
+    /// <summary>Alt-text för bilden. Tom = faller tillbaka på titeln.</summary>
+    public string ImageAlt    { get; set; } = "";
 
     // ── Behörighetssida (/webb/utbildning/{Slug}) ─────────────────────────────
     /// <summary>URL-segment, t.ex. "personbil-b". Tomt = ingen egen sida.</summary>
@@ -158,6 +162,8 @@ public class WebsiteSettings
     public string HeroIngress { get; set; } = "";
     /// <summary>Hero-bild under wwwroot, t.ex. "/Img/Webb/hero.jpg". Tom = enbart gradient.</summary>
     public string HeroImage   { get; set; } = "";
+    /// <summary>Alt-text för hero-bilden. Tom = faller tillbaka på rubriken.</summary>
+    public string HeroImageAlt { get; set; } = "";
     public string PrimaryCtaText { get; set; } = "";
     public string PrimaryCtaHref { get; set; } = "";
     /// <summary>Andra CTA – endast obligatorisk i Layout B.</summary>

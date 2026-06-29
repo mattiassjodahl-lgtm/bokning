@@ -1,7 +1,8 @@
 @inject WebsiteService Web
 
 @* Återanvändbar bilduppladdning för admin. Sparar till wwwroot/Img/Webb och
-   returnerar webbsökvägen via ValueChanged. Visar nuvarande bild + bildkrav. *@
+   returnerar webbsökvägen via ValueChanged. Visar nuvarande bild + bildkrav.
+   Med ShowAlt visas även ett alt-textfält (bildbeskrivning för skärmläsare). *@
 <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap">
     <div style="width:160px; height:90px; border-radius:8px; overflow:hidden; background:#eceff3; border:1px solid #d9dee3; flex-shrink:0;
                 display:grid; place-items:center">
@@ -32,6 +33,12 @@
         {
             <MudText Typo="Typo.caption" Style="display:block; margin-top:.3rem; color:#888; word-break:break-all">@Value</MudText>
         }
+        @if (ShowAlt)
+        {
+            <MudTextField T="string" Value="@AltValue" ValueChanged="@(v => AltChanged.InvokeAsync(v))"
+                          Label="Alt-text (bildbeskrivning)" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2"
+                          HelperText="Beskriv bilden för skärmläsare. Lämna tom för att använda titeln." />
+        }
     </div>
 </div>
 
@@ -42,6 +49,11 @@
     [Parameter] public string Subfolder { get; set; } = "";
     [Parameter] public string Label { get; set; } = "";
     [Parameter] public string Spec { get; set; } = "";
+
+    // Alt-text (valfritt). Visas bara när ShowAlt = true.
+    [Parameter] public bool ShowAlt { get; set; } = false;
+    [Parameter] public string AltValue { get; set; } = "";
+    [Parameter] public EventCallback<string> AltChanged { get; set; }
 
     private bool _busy;
 

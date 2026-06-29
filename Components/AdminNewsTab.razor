@@ -24,7 +24,8 @@
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2" GutterBottom="true">Bild</MudText>
                     <AdminImageUpload Value="@n.Image" ValueChanged="@(v => n.Image = v)" Subfolder="nyheter"
-                                      Spec="Liggande 16:9, ca 800×450 px. JPG/WebP." />
+                                      Spec="Liggande 16:9, ca 800×450 px. JPG/WebP."
+                                      ShowAlt="true" AltValue="@n.ImageAlt" AltChanged="@(v => n.ImageAlt = v)" />
                 </MudItem>
                 <MudItem xs="12">
                     <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
