@@ -328,7 +328,7 @@ body:has(.ps-site) {
 
 /* Medlem i STR – egen rad med tunn avskiljare */
 .ps-footer__member {
-    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    display: flex; flex-direction: column; align-items: flex-start; gap: .6rem;
     margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,.1);
 }
 .ps-footer__member-label { color: var(--ps-footer-ink); opacity: .65; font-size: .85rem; text-transform: uppercase; letter-spacing: .5px; }
