@@ -9,8 +9,7 @@
     {
         var preset = p;
         var active = Web.Theme.PresetName == preset.PresetName;
-        <button type="button" @onclick="@(() => ApplyPreset(preset))"
-                style="@PresetStyle(preset, active)">
+        <button type="button" @onclick="@(() => ApplyPreset(preset))" style="@PresetStyle(active)">
             <span style="display:flex; gap:4px; margin-bottom:6px">
                 <span style="@Swatch(preset.BannerColor)"></span>
                 <span style="@Swatch(preset.ButtonColor)"></span>
@@ -23,10 +22,34 @@
 
 <MudText Typo="Typo.h6" GutterBottom="true">Finjustera färger</MudText>
 <MudGrid>
-    <MudItem xs="12" sm="6" md="3">@ColorField("Banner / primär", () => Web.Theme.BannerColor, v => Web.Theme.BannerColor = v)</MudItem>
-    <MudItem xs="12" sm="6" md="3">@ColorField("Knappar / CTA", () => Web.Theme.ButtonColor, v => Web.Theme.ButtonColor = v)</MudItem>
-    <MudItem xs="12" sm="6" md="3">@ColorField("Header", () => Web.Theme.HeaderBg, v => Web.Theme.HeaderBg = v)</MudItem>
-    <MudItem xs="12" sm="6" md="3">@ColorField("Footer", () => Web.Theme.FooterBg, v => Web.Theme.FooterBg = v)</MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <div style="display:flex; align-items:center; gap:.6rem">
+            <input type="color" value="@Web.Theme.BannerColor" style="@ColorBox"
+                   @onchange="@(e => SetColor(v => Web.Theme.BannerColor = v, e))" />
+            <div><MudText Typo="Typo.body2">Banner / primär</MudText><MudText Typo="Typo.caption" Style="color:#888">@Web.Theme.BannerColor</MudText></div>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <div style="display:flex; align-items:center; gap:.6rem">
+            <input type="color" value="@Web.Theme.ButtonColor" style="@ColorBox"
+                   @onchange="@(e => SetColor(v => Web.Theme.ButtonColor = v, e))" />
+            <div><MudText Typo="Typo.body2">Knappar / CTA</MudText><MudText Typo="Typo.caption" Style="color:#888">@Web.Theme.ButtonColor</MudText></div>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <div style="display:flex; align-items:center; gap:.6rem">
+            <input type="color" value="@Web.Theme.HeaderBg" style="@ColorBox"
+                   @onchange="@(e => SetColor(v => Web.Theme.HeaderBg = v, e))" />
+            <div><MudText Typo="Typo.body2">Header</MudText><MudText Typo="Typo.caption" Style="color:#888">@Web.Theme.HeaderBg</MudText></div>
+        </div>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <div style="display:flex; align-items:center; gap:.6rem">
+            <input type="color" value="@Web.Theme.FooterBg" style="@ColorBox"
+                   @onchange="@(e => SetColor(v => Web.Theme.FooterBg = v, e))" />
+            <div><MudText Typo="Typo.body2">Footer</MudText><MudText Typo="Typo.caption" Style="color:#888">@Web.Theme.FooterBg</MudText></div>
+        </div>
+    </MudItem>
 </MudGrid>
 
 <MudAlert Severity="Severity.Info" Dense="true" Class="my-4">
@@ -36,6 +59,8 @@
 <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="Save">Spara</MudButton>
 
 @code {
+    private const string ColorBox = "width:46px; height:46px; border:1px solid #ccc; border-radius:8px; padding:2px; cursor:pointer";
+
     private void ApplyPreset(ThemeSettings p)
     {
         Web.Theme.PresetName  = p.PresetName;
@@ -45,23 +70,16 @@
         Web.Theme.FooterBg    = p.FooterBg;
     }
 
-    private RenderFragment ColorField(string label, Func<string> get, Action<string> set) => __builder =>
+    private void SetColor(Action<string> set, ChangeEventArgs e)
     {
-        <div style="display:flex; align-items:center; gap:.6rem">
-            <input type="color" value="@get()"
-                   @onchange="@(e => { set(e.Value?.ToString() ?? get()); Web.Theme.PresetName = "Egen"; })"
-                   style="width:46px; height:46px; border:1px solid #ccc; border-radius:8px; padding:2px; cursor:pointer" />
-            <div>
-                <MudText Typo="Typo.body2">@label</MudText>
-                <MudText Typo="Typo.caption" Style="color:#888">@get()</MudText>
-            </div>
-        </div>
-    };
+        set(e.Value?.ToString() ?? "");
+        Web.Theme.PresetName = "Egen";
+    }
 
     private static string Swatch(string color) =>
         $"width:18px; height:18px; border-radius:4px; display:inline-block; background:{color}; border:1px solid rgba(0,0,0,.15)";
 
-    private static string PresetStyle(ThemeSettings p, bool active) =>
+    private static string PresetStyle(bool active) =>
         $"cursor:pointer; text-align:left; padding:.7rem .9rem; border-radius:10px; font-weight:600; background:#fff; " +
         $"border:2px solid {(active ? "#1565C0" : "#d9dee3")}; box-shadow:{(active ? "0 0 0 3px rgba(21,101,192,.15)" : "none")}";
 
