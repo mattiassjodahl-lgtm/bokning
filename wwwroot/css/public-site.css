@@ -16,8 +16,18 @@
     --ps-bg-soft:        #f3f6f9;
     --ps-radius:         14px;
     --ps-shadow:         0 2px 10px rgba(11, 79, 138, .08);
-    --ps-maxw:           1120px;
+    --ps-maxw:           1320px;
     --ps-font:           "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ── Scroll-fix ───────────────────────────────────────────────────────────
+   app.css låser html/body till overflow:hidden för kalender-appen. På publika
+   sidan (/webb) släpper vi det låset så dokumentet scrollar normalt. */
+html:has(.ps-site),
+body:has(.ps-site) {
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
 }
 
 /* ── Bas ──────────────────────────────────────────────────────────────── */
@@ -36,6 +46,8 @@
 .ps-site a  { color: var(--ps-primary); }
 
 .ps-wrap { max-width: var(--ps-maxw); margin: 0 auto; padding: 0 1.25rem; }
+/* Full bredd (desktop) – används av header. */
+.ps-wrap--full { max-width: none; padding-left: clamp(1.25rem, 4vw, 3.5rem); padding-right: clamp(1.25rem, 4vw, 3.5rem); }
 .ps-section { padding: clamp(2.5rem, 6vw, 4.5rem) 0; }
 .ps-section--soft { background: var(--ps-bg-soft); }
 
@@ -87,9 +99,10 @@
 .ps-brand__tag  { display: block; font-size: .8rem; font-weight: 400; color: var(--ps-muted); }
 
 .ps-nav { margin-left: auto; }
-.ps-nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem; margin: 0; padding: 0; align-items: center; }
+/* Menyn ska aldrig bryta rad i desktopläge. */
+.ps-nav ul { list-style: none; display: flex; flex-wrap: nowrap; white-space: nowrap; gap: .15rem; margin: 0; padding: 0; align-items: center; }
 .ps-nav a {
-    display: inline-block; padding: .55rem .8rem; border-radius: 8px;
+    display: inline-block; padding: .55rem .75rem; border-radius: 8px;
     text-decoration: none; color: var(--ps-ink); font-weight: 500;
 }
 .ps-nav a:hover { background: var(--ps-bg-soft); }
@@ -113,22 +126,64 @@
     .ps-menu-panel a:hover { background: var(--ps-bg-soft); }
 }
 
+/* ── Gradient-"foton" ──────────────────────────────────────────────────────
+   Används som bild-platshållare OCH som overlay ovanpå riktiga foton:
+   background-image: linear-gradient(overlay), url(foto). Den mörka gradienten
+   garanterar AA-kontrast för vit text oavsett vilken bild körskolan laddar upp. */
+.ps-photo {
+    position: relative; overflow: hidden; border-radius: var(--ps-radius);
+    background: linear-gradient(135deg, var(--ps-primary), #1f8fd0 55%, var(--ps-accent));
+    background-size: cover; background-position: center;
+    color: #fff;
+}
+.ps-photo::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(8,30,52,.10), rgba(8,30,52,.55));
+}
+.ps-photo > * { position: relative; z-index: 1; }
+.ps-photo--1 { background: linear-gradient(135deg, #0b4f8a, #1f8fd0); }
+.ps-photo--2 { background: linear-gradient(135deg, #08406f, #2aa19a); }
+.ps-photo--3 { background: linear-gradient(135deg, #7a2f12, #c8511b); }
+.ps-photo--4 { background: linear-gradient(135deg, #3b2f6b, #6a4fb0); }
+
 /* ── Hero ─────────────────────────────────────────────────────────────── */
 .ps-hero {
     color: #fff;
-    background: linear-gradient(135deg, var(--ps-primary), var(--ps-primary-dark));
+    background:
+        radial-gradient(1200px 500px at 85% -10%, rgba(200,81,27,.35), transparent 60%),
+        radial-gradient(900px 600px at 0% 110%, rgba(42,161,154,.30), transparent 55%),
+        linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary));
 }
-.ps-hero__grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: center; }
+.ps-hero__grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 3rem; align-items: center; }
 .ps-hero h1 { color: #fff; }
-.ps-hero p { font-size: 1.2rem; color: #eaf2fa; max-width: 36ch; }
-.ps-hero__cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.5rem; }
-/* Bild-platshållare: visar bildkraven för körskolan. Ersätts av uppladdad hero-bild. */
+.ps-hero p { font-size: 1.2rem; color: #eef5fb; max-width: 40ch; }
+.ps-hero__cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.75rem; }
+/* Hero-bild: gradient-platshållare som visar bildkraven. Byt till riktig bild via background-image. */
 .ps-hero__media {
-    aspect-ratio: 16 / 10; border-radius: var(--ps-radius);
-    background: rgba(255,255,255,.12); border: 2px dashed rgba(255,255,255,.5);
-    display: grid; place-items: center; text-align: center; color: #eaf2fa; padding: 1rem;
+    aspect-ratio: 16 / 10; display: grid; place-items: center; text-align: center; padding: 1.25rem;
+    box-shadow: 0 18px 40px rgba(4,20,38,.35);
 }
-@media (max-width: 860px) { .ps-hero__grid { grid-template-columns: 1fr; } .ps-hero__media { display: none; } }
+.ps-hero__media small { color: #dfeaf4; }
+@media (max-width: 860px) { .ps-hero__grid { grid-template-columns: 1fr; } .ps-hero__media { aspect-ratio: 16/8; } }
+
+/* ── USP-band ─────────────────────────────────────────────────────────── */
+.ps-usp { background: linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary)); color: #fff; }
+.ps-usp__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.75rem; }
+.ps-usp h2 { color: #fff; }
+.ps-usp p { color: #e7f0f8; margin: 0; }
+.ps-usp .material-icons { font-size: 34px; margin-bottom: .4rem; }
+@media (max-width: 720px) { .ps-usp__grid { grid-template-columns: 1fr 1fr; } }
+
+/* ── Steg-guide (inspiration: onvia.se "kom igång i fyra steg") ─────────── */
+.ps-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; list-style: none; padding: 0; margin: 0; }
+.ps-step__num {
+    width: 46px; height: 46px; border-radius: 50%; margin-bottom: .8rem;
+    background: linear-gradient(135deg, var(--ps-primary), var(--ps-accent)); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-size: 1.15rem;
+}
+.ps-step h3 { font-size: 1.1rem; margin-bottom: .25rem; }
+.ps-step p { color: var(--ps-muted); margin: 0; }
+@media (max-width: 720px) { .ps-steps { grid-template-columns: 1fr 1fr; } }
 
 /* ── Kort-grid (utbildningar) ─────────────────────────────────────────── */
 .ps-grid { display: grid; gap: 1.25rem; }
@@ -150,6 +205,13 @@
 }
 .ps-card__icon .material-icons { font-size: 28px; }
 
+/* Kort med bild-banner (utbildningar, e-handel) */
+.ps-card--media { padding: 0; overflow: hidden; }
+.ps-card__media { aspect-ratio: 16 / 9; display: grid; place-items: center; }
+.ps-card__media .material-icons { font-size: 54px; }
+.ps-card__body { padding: 1.35rem 1.5rem 1.6rem; }
+.ps-card--media:hover { transform: translateY(-3px); transition: transform .15s; }
+
 /* ── Nyheter ──────────────────────────────────────────────────────────── */
 .ps-news time { display: block; color: var(--ps-muted); font-size: .9rem; margin-bottom: .3rem; }
 
@@ -170,9 +232,10 @@
 /* ── Personal ─────────────────────────────────────────────────────────── */
 .ps-person { text-align: center; }
 .ps-avatar {
-    width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 1rem;
-    background: var(--ps-primary); color: #fff; display: grid; place-items: center;
-    font-size: 2rem; font-weight: 700;
+    width: 104px; height: 104px; border-radius: 50%; margin: 0 auto 1rem;
+    background: linear-gradient(135deg, var(--ps-primary), var(--ps-accent));
+    color: #fff; display: grid; place-items: center;
+    font-size: 2.1rem; font-weight: 700; box-shadow: var(--ps-shadow);
 }
 .ps-person h3 { margin-bottom: .15rem; }
 .ps-person .ps-role { color: var(--ps-accent-dark); font-weight: 600; margin-bottom: .6rem; }
@@ -187,6 +250,19 @@
 }
 .ps-field input:hover, .ps-field textarea:hover { border-color: var(--ps-muted); }
 .ps-hint { color: var(--ps-muted); font-size: .9rem; }
+
+/* ── Filter (kalender) ─────────────────────────────────────────────────── */
+.ps-fieldset { border: 0; padding: 0; margin: 0; }
+.ps-fieldset legend { font-weight: 700; margin-bottom: .6rem; padding: 0; font-size: 1rem; }
+.ps-filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.ps-chip {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: 2px solid var(--ps-line); background: #fff; color: var(--ps-ink);
+    padding: .45rem .95rem; border-radius: 999px;
+}
+.ps-chip:hover { border-color: var(--ps-primary); }
+.ps-chip[aria-pressed="true"] { background: var(--ps-primary); border-color: var(--ps-primary); color: #fff; }
+.ps-filterbar { display: grid; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--ps-bg-soft); border: 1px solid var(--ps-line); border-radius: var(--ps-radius); }
 
 /* ── Info-banner (e-handel mock m.m.) ─────────────────────────────────── */
 .ps-note {

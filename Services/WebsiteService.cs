@@ -68,16 +68,17 @@ public class WebsiteService
         },
         HeroHeading    = "Ta körkort hos Vägvisarens Trafikskola",
         HeroIngress    = "Vi utbildar för bil, släp, moped och MC – med erfarna lärare och en trygg, modern utbildning hela vägen till uppkörningen.",
+        HeroImage      = "/Img/Webb/michael-kahn-Hfyrh5vUhuY-unsplash.jpg",
         PrimaryCtaText = "Boka utbildning",
         PrimaryCtaHref = "/webb/kalender",
         SecondaryCtaText = "Kontakta oss",
         SecondaryCtaHref = "/webb/kontakt",
         EducationCards = new()
         {
-            new() { Title = "Personbil (B)",   Description = "Manuell och automat. Hela vägen till uppkörning.", Icon = "directions_car" },
-            new() { Title = "Släp (BE/B96)",   Description = "Kör lagligt med tyngre släp och husvagn.",         Icon = "rv_hookup" },
-            new() { Title = "Moped & EU-moped", Description = "AM-kurs för dig som vill ut på vägarna.",          Icon = "two_wheeler" },
-            new() { Title = "Riskutbildning",  Description = "Risk 1 och Risk 2 – obligatoriskt inför körkort.",  Icon = "warning" },
+            new() { Title = "Personbil (B)",   Description = "Manuell och automat. Hela vägen till uppkörning.", Icon = "directions_car", Image = "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg" },
+            new() { Title = "Släp (BE/B96)",   Description = "Kör lagligt med tyngre släp och husvagn.",         Icon = "rv_hookup",      Image = "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg" },
+            new() { Title = "Moped & EU-moped", Description = "AM-kurs för dig som vill ut på vägarna.",          Icon = "two_wheeler",    Image = "/Img/Webb/martin-nano-yOcUZn6jILI-unsplash.jpg" },
+            new() { Title = "Riskutbildning",  Description = "Risk 1 och Risk 2 – obligatoriskt inför körkort.",  Icon = "warning",        Image = "/Img/Webb/bas-peperzak-tyhpK_QelPo-unsplash.jpg" },
         },
         News = new()
         {
@@ -117,11 +118,24 @@ public class WebsiteService
                  .Select(e => new AvailableSlot(
                      e.StartTime,
                      e.EndTime,
-                     _booking.GetLessonType(e.LessonTypeId ?? 0)?.Name ?? "Körlektion"))
+                     _booking.GetLessonType(e.LessonTypeId ?? 0)?.Name ?? "Körlektion",
+                     BehorighetFor(e.LessonTypeId ?? 0)))
                  .ToList()))
             .ToList();
     }
+
+    /// <summary>Grupperar lektionstyper till en behörighet/utbildningskategori för publikt filter.</summary>
+    public static string BehorighetFor(int lessonTypeId) => lessonTypeId switch
+    {
+        5 or 6  => "Riskutbildning",
+        7 or 10 => "Prov (Trafikverket)",
+        _       => "Personbil B",
+    };
+
+    /// <summary>Alla behörigheter i fast ordning (för filterknappar).</summary>
+    public static readonly string[] Behorigheter =
+        { "Personbil B", "Riskutbildning", "Prov (Trafikverket)" };
 }
 
 public record AvailableDay(DateOnly Date, IReadOnlyList<AvailableSlot> Slots);
-public record AvailableSlot(DateTime Start, DateTime End, string LessonType);
+public record AvailableSlot(DateTime Start, DateTime End, string LessonType, string Behorighet);

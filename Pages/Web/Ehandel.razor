@@ -13,13 +13,18 @@
         </div>
 
         <div class="ps-grid ps-grid--3 ps-mt">
-            @foreach (var p in Web.WebProducts.Take(6))
+            @{ var products = Web.WebProducts.Take(6).ToList(); }
+            @for (var i = 0; i < products.Count; i++)
             {
-                <article class="ps-card">
-                    <div class="ps-card__icon"><span class="material-icons" aria-hidden="true">shopping_cart</span></div>
-                    <h2 style="font-size:1.15rem">@p.Name</h2>
-                    <p class="ps-price" style="font-size:1.25rem;color:var(--ps-ink)">@p.Price.ToString("N0", Sv) kr</p>
-                    <button class="ps-btn ps-btn--outline" type="button" disabled aria-disabled="true">Lägg i varukorg</button>
+                var p = products[i];
+                <article class="ps-card ps-card--media">
+                    <div class="ps-card__media ps-photo" role="img" aria-label="@p.Name"
+                         style="background-image:url('@Banners[i % Banners.Length]')"></div>
+                    <div class="ps-card__body">
+                        <h2 style="font-size:1.15rem">@p.Name</h2>
+                        <p class="ps-price" style="font-size:1.25rem;color:var(--ps-ink)">@p.Price.ToString("N0", Sv) kr</p>
+                        <button class="ps-btn ps-btn--outline" type="button" disabled aria-disabled="true">Lägg i varukorg</button>
+                    </div>
                 </article>
             }
         </div>
@@ -28,4 +33,15 @@
 
 @code {
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+
+    // Bild-banners som roteras över produktkorten (mock).
+    private static readonly string[] Banners =
+    {
+        "/Img/Webb/sara-kurfess-bHNip8GaOso-unsplash.jpg",
+        "/Img/Webb/mira-kireeva-GXA2XiAsko8-unsplash.jpg",
+        "/Img/Webb/foto-k-FYhEP1UMfcY-unsplash.jpg",
+        "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg",
+        "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg",
+        "/Img/Webb/michael-kahn-Hfyrh5vUhuY-unsplash.jpg",
+    };
 }

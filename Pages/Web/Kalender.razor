@@ -7,16 +7,49 @@
 <section class="ps-section">
     <div class="ps-wrap">
         <h1>Bokningskalender</h1>
-        <p class="ps-lead">Lediga tider de närmaste två veckorna. Ring oss eller boka via elevportalen för att ta en tid.</p>
+        <p class="ps-lead">Lediga tider de närmaste två veckorna. Filtrera på behörighet och välj dag för att hitta det som passar dig.</p>
 
-        @if (_days.Count == 0)
+        @* ── Filter ──────────────────────────────────────────────────────── *@
+        <div class="ps-filterbar ps-mt">
+            <fieldset class="ps-fieldset">
+                <legend>Behörighet</legend>
+                <div class="ps-filters">
+                    <button type="button" class="ps-chip" aria-pressed="@(_selectedBeh.Count == 0 ? "true" : "false")"
+                            @onclick="ClearBeh">Alla</button>
+                    @foreach (var b in PresentBehorigheter)
+                    {
+                        <button type="button" class="ps-chip" aria-pressed="@(_selectedBeh.Contains(b) ? "true" : "false")"
+                                @onclick="() => ToggleBeh(b)">@b</button>
+                    }
+                </div>
+            </fieldset>
+
+            <fieldset class="ps-fieldset">
+                <legend>Välj dag</legend>
+                <div class="ps-filters">
+                    <button type="button" class="ps-chip" aria-pressed="@(_selectedDay is null ? "true" : "false")"
+                            @onclick="() => _selectedDay = null">Alla dagar</button>
+                    @foreach (var d in DaysWithMatches)
+                    {
+                        <button type="button" class="ps-chip" aria-pressed="@(_selectedDay == d ? "true" : "false")"
+                                @onclick="() => _selectedDay = d">
+                            @d.ToDateTime(TimeOnly.MinValue).ToString("ddd d/M", Sv)
+                        </button>
+                    }
+                </div>
+            </fieldset>
+        </div>
+
+        @* ── Resultat ────────────────────────────────────────────────────── *@
+        @{ var result = Filtered().ToList(); }
+        @if (result.Count == 0)
         {
-            <div class="ps-note ps-mt">Just nu finns inga lediga tider de närmaste två veckorna. Kontakta oss så hjälper vi dig.</div>
+            <div class="ps-note ps-mt" role="status">Inga lediga tider matchar ditt val. Prova att ta bort ett filter eller kontakta oss.</div>
         }
         else
         {
             <div class="ps-mt" style="display:grid;gap:1.25rem">
-                @foreach (var day in _days)
+                @foreach (var day in result)
                 {
                     <article class="ps-card">
                         <h2 style="font-size:1.15rem;text-transform:capitalize">
@@ -26,7 +59,7 @@
                             <table class="ps-table">
                                 <caption>Lediga tider @day.Date.ToDateTime(TimeOnly.MinValue).ToString("d MMMM", Sv)</caption>
                                 <thead>
-                                    <tr><th scope="col">Tid</th><th scope="col">Typ</th><th scope="col"><span class="visually-hidden">Status</span></th></tr>
+                                    <tr><th scope="col">Tid</th><th scope="col">Utbildning</th><th scope="col">Behörighet</th><th scope="col"><span class="visually-hidden">Status</span></th></tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var slot in day.Slots)
@@ -34,6 +67,7 @@
                                         <tr>
                                             <td>@slot.Start.ToString("HH:mm")–@slot.End.ToString("HH:mm")</td>
                                             <td>@slot.LessonType</td>
+                                            <td>@slot.Behorighet</td>
                                             <td><span class="ps-badge ps-badge--open"><span class="material-icons" aria-hidden="true" style="font-size:16px">event_available</span> Ledig</span></td>
                                         </tr>
                                     }
@@ -49,7 +83,42 @@
 
 @code {
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
-    private IReadOnlyList<AvailableDay> _days = new List<AvailableDay>();
 
-    protected override void OnInitialized() => _days = Web.GetAvailableSlots(14);
+    private IReadOnlyList<AvailableDay> _allDays = new List<AvailableDay>();
+    private readonly HashSet<string> _selectedBeh = new();
+    private DateOnly? _selectedDay;
+
+    protected override void OnInitialized() => _allDays = Web.GetAvailableSlots(14);
+
+    // Behörigheter som faktiskt förekommer bland lediga tider (i fast ordning).
+    private IEnumerable<string> PresentBehorigheter =>
+        WebsiteService.Behorigheter.Where(b => _allDays.Any(d => d.Slots.Any(s => s.Behorighet == b)));
+
+    // Dagar som har minst en tid givet aktuellt behörighetsfilter.
+    private IEnumerable<DateOnly> DaysWithMatches =>
+        _allDays.Where(d => d.Slots.Any(MatchesBeh)).Select(d => d.Date);
+
+    private bool MatchesBeh(AvailableSlot s) => _selectedBeh.Count == 0 || _selectedBeh.Contains(s.Behorighet);
+
+    private IEnumerable<AvailableDay> Filtered()
+    {
+        foreach (var day in _allDays)
+        {
+            if (_selectedDay is not null && day.Date != _selectedDay) continue;
+            var slots = day.Slots.Where(MatchesBeh).ToList();
+            if (slots.Count > 0) yield return new AvailableDay(day.Date, slots);
+        }
+    }
+
+    private void ToggleBeh(string b)
+    {
+        if (!_selectedBeh.Remove(b)) _selectedBeh.Add(b);
+        // Om vald dag inte längre har träffar, nollställ dagvalet.
+        if (_selectedDay is not null && !DaysWithMatches.Contains(_selectedDay.Value)) _selectedDay = null;
+    }
+
+    private void ClearBeh()
+    {
+        _selectedBeh.Clear();
+    }
 }

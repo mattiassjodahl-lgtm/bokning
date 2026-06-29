@@ -26,10 +26,19 @@
                     }
                 </div>
             </div>
-            <div class="ps-hero__media" role="img"
-                 aria-label="Platshållare för hero-bild. Körskolan laddar upp en egen bild i administrationen.">
-                <span>Hero-bild<br><small>1600×900 px · JPG/WebP · max 500 kB</small></span>
-            </div>
+            @if (!string.IsNullOrEmpty(s.HeroImage))
+            {
+                <div class="ps-photo ps-hero__media" role="img"
+                     aria-label="Elev och trafiklärare under en körlektion"
+                     style="background-image:url('@s.HeroImage')"></div>
+            }
+            else
+            {
+                <div class="ps-photo ps-hero__media" role="img"
+                     aria-label="Platshållare för hero-bild.">
+                    <span><strong>Hero-bild</strong><br><small>1600×900 px · JPG/WebP · max 500 kB</small></span>
+                </div>
+            }
         </div>
     </div>
 </section>
@@ -40,14 +49,56 @@
         <h2>Våra utbildningar</h2>
         <div class="ps-grid @(layoutA ? "ps-grid--3" : "ps-grid--4") ps-mt">
             @* Layout A: tre kort + nyheter. Layout B: brett grid med alla kort. *@
-            @foreach (var card in (layoutA ? s.EducationCards.Take(3) : s.EducationCards))
+            @{ var cards = (layoutA ? s.EducationCards.Take(3) : s.EducationCards).ToList(); }
+            @for (var i = 0; i < cards.Count; i++)
             {
-                <article class="ps-card">
-                    <div class="ps-card__icon"><span class="material-icons" aria-hidden="true">@card.Icon</span></div>
-                    <h3>@card.Title</h3>
-                    <p>@card.Description</p>
+                var card = cards[i];
+                <article class="ps-card ps-card--media">
+                    @if (!string.IsNullOrEmpty(card.Image))
+                    {
+                        <div class="ps-card__media ps-photo" role="img" aria-label="@card.Title"
+                             style="background-image:url('@card.Image')"></div>
+                    }
+                    else
+                    {
+                        <div class="ps-card__media ps-photo ps-photo--@((i % 4) + 1)">
+                            <span class="material-icons" aria-hidden="true">@card.Icon</span>
+                        </div>
+                    }
+                    <div class="ps-card__body">
+                        <h3>@card.Title</h3>
+                        <p>@card.Description</p>
+                    </div>
                 </article>
             }
+        </div>
+    </div>
+</section>
+
+@* ── USP-band ───────────────────────────────────────────────────────────── *@
+<section class="ps-section ps-usp">
+    <div class="ps-wrap">
+        <div class="ps-usp__grid">
+            <div>
+                <span class="material-icons" aria-hidden="true">verified</span>
+                <h2 style="font-size:1.1rem">Ansluten till STR</h2>
+                <p>Kvalitetssäkrad utbildning enligt STR:s krav.</p>
+            </div>
+            <div>
+                <span class="material-icons" aria-hidden="true">school</span>
+                <h2 style="font-size:1.1rem">Erfarna lärare</h2>
+                <p>Behöriga trafiklärare med lång erfarenhet.</p>
+            </div>
+            <div>
+                <span class="material-icons" aria-hidden="true">directions_car</span>
+                <h2 style="font-size:1.1rem">Moderna bilar</h2>
+                <p>Manuellt och automat – trygga, nya fordon.</p>
+            </div>
+            <div>
+                <span class="material-icons" aria-hidden="true">thumb_up</span>
+                <h2 style="font-size:1.1rem">Hög andel godkända</h2>
+                <p>Vi förbereder dig hela vägen till uppkörningen.</p>
+            </div>
         </div>
     </div>
 </section>
@@ -71,6 +122,35 @@
         </div>
     </section>
 }
+
+@* ── Så går det till (steg-guide) ───────────────────────────────────────── *@
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h2>Så tar du körkort – fyra enkla steg</h2>
+        <ol class="ps-steps ps-mt">
+            <li class="ps-step">
+                <div class="ps-step__num" aria-hidden="true">1</div>
+                <h3>Boka introduktion</h3>
+                <p>Vi går igenom dina mål och lägger upp en plan som passar dig.</p>
+            </li>
+            <li class="ps-step">
+                <div class="ps-step__num" aria-hidden="true">2</div>
+                <h3>Övningskör</h3>
+                <p>Körlektioner i din takt, varvat med teori och riskutbildning.</p>
+            </li>
+            <li class="ps-step">
+                <div class="ps-step__num" aria-hidden="true">3</div>
+                <h3>Risk 1 &amp; 2</h3>
+                <p>Obligatorisk riskutbildning – halkbana och trafiksäkerhet.</p>
+            </li>
+            <li class="ps-step">
+                <div class="ps-step__num" aria-hidden="true">4</div>
+                <h3>Prov &amp; körkort</h3>
+                <p>Vi förbereder dig inför kunskapsprov och uppkörning.</p>
+            </li>
+        </ol>
+    </div>
+</section>
 
 @* ── Kommande kurser ────────────────────────────────────────────────────── *@
 <section class="ps-section @(layoutA ? "" : "ps-section--soft")">

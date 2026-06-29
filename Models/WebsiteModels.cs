@@ -74,8 +74,10 @@ public class EducationCard
 {
     public string Title       { get; set; } = "";
     public string Description { get; set; } = "";
-    /// <summary>Material Icons-namn (samma uppsättning som affärssystemet använder).</summary>
+    /// <summary>Material Icons-namn (visas om Image saknas).</summary>
     public string Icon        { get; set; } = "directions_car";
+    /// <summary>Sökväg till kort-bild under wwwroot, t.ex. "/Img/Webb/bil.jpg". Tom = visa ikon.</summary>
+    public string Image       { get; set; } = "";
 }
 
 /// <summary>Innehåll och inställningar för hela hemsidan (en körskola).</summary>
@@ -89,6 +91,8 @@ public class WebsiteSettings
     // ── Startsidans redigerbara innehåll ──────────────────────────────────────
     public string HeroHeading { get; set; } = "";
     public string HeroIngress { get; set; } = "";
+    /// <summary>Hero-bild under wwwroot, t.ex. "/Img/Webb/hero.jpg". Tom = enbart gradient.</summary>
+    public string HeroImage   { get; set; } = "";
     public string PrimaryCtaText { get; set; } = "";
     public string PrimaryCtaHref { get; set; } = "";
     /// <summary>Andra CTA – endast obligatorisk i Layout B.</summary>
