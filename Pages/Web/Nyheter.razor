@@ -1,0 +1,43 @@
+@page "/webb/nyheter"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>Nyheter – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>Nyheter</h1>
+        <p class="ps-lead">Det senaste från @Web.School.Name – kurser, erbjudanden och annat på gång.</p>
+
+        @if (Web.NewsByDate.Count == 0)
+        {
+            <div class="ps-note ps-mt" role="status">Inga nyheter just nu.</div>
+        }
+        else
+        {
+            <div class="ps-grid ps-grid--3 ps-mt">
+                @foreach (var n in Web.NewsByDate)
+                {
+                    <article class="ps-card ps-card--media ps-card--link">
+                        <a class="ps-card__stretch" href="/webb/nyheter/@n.Slug" aria-label="Läs nyheten: @n.Title"></a>
+                        @if (!string.IsNullOrEmpty(n.Image))
+                        {
+                            <div class="ps-card__media ps-photo" role="img" aria-label="@n.Title"
+                                 style="background-image:url('@n.Image')"></div>
+                        }
+                        <div class="ps-card__body">
+                            <time datetime="@n.Date.ToString("yyyy-MM-dd")" class="ps-news-date">@n.Date.ToString("d MMMM yyyy", Sv)</time>
+                            <h2 style="font-size:1.2rem">@n.Title</h2>
+                            <p>@n.Summary</p>
+                            <p class="ps-mt" style="margin:0;color:var(--ps-primary);font-weight:600">Läs mer →</p>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+}

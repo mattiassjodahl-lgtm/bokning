@@ -100,14 +100,26 @@
 {
     <section class="ps-section ps-section--soft ps-news">
         <div class="ps-wrap">
-            <h2>Nyheter</h2>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+                <h2>Nyheter</h2>
+                <a href="/webb/nyheter" style="font-weight:600">Alla nyheter →</a>
+            </div>
             <div class="ps-grid ps-grid--3 ps-mt">
-                @foreach (var n in s.News)
+                @foreach (var n in s.News.Take(3))
                 {
-                    <article class="ps-card">
-                        <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToString("d MMMM yyyy", Sv)</time>
-                        <h3>@n.Title</h3>
-                        <p>@n.Body</p>
+                    <article class="ps-card ps-card--media ps-card--link">
+                        <a class="ps-card__stretch" href="/webb/nyheter/@n.Slug" aria-label="Läs nyheten: @n.Title"></a>
+                        @if (!string.IsNullOrEmpty(n.Image))
+                        {
+                            <div class="ps-card__media ps-photo" role="img" aria-label="@n.Title"
+                                 style="background-image:url('@n.Image')"></div>
+                        }
+                        <div class="ps-card__body">
+                            <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToString("d MMMM yyyy", Sv)</time>
+                            <h3>@n.Title</h3>
+                            <p>@n.Summary</p>
+                            <p class="ps-mt" style="margin:0;color:var(--ps-primary);font-weight:600">Läs mer →</p>
+                        </div>
                     </article>
                 }
             </div>

@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using BookingDemo.Helpers
 @inject WebsiteService Web
 @inject NavigationManager Nav
 
@@ -6,6 +7,22 @@
    Publik layout för körskolans hemsida (/webb). Semantisk, tillgänglig,
    frikopplad från affärssystemets MudBlazor-chrome.
    ════════════════════════════════════════════════════════════════════════ *@
+
+@{ var t = Web.Theme; }
+<style>
+    /* Dynamiskt färgtema (styrs i admin). Sätter CSS-variabler som resten av
+       public-site.css redan använder. Textfärger härleds för läsbar kontrast. */
+    .ps-site {
+        --ps-primary:      @t.BannerColor;
+        --ps-primary-dark: @ColorUtil.Darken(t.BannerColor);
+        --ps-accent:       @t.ButtonColor;
+        --ps-accent-dark:  @ColorUtil.Darken(t.ButtonColor);
+        --ps-header-bg:    @t.HeaderBg;
+        --ps-header-ink:   @ColorUtil.TextOn(t.HeaderBg);
+        --ps-footer-bg:    @t.FooterBg;
+        --ps-footer-ink:   @ColorUtil.TextOn(t.FooterBg);
+    }
+</style>
 
 <div class="ps-site">
 
@@ -137,6 +154,7 @@
             if (s.IsVisible(WebPageKey.Kalender)) yield return new("Bokningskalender", "/webb/kalender");
             if (s.IsVisible(WebPageKey.Prislista)) yield return new("Prislista",       "/webb/prislista");
             if (s.IsVisible(WebPageKey.Personal)) yield return new("Anställda",        "/webb/personal");
+            if (s.IsVisible(WebPageKey.Nyheter))  yield return new("Nyheter",          "/webb/nyheter");
             if (s.IsVisible(WebPageKey.Kontakt))  yield return new("Kontakta oss",     "/webb/kontakt");
         }
     }

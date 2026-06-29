@@ -23,6 +23,7 @@ public enum WebPageKey
     Kalender,
     Prislista,
     Personal,
+    Nyheter,
     Kontakt,
 }
 
@@ -73,12 +74,19 @@ public class Employee
     public string Initials  { get; set; } = "";
 }
 
-/// <summary>Nyhet som visas i Layout A:s nyhetsblock.</summary>
+/// <summary>Nyhet – visas i startsidans nyhetsblock, i listningen och på detaljsidan.</summary>
 public class NewsItem
 {
-    public string Title { get; set; } = "";
-    public string Body  { get; set; } = "";
-    public DateOnly Date { get; set; }
+    /// <summary>URL-segment, t.ex. "sommarkurser-2026".</summary>
+    public string Slug    { get; set; } = "";
+    public string Title   { get; set; } = "";
+    /// <summary>Kort ingress för kort/listning.</summary>
+    public string Summary { get; set; } = "";
+    /// <summary>Hela brödtexten på detaljsidan.</summary>
+    public string Body    { get; set; } = "";
+    public DateOnly Date  { get; set; }
+    /// <summary>Sökväg till bild under wwwroot. Tom = ingen bild.</summary>
+    public string Image   { get; set; } = "";
 }
 
 /// <summary>Utbildningskort på startsidan + innehåll för dess behörighetssida.</summary>
@@ -131,4 +139,32 @@ public class WebsiteSettings
 
     public bool IsVisible(WebPageKey key) =>
         key == WebPageKey.Start || PageVisibility.GetValueOrDefault(key, false);
+}
+
+/// <summary>Färgtema för hemsidan. Mappas till CSS-variabler i PublicLayout.</summary>
+public class ThemeSettings
+{
+    /// <summary>Namn på valt preset (eller "Egen" vid finjustering).</summary>
+    public string PresetName  { get; set; } = "Klassisk blå";
+    /// <summary>Primär-/bannerfärg – hero, länkar, aktiv meny.</summary>
+    public string BannerColor { get; set; } = "#0b4f8a";
+    /// <summary>Knapp-/CTA-färg.</summary>
+    public string ButtonColor { get; set; } = "#c8511b";
+    /// <summary>Bakgrundsfärg för header.</summary>
+    public string HeaderBg    { get; set; } = "#ffffff";
+    /// <summary>Bakgrundsfärg för footer.</summary>
+    public string FooterBg    { get; set; } = "#1a1f24";
+}
+
+/// <summary>
+/// All redigerbar hemside-data för en körskola. Serialiseras till JSON så att
+/// admin-ändringar överlever omstart. Produkter/lediga tider kommer från
+/// affärssystemet och ingår inte här.
+/// </summary>
+public class WebsiteContent
+{
+    public SchoolProfile   School    { get; set; } = new();
+    public WebsiteSettings Settings  { get; set; } = new();
+    public List<Employee>  Employees { get; set; } = new();
+    public ThemeSettings   Theme     { get; set; } = new();
 }

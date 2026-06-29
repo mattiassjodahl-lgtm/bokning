@@ -1,0 +1,43 @@
+@page "/admin/hemsida"
+@inject WebsiteService Web
+
+<PageTitle>Hemsideadministration</PageTitle>
+
+<MudAppBar Color="Color.Primary" Fixed="true" Dense="true">
+    <MudIcon Icon="@Icons.Material.Filled.Language" Class="mr-2" />
+    <MudText Typo="Typo.h6">Hemsida – administration</MudText>
+    <MudSpacer />
+    <MudButton Href="/webb/start" Target="_blank" Color="Color.Inherit"
+               StartIcon="@Icons.Material.Filled.OpenInNew">Visa hemsidan</MudButton>
+    <MudIconButton Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Inherit"
+                   Href="/" title="Till kalendern" />
+</MudAppBar>
+
+<MudMainContent>
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+
+        <MudText Typo="Typo.body2" Class="mb-4" Style="color:#666">
+            Ändringar sparas per flik och syns direkt på den publika sidan. Bilder laddas upp och lagras under
+            <code>/Img/Webb</code>.
+        </MudText>
+
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6" Border="true">
+            <MudTabPanel Text="Sidor & profil" Icon="@Icons.Material.Filled.Tune">
+                <AdminPagesTab />
+            </MudTabPanel>
+            <MudTabPanel Text="Startsida" Icon="@Icons.Material.Filled.Home">
+                <AdminStartTab />
+            </MudTabPanel>
+            <MudTabPanel Text="Utbildningar" Icon="@Icons.Material.Filled.School">
+                <AdminEducationTab />
+            </MudTabPanel>
+            <MudTabPanel Text="Nyheter" Icon="@Icons.Material.Filled.Article">
+                <AdminNewsTab />
+            </MudTabPanel>
+            <MudTabPanel Text="Tema" Icon="@Icons.Material.Filled.Palette">
+                <AdminThemeTab />
+            </MudTabPanel>
+        </MudTabs>
+
+    </MudContainer>
+</MudMainContent>

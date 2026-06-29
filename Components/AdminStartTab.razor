@@ -1,0 +1,95 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Startsidans layout</MudText>
+<MudRadioGroup T="StartLayout" @bind-Value="Web.Settings.Layout">
+    <MudRadio T="StartLayout" Value="StartLayout.FocusNews" Color="Color.Primary">
+        <strong>Layout A – Fokus &amp; nyheter</strong>
+        <MudText Typo="Typo.caption" Style="display:block; color:#666">Hero med en knapp, tre utbildningskort och ett nyhetsblock.</MudText>
+    </MudRadio>
+    <MudRadio T="StartLayout" Value="StartLayout.BroadAction" Color="Color.Primary">
+        <strong>Layout B – Bred &amp; handlingsdriven</strong>
+        <MudText Typo="Typo.caption" Style="display:block; color:#666">Hero med två knappar och ett brett utbildningsgrid (utan nyhetsblock).</MudText>
+    </MudRadio>
+</MudRadioGroup>
+
+@if (Missing.Count > 0)
+{
+    <MudAlert Severity="Severity.Warning" Class="my-4" Dense="true">
+        Följande krävs för vald layout: @string.Join(", ", Missing)
+    </MudAlert>
+}
+
+<MudDivider Class="my-4" />
+<MudText Typo="Typo.h6" GutterBottom="true">Hero</MudText>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Web.Settings.HeroHeading" Label="Rubrik *" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Web.Settings.HeroIngress" Label="Ingress *" Variant="Variant.Outlined" Lines="3" />
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.Settings.PrimaryCtaText" Label="Knapp 1 – text *" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.Settings.PrimaryCtaHref" Label="Knapp 1 – länk *" Variant="Variant.Outlined" />
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.Settings.SecondaryCtaText"
+                      Label="@($"Knapp 2 – text {(IsB ? "*" : "(endast Layout B)")}")" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.Settings.SecondaryCtaHref"
+                      Label="@($"Knapp 2 – länk {(IsB ? "*" : "(endast Layout B)")}")" Variant="Variant.Outlined" />
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudText Typo="Typo.subtitle2" GutterBottom="true">Hero-bild *</MudText>
+        <AdminImageUpload Value="@Web.Settings.HeroImage"
+                          ValueChanged="@(v => Web.Settings.HeroImage = v)"
+                          Subfolder="hero"
+                          Spec="Liggande bild, 1600×900 px (16:9). JPG eller WebP, max ~500 kB. Texten läggs ovanpå med mörk overlay." />
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudDivider Class="my-2" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="Save">Spara</MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private bool IsB => Web.Settings.Layout == StartLayout.BroadAction;
+
+    // Obligatoriska fält givet vald layout.
+    private List<string> Missing
+    {
+        get
+        {
+            var s = Web.Settings;
+            var m = new List<string>();
+            if (string.IsNullOrWhiteSpace(s.HeroHeading)) m.Add("rubrik");
+            if (string.IsNullOrWhiteSpace(s.HeroIngress)) m.Add("ingress");
+            if (string.IsNullOrWhiteSpace(s.PrimaryCtaText)) m.Add("knapp 1-text");
+            if (string.IsNullOrWhiteSpace(s.HeroImage)) m.Add("hero-bild");
+            if (s.Layout == StartLayout.FocusNews && s.News.Count == 0) m.Add("minst 1 nyhet");
+            if (s.Layout == StartLayout.BroadAction)
+            {
+                if (string.IsNullOrWhiteSpace(s.SecondaryCtaText)) m.Add("knapp 2-text");
+                if (s.EducationCards.Count < 4) m.Add("minst 4 utbildningskort");
+            }
+            return m;
+        }
+    }
+
+    private void Save()
+    {
+        Web.Save();
+        Snackbar.Add(Missing.Count == 0 ? "Startsidan sparad" : "Sparat – men obligatoriska fält saknas för vald layout",
+            Missing.Count == 0 ? Severity.Success : Severity.Warning);
+    }
+}

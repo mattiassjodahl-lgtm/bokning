@@ -1,0 +1,54 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Innehållssidor – utbildningar</MudText>
+<MudText Typo="Typo.caption" Style="color:#666">
+    Varje kort på startsidan länkar till en behörighetssida (<code>/webb/utbildning/&lt;länk&gt;</code>). Töm fältet "Länk" för att dölja sidan.
+</MudText>
+
+<MudExpansionPanels MultiExpansion="true" Class="my-4">
+    @foreach (var card in Web.Settings.EducationCards)
+    {
+        var c = card;
+        <MudExpansionPanel Text="@(string.IsNullOrWhiteSpace(c.Title) ? "(ny utbildning)" : c.Title)">
+            <MudGrid>
+                <MudItem xs="12" md="6"><MudTextField @bind-Value="c.Title" Label="Titel" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" md="6"><MudTextField @bind-Value="c.Slug" Label="Länk (slug)" Variant="Variant.Outlined" HelperText="t.ex. personbil-b" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="c.Description" Label="Kort beskrivning (på kortet)" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" md="8"><MudTextField @bind-Value="c.LongText" Label="Brödtext (på sidan)" Variant="Variant.Outlined" Lines="4" /></MudItem>
+                <MudItem xs="12" md="4"><MudTextField @bind-Value="c.PriceFrom" Label="Prisindikation" Variant="Variant.Outlined" HelperText="t.ex. Från 950 kr/lektion" /></MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Det här ingår (en punkt per rad)" Variant="Variant.Outlined" Lines="4"
+                                  Value="@string.Join("\n", c.Highlights)"
+                                  ValueChanged="@(v => c.Highlights = SplitLines(v))" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" GutterBottom="true">Bild</MudText>
+                    <AdminImageUpload Value="@c.Image" ValueChanged="@(v => c.Image = v)" Subfolder="utbildningar"
+                                      Spec="Liggande 16:9, ca 800×450 px. JPG/WebP." />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="@(() => Web.Settings.EducationCards.Remove(c))">Ta bort utbildning</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudExpansionPanel>
+    }
+</MudExpansionPanels>
+
+<div style="display:flex; gap:.75rem">
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="@(() => Web.Settings.EducationCards.Add(new() { Title = "", Icon = "directions_car" }))">Lägg till utbildning</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="Save">Spara</MudButton>
+</div>
+
+@code {
+    private static List<string> SplitLines(string? text) =>
+        (text ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    private void Save()
+    {
+        Web.Save();
+        Snackbar.Add("Utbildningar sparade", Severity.Success);
+    }
+}

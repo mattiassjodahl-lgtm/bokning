@@ -1,0 +1,61 @@
+@inject WebsiteService Web
+
+@* Återanvändbar bilduppladdning för admin. Sparar till wwwroot/Img/Webb och
+   returnerar webbsökvägen via ValueChanged. Visar nuvarande bild + bildkrav. *@
+<div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap">
+    <div style="width:160px; height:90px; border-radius:8px; overflow:hidden; background:#eceff3; border:1px solid #d9dee3; flex-shrink:0;
+                display:grid; place-items:center">
+        @if (!string.IsNullOrEmpty(Value))
+        {
+            <img src="@Value" alt="Förhandsvisning" style="width:100%; height:100%; object-fit:cover" />
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Default" />
+        }
+    </div>
+    <div style="flex:1; min-width:220px">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <MudText Typo="Typo.subtitle2">@Label</MudText>
+        }
+        @if (!string.IsNullOrEmpty(Spec))
+        {
+            <MudText Typo="Typo.caption" Style="color:#666; display:block; margin-bottom:.4rem">@Spec</MudText>
+        }
+        <InputFile OnChange="OnFile" accept="image/*" />
+        @if (_busy)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />
+        }
+        @if (!string.IsNullOrEmpty(Value))
+        {
+            <MudText Typo="Typo.caption" Style="display:block; margin-top:.3rem; color:#888; word-break:break-all">@Value</MudText>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    /// <summary>Undermapp i Img/Webb, t.ex. "hero" eller "personal". Tom = roten.</summary>
+    [Parameter] public string Subfolder { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Spec { get; set; } = "";
+
+    private bool _busy;
+
+    private async Task OnFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        _busy = true;
+        await using var stream = file.OpenReadStream(10 * 1024 * 1024); // max 10 MB
+        var path = await Web.SaveImageAsync(stream, file.Name,
+            string.IsNullOrWhiteSpace(Subfolder) ? null : Subfolder);
+        _busy = false;
+
+        await ValueChanged.InvokeAsync(path);
+    }
+}

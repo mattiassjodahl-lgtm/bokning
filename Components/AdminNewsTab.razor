@@ -1,0 +1,52 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Nyheter</MudText>
+<MudText Typo="Typo.caption" Style="color:#666">
+    Visas i nyhetsblocket på startsidan (Layout A), i listningen <code>/webb/nyheter</code> och på egen sida <code>/webb/nyheter/&lt;länk&gt;</code>.
+</MudText>
+
+<MudExpansionPanels MultiExpansion="true" Class="my-4">
+    @foreach (var news in Web.Settings.News)
+    {
+        var n = news;
+        <MudExpansionPanel Text="@($"{(string.IsNullOrWhiteSpace(n.Title) ? "(ny nyhet)" : n.Title)}  ·  {n.Date:yyyy-MM-dd}")">
+            <MudGrid>
+                <MudItem xs="12" md="8"><MudTextField @bind-Value="n.Title" Label="Rubrik" Variant="Variant.Outlined" /></MudItem>
+                <MudItem xs="12" md="4">
+                    <MudDatePicker Label="Datum" Variant="Variant.Outlined"
+                                   Date="@n.Date.ToDateTime(TimeOnly.MinValue)"
+                                   DateChanged="@(d => n.Date = DateOnly.FromDateTime(d ?? DateTime.Today))" />
+                </MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="n.Slug" Label="Länk (slug)" Variant="Variant.Outlined" HelperText="t.ex. sommarkurser-2026" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="n.Summary" Label="Ingress (kort)" Variant="Variant.Outlined" Lines="2" /></MudItem>
+                <MudItem xs="12"><MudTextField @bind-Value="n.Body" Label="Brödtext (tom rad = nytt stycke)" Variant="Variant.Outlined" Lines="6" /></MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" GutterBottom="true">Bild</MudText>
+                    <AdminImageUpload Value="@n.Image" ValueChanged="@(v => n.Image = v)" Subfolder="nyheter"
+                                      Spec="Liggande 16:9, ca 800×450 px. JPG/WebP." />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="@(() => Web.Settings.News.Remove(n))">Ta bort nyhet</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudExpansionPanel>
+    }
+</MudExpansionPanels>
+
+<div style="display:flex; gap:.75rem">
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" OnClick="AddNews">Lägg till nyhet</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="Save">Spara</MudButton>
+</div>
+
+@code {
+    private void AddNews() =>
+        Web.Settings.News.Add(new() { Title = "", Slug = "", Date = DateOnly.FromDateTime(DateTime.Today) });
+
+    private void Save()
+    {
+        Web.Save();
+        Snackbar.Add("Nyheter sparade", Severity.Success);
+    }
+}

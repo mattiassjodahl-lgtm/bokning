@@ -1,0 +1,122 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    @* ── Synliga sidor ─────────────────────────────────────────────────────── *@
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.h6" GutterBottom="true">Synliga sidor</MudText>
+        <MudText Typo="Typo.caption" Style="color:#666">Startsidan visas alltid. Övriga sidor kan döljas i menyn.</MudText>
+        <div class="mt-3">
+            @foreach (var (key, label) in Pages)
+            {
+                var k = key;
+                <MudSwitch T="bool" Color="Color.Primary"
+                           Value="@Web.Settings.PageVisibility.GetValueOrDefault(k, false)"
+                           ValueChanged="@(v => Web.Settings.PageVisibility[k] = v)"
+                           Label="@label" />
+            }
+        </div>
+    </MudItem>
+
+    @* ── Webbflaggade produkter (prislista) ────────────────────────────────── *@
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.h6" GutterBottom="true">Produkter i prislistan</MudText>
+        <MudText Typo="Typo.caption" Style="color:#666">Bocka för de artiklar som ska visas på den publika prislistan.</MudText>
+        <div class="mt-3">
+            @foreach (var a in Web.AllArticles)
+            {
+                var id = a.Id;
+                <MudCheckBox T="bool" Dense="true"
+                             Value="@Web.Settings.WebFlaggedArticleIds.Contains(id)"
+                             ValueChanged="@(v => ToggleArticle(id, v))"
+                             Label="@($"{a.ArticleNumber} – {a.Name}")" />
+            }
+        </div>
+    </MudItem>
+
+    @* ── Profil ────────────────────────────────────────────────────────────── *@
+    <MudItem xs="12">
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.h6" GutterBottom="true">Körskolans profil</MudText>
+    </MudItem>
+    <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.Name" Label="Namn" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.LogoInitials" Label="Logo-initialer" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.OrgNumber" Label="Org.nummer" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.Tagline" Label="Slogan" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.Phone" Label="Telefon" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.Email" Label="E-post" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.VisitAddress" Label="Besöksadress" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.PostalAddress" Label="Postadress" Variant="Variant.Outlined" /></MudItem>
+
+    @* ── Öppettider ────────────────────────────────────────────────────────── *@
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.subtitle1" GutterBottom="true">Öppettider</MudText>
+        @foreach (var oh in Web.School.OpeningHours)
+        {
+            var row = oh;
+            <div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.5rem">
+                <MudTextField @bind-Value="row.Days" Label="Dagar" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField @bind-Value="row.Hours" Label="Tider" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => Web.School.OpeningHours.Remove(row))" />
+            </div>
+        }
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                   OnClick="@(() => Web.School.OpeningHours.Add(new()))">Lägg till rad</MudButton>
+    </MudItem>
+
+    @* ── Sociala medier ────────────────────────────────────────────────────── *@
+    <MudItem xs="12" md="6">
+        <MudText Typo="Typo.subtitle1" GutterBottom="true">Sociala medier</MudText>
+        @foreach (var soc in Web.School.Social)
+        {
+            var row = soc;
+            <div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.5rem">
+                <MudSelect T="string" @bind-Value="row.Platform" Label="Plattform" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:130px">
+                    <MudSelectItem T="string" Value="@("facebook")">Facebook</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("instagram")">Instagram</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("youtube")">YouTube</MudSelectItem>
+                </MudSelect>
+                <MudTextField @bind-Value="row.Url" Label="Länk (URL)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                               OnClick="@(() => Web.School.Social.Remove(row))" />
+            </div>
+        }
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                   OnClick="@(() => Web.School.Social.Add(new() { Platform = "facebook", Label = "Facebook" }))">Lägg till länk</MudButton>
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudDivider Class="my-4" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveAll">Spara</MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private static readonly (WebPageKey Key, string Label)[] Pages =
+    {
+        (WebPageKey.Ehandel,  "E-handel"),
+        (WebPageKey.Kalender, "Bokningskalender"),
+        (WebPageKey.Prislista, "Prislista"),
+        (WebPageKey.Personal, "Anställda"),
+        (WebPageKey.Nyheter,  "Nyheter"),
+        (WebPageKey.Kontakt,  "Kontakta oss"),
+    };
+
+    private void ToggleArticle(int id, bool on)
+    {
+        var list = Web.Settings.WebFlaggedArticleIds;
+        if (on) { if (!list.Contains(id)) list.Add(id); }
+        else list.Remove(id);
+    }
+
+    private void SaveAll()
+    {
+        // Synka social-label med vald plattform.
+        foreach (var s in Web.School.Social)
+            s.Label = s.Platform switch { "facebook" => "Facebook", "instagram" => "Instagram", "youtube" => "YouTube", _ => s.Platform };
+        Web.Save();
+        Snackbar.Add("Inställningar sparade", Severity.Success);
+    }
+}

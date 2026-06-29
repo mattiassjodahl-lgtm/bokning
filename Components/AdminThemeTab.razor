@@ -1,0 +1,73 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Färdiga teman</MudText>
+<MudText Typo="Typo.caption" Style="color:#666">Välj ett tema som utgångspunkt – finjustera sedan enskilda färger nedan.</MudText>
+
+<div style="display:flex; gap:.75rem; flex-wrap:wrap; margin:1rem 0 1.5rem">
+    @foreach (var p in WebsiteService.Presets)
+    {
+        var preset = p;
+        var active = Web.Theme.PresetName == preset.PresetName;
+        <button type="button" @onclick="@(() => ApplyPreset(preset))"
+                style="@PresetStyle(preset, active)">
+            <span style="display:flex; gap:4px; margin-bottom:6px">
+                <span style="@Swatch(preset.BannerColor)"></span>
+                <span style="@Swatch(preset.ButtonColor)"></span>
+                <span style="@Swatch(preset.FooterBg)"></span>
+            </span>
+            @preset.PresetName
+        </button>
+    }
+</div>
+
+<MudText Typo="Typo.h6" GutterBottom="true">Finjustera färger</MudText>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">@ColorField("Banner / primär", () => Web.Theme.BannerColor, v => Web.Theme.BannerColor = v)</MudItem>
+    <MudItem xs="12" sm="6" md="3">@ColorField("Knappar / CTA", () => Web.Theme.ButtonColor, v => Web.Theme.ButtonColor = v)</MudItem>
+    <MudItem xs="12" sm="6" md="3">@ColorField("Header", () => Web.Theme.HeaderBg, v => Web.Theme.HeaderBg = v)</MudItem>
+    <MudItem xs="12" sm="6" md="3">@ColorField("Footer", () => Web.Theme.FooterBg, v => Web.Theme.FooterBg = v)</MudItem>
+</MudGrid>
+
+<MudAlert Severity="Severity.Info" Dense="true" Class="my-4">
+    Textfärg på header och footer väljs automatiskt (svart/vit) för läsbar kontrast. Footer passar bäst i mörka toner.
+</MudAlert>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="Save">Spara</MudButton>
+
+@code {
+    private void ApplyPreset(ThemeSettings p)
+    {
+        Web.Theme.PresetName  = p.PresetName;
+        Web.Theme.BannerColor = p.BannerColor;
+        Web.Theme.ButtonColor = p.ButtonColor;
+        Web.Theme.HeaderBg    = p.HeaderBg;
+        Web.Theme.FooterBg    = p.FooterBg;
+    }
+
+    private RenderFragment ColorField(string label, Func<string> get, Action<string> set) => __builder =>
+    {
+        <div style="display:flex; align-items:center; gap:.6rem">
+            <input type="color" value="@get()"
+                   @onchange="@(e => { set(e.Value?.ToString() ?? get()); Web.Theme.PresetName = "Egen"; })"
+                   style="width:46px; height:46px; border:1px solid #ccc; border-radius:8px; padding:2px; cursor:pointer" />
+            <div>
+                <MudText Typo="Typo.body2">@label</MudText>
+                <MudText Typo="Typo.caption" Style="color:#888">@get()</MudText>
+            </div>
+        </div>
+    };
+
+    private static string Swatch(string color) =>
+        $"width:18px; height:18px; border-radius:4px; display:inline-block; background:{color}; border:1px solid rgba(0,0,0,.15)";
+
+    private static string PresetStyle(ThemeSettings p, bool active) =>
+        $"cursor:pointer; text-align:left; padding:.7rem .9rem; border-radius:10px; font-weight:600; background:#fff; " +
+        $"border:2px solid {(active ? "#1565C0" : "#d9dee3")}; box-shadow:{(active ? "0 0 0 3px rgba(21,101,192,.15)" : "none")}";
+
+    private void Save()
+    {
+        Web.Save();
+        Snackbar.Add("Tema sparat", Severity.Success);
+    }
+}

@@ -1,0 +1,60 @@
+@page "/webb/nyheter/{Slug}"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>@(_news?.Title ?? "Nyhet") – @Web.School.Name</PageTitle>
+
+@if (_news is null)
+{
+    <section class="ps-section">
+        <div class="ps-wrap">
+            <h1>Nyheten hittades inte</h1>
+            <p class="ps-lead">Den här nyheten finns inte längre. Se <a href="/webb/nyheter">alla nyheter</a>.</p>
+        </div>
+    </section>
+}
+else
+{
+    @* ── Sub-hero ─────────────────────────────────────────────────────────── *@
+    <section class="ps-hero ps-hero--sub ps-section" style="background-image:url('@_news.Image')">
+        <div class="ps-wrap ps-hero__inner">
+            <time datetime="@_news.Date.ToString("yyyy-MM-dd")" style="color:#dfeaf4;font-weight:600">
+                @_news.Date.ToString("d MMMM yyyy", Sv)
+            </time>
+            <h1>@_news.Title</h1>
+        </div>
+    </section>
+
+    @* ── Artikel (fast mall) ──────────────────────────────────────────────── *@
+    <article class="ps-section">
+        <div class="ps-wrap" style="max-width: 760px">
+            <p class="ps-lead">@_news.Summary</p>
+
+            @foreach (var para in Paragraphs)
+            {
+                <p>@para</p>
+            }
+
+            <div class="ps-hero__cta ps-mt">
+                <a class="ps-btn ps-btn--primary" href="/webb/kalender">Boka tid</a>
+                <a class="ps-btn ps-btn--outline" href="/webb/kontakt">Kontakta oss</a>
+            </div>
+
+            <p class="ps-mt"><a href="/webb/nyheter">← Alla nyheter</a></p>
+        </div>
+    </article>
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+
+    [Parameter] public string Slug { get; set; } = "";
+
+    private NewsItem? _news;
+
+    protected override void OnParametersSet() => _news = Web.GetNews(Slug);
+
+    // Delar upp brödtexten i stycken på dubbla radbrytningar.
+    private IEnumerable<string> Paragraphs =>
+        (_news?.Body ?? "").Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}
