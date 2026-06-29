@@ -31,8 +31,10 @@ public enum WebPageKey
 public class SchoolProfile
 {
     public string Name        { get; set; } = "";
-    /// <summary>Initialer som visas i logotyp-platshållaren (ersätts av uppladdad logga).</summary>
+    /// <summary>Initialer som visas i logotyp-platshållaren om ingen logga laddats upp.</summary>
     public string LogoInitials { get; set; } = "";
+    /// <summary>Sökväg till uppladdad logga under wwwroot (SVG/vektor eller PNG). Tom = visa initialer.</summary>
+    public string LogoImage   { get; set; } = "";
     public string Tagline     { get; set; } = "";
     public string Phone       { get; set; } = "";
     public string Email       { get; set; } = "";
@@ -43,6 +45,11 @@ public class SchoolProfile
     public List<OpeningHour> OpeningHours { get; set; } = new();
     /// <summary>Sociala medier-länkar som visas i footern.</summary>
     public List<SocialLink> Social { get; set; } = new();
+
+    /// <summary>Länk till STR (visas i "Medlem i"-blocket och menyn).</summary>
+    public string StrUrl  { get; set; } = "https://www.str.se";
+    /// <summary>Uppladdad STR-logga under wwwroot. Tom = textmärke "STR".</summary>
+    public string StrLogo { get; set; } = "";
 }
 
 /// <summary>En länk till ett socialt medium. Platform styr vilken ikon som visas.</summary>

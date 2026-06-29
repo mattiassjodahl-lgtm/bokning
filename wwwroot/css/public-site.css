@@ -81,7 +81,7 @@ body:has(.ps-site) {
     padding: .8rem 1.5rem; border-radius: 999px; border: 2px solid transparent;
     text-decoration: none; transition: background .15s, color .15s, border-color .15s;
 }
-.ps-btn--primary { background: var(--ps-accent); color: #fff; }
+.ps-btn--primary { background: var(--ps-accent); color: var(--ps-on-accent, #fff); }
 .ps-btn--primary:hover { background: var(--ps-accent-dark); }
 .ps-btn--ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.8); }
 .ps-btn--ghost:hover { background: rgba(255,255,255,.14); }
@@ -100,6 +100,8 @@ body:has(.ps-site) {
     background: var(--ps-primary); color: #fff;
     display: grid; place-items: center; font-weight: 700; letter-spacing: .5px;
 }
+/* Uppladdad logga (SVG/vektor eller PNG) */
+.ps-logo-img { height: 48px; width: auto; max-width: 220px; display: block; flex-shrink: 0; }
 .ps-brand__name { font-size: 1.05rem; }
 .ps-brand__tag  { display: block; font-size: .8rem; font-weight: 400; color: var(--ps-header-ink); opacity: .7; }
 
@@ -111,7 +113,7 @@ body:has(.ps-site) {
     text-decoration: none; color: var(--ps-header-ink); font-weight: 500;
 }
 .ps-nav a:hover { background: rgba(127,127,127,.14); }
-.ps-nav a[aria-current="page"] { color: var(--ps-primary); font-weight: 700; box-shadow: inset 0 -3px 0 var(--ps-primary); }
+.ps-nav a[aria-current="page"] { color: var(--ps-header-ink); font-weight: 700; box-shadow: inset 0 -3px 0 currentColor; }
 .ps-nav a[target="_blank"]::after { content: " ↗"; font-size: .8em; color: var(--ps-muted); }
 
 /* Mobilmeny via <details> – ingen JS behövs */
@@ -176,10 +178,10 @@ body:has(.ps-site) {
 }
 
 /* ── USP-band ─────────────────────────────────────────────────────────── */
-.ps-usp { background: linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary)); color: #fff; }
+.ps-usp { background: linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary)); color: var(--ps-on-primary, #fff); }
 .ps-usp__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.75rem; }
-.ps-usp h2 { color: #fff; }
-.ps-usp p { color: #e7f0f8; margin: 0; }
+.ps-usp h2 { color: var(--ps-on-primary, #fff); }
+.ps-usp p { color: var(--ps-on-primary, #fff); opacity: .85; margin: 0; }
 .ps-usp .material-icons { font-size: 34px; margin-bottom: .4rem; }
 @media (max-width: 720px) { .ps-usp__grid { grid-template-columns: 1fr 1fr; } }
 
@@ -306,6 +308,22 @@ body:has(.ps-site) {
 .ps-footer dt { color: #9fb0bf; font-size: .85rem; margin-top: .6rem; }
 .ps-footer dd { margin: 0; }
 .ps-footer__bottom { border-top: 1px solid #303a43; margin-top: 2rem; padding-top: 1.25rem; font-size: .9rem; color: #9fb0bf; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+
+/* Footer-brand (körskolans logga + namn) */
+.ps-footer__brand { display: flex; align-items: center; gap: .8rem; margin-bottom: 2rem; font-size: 1.2rem; font-weight: 700; color: var(--ps-footer-ink); }
+/* Ljus bricka bakom loggor så att även mörka loggor syns på mörk footer. */
+.ps-footer__logochip { background: #fff; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; }
+.ps-footer__logochip img { height: 40px; width: auto; max-width: 200px; display: block; }
+
+/* Medlem i STR */
+.ps-footer__member { display: flex; align-items: center; gap: .8rem; margin-top: 2.25rem; flex-wrap: wrap; }
+.ps-footer__member-label { color: var(--ps-footer-ink); opacity: .75; font-size: .9rem; text-transform: uppercase; letter-spacing: .5px; }
+.ps-str { display: inline-flex; align-items: center; gap: .7rem; text-decoration: none; color: var(--ps-footer-ink); }
+.ps-str-badge {
+    background: #fff; color: #0b4f8a; font-weight: 800; letter-spacing: 1px;
+    padding: .35rem .7rem; border-radius: 8px; font-size: 1.1rem;
+}
+.ps-str-text { font-size: .95rem; opacity: .9; }
 
 /* Sociala medier */
 .ps-social { display: flex; gap: .6rem; margin-top: 2rem; }

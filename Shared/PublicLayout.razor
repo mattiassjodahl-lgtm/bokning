@@ -17,6 +17,8 @@
         --ps-primary-dark: @ColorUtil.Darken(t.BannerColor);
         --ps-accent:       @t.ButtonColor;
         --ps-accent-dark:  @ColorUtil.Darken(t.ButtonColor);
+        --ps-on-accent:    @ColorUtil.TextOn(t.ButtonColor);
+        --ps-on-primary:   @ColorUtil.TextOn(t.BannerColor);
         --ps-header-bg:    @t.HeaderBg;
         --ps-header-ink:   @ColorUtil.TextOn(t.HeaderBg);
         --ps-footer-bg:    @t.FooterBg;
@@ -31,8 +33,14 @@
     <header class="ps-header">
         <div class="ps-wrap ps-wrap--full ps-header__inner">
             <a class="ps-brand" href="/webb/start">
-                @* Logotyp-platshållare – ersätts av körskolans uppladdade logga *@
-                <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                @if (!string.IsNullOrEmpty(Web.School.LogoImage))
+                {
+                    <img class="ps-logo-img" src="@Web.School.LogoImage" alt="@Web.School.Name" />
+                }
+                else
+                {
+                    <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                }
                 <span>
                     <span class="ps-brand__name">@Web.School.Name</span>
                     <span class="ps-brand__tag">@Web.School.Tagline</span>
@@ -81,6 +89,18 @@
 
     <footer class="ps-footer">
         <div class="ps-wrap">
+            <div class="ps-footer__brand">
+                @if (!string.IsNullOrEmpty(Web.School.LogoImage))
+                {
+                    <span class="ps-footer__logochip"><img src="@Web.School.LogoImage" alt="@Web.School.Name" /></span>
+                }
+                else
+                {
+                    <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                }
+                <strong>@Web.School.Name</strong>
+            </div>
+
             <div class="ps-footer__cols">
                 <section>
                     <h2>Kontakt</h2>
@@ -114,9 +134,25 @@
                         {
                             <li><a href="@item.Href">@item.Label</a></li>
                         }
-                        <li><a href="#" target="_blank" rel="noopener">Medlem i STR ↗</a></li>
                     </ul>
                 </section>
+            </div>
+
+            @* Medlem i STR (likt referenssidorna). STR-logga laddas upp i admin – annars textmärke. *@
+            <div class="ps-footer__member">
+                <span class="ps-footer__member-label">Medlem i</span>
+                <a class="ps-str" href="@Web.School.StrUrl" target="_blank" rel="noopener"
+                   aria-label="STR – Sveriges Trafikutbildares Riksförbund">
+                    @if (!string.IsNullOrEmpty(Web.School.StrLogo))
+                    {
+                        <span class="ps-footer__logochip"><img src="@Web.School.StrLogo" alt="STR" /></span>
+                    }
+                    else
+                    {
+                        <span class="ps-str-badge" aria-hidden="true">STR</span>
+                    }
+                    <span class="ps-str-text">Sveriges Trafikutbildares Riksförbund</span>
+                </a>
             </div>
 
             @if (Web.School.Social.Count > 0)
@@ -159,12 +195,12 @@
         }
     }
 
-    // Mockade externa länkar – href lämnas tom tills de kopplas.
-    private static readonly NavLinkItem[] ExternalLinks =
+    // Externa länkar. Elev/Körkortsboken är mockade tills de kopplas; STR går till STR-sajten.
+    private IEnumerable<NavLinkItem> ExternalLinks => new[]
     {
-        new("Elev", "#"),
-        new("Körkortsboken", "#"),
-        new("STR", "#"),
+        new NavLinkItem("Elev", "#"),
+        new NavLinkItem("Körkortsboken", "#"),
+        new NavLinkItem("STR", Web.School.StrUrl),
     };
 
     private bool IsCurrent(string href)

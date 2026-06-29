@@ -23,7 +23,7 @@
         {
             <MudText Typo="Typo.caption" Style="color:#666; display:block; margin-bottom:.4rem">@Spec</MudText>
         }
-        <InputFile OnChange="OnFile" accept="image/*" />
+        <InputFile OnChange="OnFile" accept="image/*,.svg" />
         @if (_busy)
         {
             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />

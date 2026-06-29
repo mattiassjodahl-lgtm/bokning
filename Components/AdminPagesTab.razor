@@ -48,6 +48,37 @@
     <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.VisitAddress" Label="Besöksadress" Variant="Variant.Outlined" /></MudItem>
     <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.PostalAddress" Label="Postadress" Variant="Variant.Outlined" /></MudItem>
 
+    <MudItem xs="12">
+        <MudText Typo="Typo.subtitle2" GutterBottom="true">Logotyp</MudText>
+        <AdminImageUpload Value="@Web.School.LogoImage"
+                          ValueChanged="@(v => Web.School.LogoImage = v)"
+                          Subfolder="logo"
+                          Spec="SVG (vektorgrafik) rekommenderas – skarp i alla storlekar. Annars PNG med transparent bakgrund, höjd ca 48 px. Töm för att visa initialer istället." />
+        @if (!string.IsNullOrEmpty(Web.School.LogoImage))
+        {
+            <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Clear" Class="mt-1"
+                       OnClick="@(() => Web.School.LogoImage = "")">Ta bort logga (visa initialer)</MudButton>
+        }
+    </MudItem>
+
+    @* ── STR (medlemskap) ──────────────────────────────────────────────────── *@
+    <MudItem xs="12">
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.subtitle1" GutterBottom="true">STR-medlemskap (footer)</MudText>
+    </MudItem>
+    <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.StrUrl" Label="STR-länk" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12">
+        <AdminImageUpload Value="@Web.School.StrLogo"
+                          ValueChanged="@(v => Web.School.StrLogo = v)"
+                          Subfolder="logo"
+                          Spec="STR-logga (SVG/PNG). Töm för att visa ett textmärke 'STR' istället. Visas i footerns 'Medlem i'-block." />
+        @if (!string.IsNullOrEmpty(Web.School.StrLogo))
+        {
+            <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.Clear" Class="mt-1"
+                       OnClick="@(() => Web.School.StrLogo = "")">Ta bort STR-logga</MudButton>
+        }
+    </MudItem>
+
     @* ── Öppettider ────────────────────────────────────────────────────────── *@
     <MudItem xs="12" md="6">
         <MudText Typo="Typo.subtitle1" GutterBottom="true">Öppettider</MudText>
