@@ -162,8 +162,6 @@ public class WebsiteSettings
     public string HeroIngress { get; set; } = "";
     /// <summary>Hero-bild under wwwroot, t.ex. "/Img/Webb/hero.jpg". Tom = enbart gradient.</summary>
     public string HeroImage   { get; set; } = "";
-    /// <summary>Alt-text för hero-bilden. Tom = faller tillbaka på rubriken.</summary>
-    public string HeroImageAlt { get; set; } = "";
     public string PrimaryCtaText { get; set; } = "";
     public string PrimaryCtaHref { get; set; } = "";
     /// <summary>Andra CTA – endast obligatorisk i Layout B.</summary>
@@ -202,8 +200,8 @@ public class ThemeSettings
     public string ButtonColor { get; set; } = "#c8511b";
     /// <summary>Bakgrundsfärg för header.</summary>
     public string HeaderBg    { get; set; } = "#ffffff";
-    /// <summary>Bakgrundsfärg för footer.</summary>
-    public string FooterBg    { get; set; } = "#1a1f24";
+    /// <summary>Bakgrundsfärg för footer (ljusgrå som default – bäst kontrast mot loggor).</summary>
+    public string FooterBg    { get; set; } = "#e9edf1";
 }
 
 /// <summary>

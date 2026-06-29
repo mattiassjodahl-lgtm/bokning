@@ -44,7 +44,8 @@
                     }
                     @if (!string.IsNullOrEmpty(card.Image))
                     {
-                        <div class="ps-card__media ps-photo" role="img" aria-label="@card.Title"
+                        <div class="ps-card__media ps-photo" role="img"
+                             aria-label="@(string.IsNullOrWhiteSpace(card.ImageAlt) ? card.Title : card.ImageAlt)"
                              style="background-image:url('@card.Image')"></div>
                     }
                     else
@@ -102,7 +103,8 @@
                         <a class="ps-card__stretch" href="/webb/nyheter/@n.Slug" aria-label="Läs nyheten: @n.Title"></a>
                         @if (!string.IsNullOrEmpty(n.Image))
                         {
-                            <div class="ps-card__media ps-photo" role="img" aria-label="@n.Title"
+                            <div class="ps-card__media ps-photo" role="img"
+                                 aria-label="@(string.IsNullOrWhiteSpace(n.ImageAlt) ? n.Title : n.ImageAlt)"
                                  style="background-image:url('@n.Image')"></div>
                         }
                         <div class="ps-card__body">

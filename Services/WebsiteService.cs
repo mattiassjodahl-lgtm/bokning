@@ -189,10 +189,10 @@ public class WebsiteService
     // ── Färgteman (presets) ─────────────────────────────────────────────────────
     public static readonly IReadOnlyList<ThemeSettings> Presets = new List<ThemeSettings>
     {
-        new() { PresetName = "Klassisk blå",  BannerColor = "#0b4f8a", ButtonColor = "#c8511b", HeaderBg = "#ffffff", FooterBg = "#1a1f24" },
-        new() { PresetName = "Skogsgrön",     BannerColor = "#1b5e34", ButtonColor = "#b8541a", HeaderBg = "#ffffff", FooterBg = "#13241a" },
-        new() { PresetName = "Djup natt",     BannerColor = "#1f3a93", ButtonColor = "#e07b00", HeaderBg = "#0f1830", FooterBg = "#0b1224" },
-        new() { PresetName = "Vinröd",        BannerColor = "#8a1f3d", ButtonColor = "#2a7d6f", HeaderBg = "#ffffff", FooterBg = "#221016" },
+        new() { PresetName = "Klassisk blå",  BannerColor = "#0b4f8a", ButtonColor = "#c8511b", HeaderBg = "#ffffff", FooterBg = "#e9edf1" },
+        new() { PresetName = "Skogsgrön",     BannerColor = "#1b5e34", ButtonColor = "#b8541a", HeaderBg = "#ffffff", FooterBg = "#e9edf1" },
+        new() { PresetName = "Djup natt",     BannerColor = "#1f3a93", ButtonColor = "#e07b00", HeaderBg = "#0f1830", FooterBg = "#e9edf1" },
+        new() { PresetName = "Vinröd",        BannerColor = "#8a1f3d", ButtonColor = "#2a7d6f", HeaderBg = "#ffffff", FooterBg = "#e9edf1" },
     };
 
     // ════════════════════════════════════════════════════════════════════════
@@ -203,6 +203,9 @@ public class WebsiteService
         School = new()
         {
             Name = "Vägvisarens Trafikskola", LogoInitials = "VT",
+            // Loggor som mockas in – lägg filerna i wwwroot/Img/Webb/logo/.
+            LogoImage = "/Img/Webb/logo/logo.svg",
+            StrLogo   = "/Img/Webb/logo/str.svg",
             Tagline = "Din kompletta trafikskola i stan",
             Phone = "054-21 40 50", Email = "info@vagvisaren.se",
             VisitAddress = "Storgatan 12, 652 25 Karlstad",
