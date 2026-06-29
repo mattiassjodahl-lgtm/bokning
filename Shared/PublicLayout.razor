@@ -1,0 +1,144 @@
+@inherits LayoutComponentBase
+@inject WebsiteService Web
+@inject NavigationManager Nav
+
+@* ════════════════════════════════════════════════════════════════════════
+   Publik layout för körskolans hemsida (/webb). Semantisk, tillgänglig,
+   frikopplad från affärssystemets MudBlazor-chrome.
+   ════════════════════════════════════════════════════════════════════════ *@
+
+<div class="ps-site">
+
+    <a class="ps-skip" href="#ps-main">Hoppa till innehåll</a>
+
+    <header class="ps-header">
+        <div class="ps-wrap ps-header__inner">
+            <a class="ps-brand" href="/webb/start">
+                @* Logotyp-platshållare – ersätts av körskolans uppladdade logga *@
+                <span class="ps-logo" aria-hidden="true">@Web.School.LogoInitials</span>
+                <span>
+                    <span class="ps-brand__name">@Web.School.Name</span>
+                    <span class="ps-brand__tag">@Web.School.Tagline</span>
+                </span>
+            </a>
+
+            @* Desktop-nav *@
+            <nav class="ps-nav" aria-label="Huvudmeny">
+                <ul>
+                    @foreach (var item in NavItems)
+                    {
+                        <li>
+                            <a href="@item.Href"
+                               aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a>
+                        </li>
+                    }
+                    @foreach (var ext in ExternalLinks)
+                    {
+                        <li><a href="@ext.Href" target="_blank" rel="noopener" title="Mockad länk – kopplas i affärssystemet">@ext.Label</a></li>
+                    }
+                </ul>
+            </nav>
+
+            @* Mobil-nav (ren CSS via <details>, ingen JS) *@
+            <details class="ps-menu-toggle">
+                <summary aria-label="Öppna meny">☰ Meny</summary>
+                <div class="ps-menu-panel">
+                    <ul>
+                        @foreach (var item in NavItems)
+                        {
+                            <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
+                        }
+                        @foreach (var ext in ExternalLinks)
+                        {
+                            <li><a href="@ext.Href" target="_blank" rel="noopener">@ext.Label ↗</a></li>
+                        }
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </header>
+
+    <main id="ps-main">
+        @Body
+    </main>
+
+    <footer class="ps-footer">
+        <div class="ps-wrap">
+            <div class="ps-footer__cols">
+                <section>
+                    <h2>Kontakt</h2>
+                    <dl>
+                        <dt>Telefon</dt>
+                        <dd><a href="tel:@Web.School.Phone.Replace(" ", "")">@Web.School.Phone</a></dd>
+                        <dt>E-post</dt>
+                        <dd><a href="mailto:@Web.School.Email">@Web.School.Email</a></dd>
+                        <dt>Besöksadress</dt>
+                        <dd>@Web.School.VisitAddress</dd>
+                        <dt>Org.nummer</dt>
+                        <dd>@Web.School.OrgNumber</dd>
+                    </dl>
+                </section>
+
+                <section>
+                    <h2>Öppettider</h2>
+                    <dl>
+                        @foreach (var oh in Web.School.OpeningHours)
+                        {
+                            <dt>@oh.Days</dt>
+                            <dd>@oh.Hours</dd>
+                        }
+                    </dl>
+                </section>
+
+                <section>
+                    <h2>Genvägar</h2>
+                    <ul style="list-style:none;margin:0;padding:0;display:grid;gap:.4rem">
+                        @foreach (var item in NavItems)
+                        {
+                            <li><a href="@item.Href">@item.Label</a></li>
+                        }
+                        <li><a href="#" target="_blank" rel="noopener">Medlem i STR ↗</a></li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="ps-footer__bottom">
+                <span>© @DateTime.Now.Year @Web.School.Name</span>
+                <a href="#">Integritetspolicy</a>
+            </div>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private record NavLinkItem(string Label, string Href);
+
+    // Menyn byggs från sidornas synlighet (styrs i admin). Start alltid med.
+    private IEnumerable<NavLinkItem> NavItems
+    {
+        get
+        {
+            var s = Web.Settings;
+            yield return new("Hem", "/webb/start");
+            if (s.IsVisible(WebPageKey.Ehandel))  yield return new("E-handel",        "/webb/ehandel");
+            if (s.IsVisible(WebPageKey.Kalender)) yield return new("Bokningskalender", "/webb/kalender");
+            if (s.IsVisible(WebPageKey.Prislista)) yield return new("Prislista",       "/webb/prislista");
+            if (s.IsVisible(WebPageKey.Personal)) yield return new("Anställda",        "/webb/personal");
+            if (s.IsVisible(WebPageKey.Kontakt))  yield return new("Kontakta oss",     "/webb/kontakt");
+        }
+    }
+
+    // Mockade externa länkar – href lämnas tom tills de kopplas.
+    private static readonly NavLinkItem[] ExternalLinks =
+    {
+        new("Elev", "#"),
+        new("Körkortsboken", "#"),
+        new("STR", "#"),
+    };
+
+    private bool IsCurrent(string href)
+    {
+        var path = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?')[0].TrimEnd('/');
+        return string.Equals(path, href, StringComparison.OrdinalIgnoreCase);
+    }
+}

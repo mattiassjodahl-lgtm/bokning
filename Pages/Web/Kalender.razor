@@ -1,0 +1,55 @@
+@page "/webb/kalender"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>Bokningskalender – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>Bokningskalender</h1>
+        <p class="ps-lead">Lediga tider de närmaste två veckorna. Ring oss eller boka via elevportalen för att ta en tid.</p>
+
+        @if (_days.Count == 0)
+        {
+            <div class="ps-note ps-mt">Just nu finns inga lediga tider de närmaste två veckorna. Kontakta oss så hjälper vi dig.</div>
+        }
+        else
+        {
+            <div class="ps-mt" style="display:grid;gap:1.25rem">
+                @foreach (var day in _days)
+                {
+                    <article class="ps-card">
+                        <h2 style="font-size:1.15rem;text-transform:capitalize">
+                            @day.Date.ToDateTime(TimeOnly.MinValue).ToString("dddd d MMMM", Sv)
+                        </h2>
+                        <div class="ps-table-wrap" style="margin-top:.75rem">
+                            <table class="ps-table">
+                                <caption>Lediga tider @day.Date.ToDateTime(TimeOnly.MinValue).ToString("d MMMM", Sv)</caption>
+                                <thead>
+                                    <tr><th scope="col">Tid</th><th scope="col">Typ</th><th scope="col"><span class="visually-hidden">Status</span></th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var slot in day.Slots)
+                                    {
+                                        <tr>
+                                            <td>@slot.Start.ToString("HH:mm")–@slot.End.ToString("HH:mm")</td>
+                                            <td>@slot.LessonType</td>
+                                            <td><span class="ps-badge ps-badge--open"><span class="material-icons" aria-hidden="true" style="font-size:16px">event_available</span> Ledig</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+    private IReadOnlyList<AvailableDay> _days = new List<AvailableDay>();
+
+    protected override void OnInitialized() => _days = Web.GetAvailableSlots(14);
+}

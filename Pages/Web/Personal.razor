@@ -1,0 +1,25 @@
+@page "/webb/personal"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>Anställda – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>Våra anställda</h1>
+        <p class="ps-lead">Lär känna lärarna som hjälper dig hela vägen till körkortet.</p>
+
+        <div class="ps-grid ps-grid--3 ps-mt">
+            @foreach (var e in Web.WebEmployees)
+            {
+                <article class="ps-card ps-person">
+                    @* Avatar-platshållare (initialer) tills foto laddats upp i affärssystemet *@
+                    <div class="ps-avatar" aria-hidden="true">@e.Initials</div>
+                    <h2 class="ps-h3" style="font-size:1.2rem">@e.Name</h2>
+                    <p class="ps-role">@e.Role</p>
+                    <p>@e.Bio</p>
+                </article>
+            }
+        </div>
+    </div>
+</section>

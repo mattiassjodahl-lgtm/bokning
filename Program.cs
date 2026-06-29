@@ -18,6 +18,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<BookingService>();
+builder.Services.AddSingleton<WebsiteService>();
 builder.Services.AddSingleton<ReportExcelExporter>();
 
 // Tools delas mellan TestLlmReportAgent och OpenAIReportAgent.
@@ -64,6 +65,7 @@ app.Use(async (context, next) =>
 
     bool bypass =
         path.StartsWith("/login",       StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/webb",        StringComparison.OrdinalIgnoreCase) ||  // publik körskole-hemsida
         path.StartsWith("/_blazor",     StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/_framework",  StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/_content",    StringComparison.OrdinalIgnoreCase) ||

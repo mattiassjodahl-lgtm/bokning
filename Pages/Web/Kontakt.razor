@@ -1,0 +1,92 @@
+@page "/webb/kontakt"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>Kontakta oss – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>Kontakta oss</h1>
+        <p class="ps-lead">Hör av dig så hjälper vi dig med din utbildning. Du når oss via formuläret, telefon eller e-post.</p>
+
+        <div class="ps-grid ps-grid--3 ps-mt" style="align-items:start">
+
+            @* ── Kontaktformulär (mock – skickar inget i prototypen) ──────── *@
+            <div style="grid-column: span 2">
+                @if (_sent)
+                {
+                    <div class="ps-note" role="status">
+                        Tack @(_model.Name)! Ditt meddelande har tagits emot (demo – inget skickas i prototypen).
+                    </div>
+                }
+                else
+                {
+                    <form class="ps-form" @onsubmit="Submit" @onsubmit:preventDefault="true">
+                        <div class="ps-field">
+                            <label for="namn">Namn <span class="ps-req" aria-hidden="true">*</span></label>
+                            <input id="namn" name="namn" required autocomplete="name"
+                                   @bind="_model.Name" @bind:event="oninput" />
+                        </div>
+                        <div class="ps-field">
+                            <label for="epost">E-post <span class="ps-req" aria-hidden="true">*</span></label>
+                            <input id="epost" name="epost" type="email" required autocomplete="email"
+                                   @bind="_model.Email" @bind:event="oninput" />
+                        </div>
+                        <div class="ps-field">
+                            <label for="tel">Telefon</label>
+                            <input id="tel" name="tel" type="tel" autocomplete="tel"
+                                   @bind="_model.Phone" @bind:event="oninput" />
+                        </div>
+                        <div class="ps-field">
+                            <label for="meddelande">Meddelande <span class="ps-req" aria-hidden="true">*</span></label>
+                            <textarea id="meddelande" name="meddelande" rows="5" required
+                                      @bind="_model.Message" @bind:event="oninput"></textarea>
+                        </div>
+                        <p class="ps-hint">Fält märkta med * är obligatoriska.</p>
+                        <div>
+                            <button type="submit" class="ps-btn ps-btn--primary" disabled="@(!Valid)">Skicka meddelande</button>
+                        </div>
+                    </form>
+                }
+            </div>
+
+            @* ── Kontaktuppgifter (från affärssystemet) ───────────────────── *@
+            <aside class="ps-card">
+                <h2 style="font-size:1.15rem">@Web.School.Name</h2>
+                <dl>
+                    <dt class="ps-hint">Telefon</dt>
+                    <dd><a href="tel:@Web.School.Phone.Replace(" ", "")">@Web.School.Phone</a></dd>
+                    <dt class="ps-hint" style="margin-top:.6rem">E-post</dt>
+                    <dd><a href="mailto:@Web.School.Email">@Web.School.Email</a></dd>
+                    <dt class="ps-hint" style="margin-top:.6rem">Besöksadress</dt>
+                    <dd>@Web.School.VisitAddress</dd>
+                    <dt class="ps-hint" style="margin-top:.6rem">Postadress</dt>
+                    <dd>@Web.School.PostalAddress</dd>
+                </dl>
+            </aside>
+        </div>
+    </div>
+</section>
+
+@code {
+    private class ContactForm
+    {
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Message { get; set; } = "";
+    }
+
+    private ContactForm _model = new();
+    private bool _sent;
+
+    private bool Valid =>
+        !string.IsNullOrWhiteSpace(_model.Name) &&
+        !string.IsNullOrWhiteSpace(_model.Email) &&
+        !string.IsNullOrWhiteSpace(_model.Message);
+
+    private void Submit()
+    {
+        if (Valid) _sent = true;   // Prototyp: ingen riktig utskick.
+    }
+}

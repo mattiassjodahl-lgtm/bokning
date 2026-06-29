@@ -1,0 +1,123 @@
+@page "/webb"
+@page "/webb/start"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>@Web.School.Name</PageTitle>
+
+@{
+    var s = Web.Settings;
+    var layoutA = s.Layout == StartLayout.FocusNews;
+}
+
+@* ── Hero ──────────────────────────────────────────────────────────────── *@
+<section class="ps-hero ps-section">
+    <div class="ps-wrap">
+        <div class="ps-hero__grid">
+            <div>
+                <h1>@s.HeroHeading</h1>
+                <p>@s.HeroIngress</p>
+                <div class="ps-hero__cta">
+                    <a class="ps-btn ps-btn--primary" href="@s.PrimaryCtaHref">@s.PrimaryCtaText</a>
+                    @* Andra CTA – endast i Layout B *@
+                    @if (!layoutA && !string.IsNullOrWhiteSpace(s.SecondaryCtaText))
+                    {
+                        <a class="ps-btn ps-btn--ghost" href="@s.SecondaryCtaHref">@s.SecondaryCtaText</a>
+                    }
+                </div>
+            </div>
+            <div class="ps-hero__media" role="img"
+                 aria-label="Platshållare för hero-bild. Körskolan laddar upp en egen bild i administrationen.">
+                <span>Hero-bild<br><small>1600×900 px · JPG/WebP · max 500 kB</small></span>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ── Utbildningar (kort) ────────────────────────────────────────────────── *@
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h2>Våra utbildningar</h2>
+        <div class="ps-grid @(layoutA ? "ps-grid--3" : "ps-grid--4") ps-mt">
+            @* Layout A: tre kort + nyheter. Layout B: brett grid med alla kort. *@
+            @foreach (var card in (layoutA ? s.EducationCards.Take(3) : s.EducationCards))
+            {
+                <article class="ps-card">
+                    <div class="ps-card__icon"><span class="material-icons" aria-hidden="true">@card.Icon</span></div>
+                    <h3>@card.Title</h3>
+                    <p>@card.Description</p>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+
+@* ── Nyheter – endast Layout A ──────────────────────────────────────────── *@
+@if (layoutA)
+{
+    <section class="ps-section ps-section--soft ps-news">
+        <div class="ps-wrap">
+            <h2>Nyheter</h2>
+            <div class="ps-grid ps-grid--3 ps-mt">
+                @foreach (var n in s.News)
+                {
+                    <article class="ps-card">
+                        <time datetime="@n.Date.ToString("yyyy-MM-dd")">@n.Date.ToString("d MMMM yyyy", Sv)</time>
+                        <h3>@n.Title</h3>
+                        <p>@n.Body</p>
+                    </article>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ── Kommande kurser ────────────────────────────────────────────────────── *@
+<section class="ps-section @(layoutA ? "" : "ps-section--soft")">
+    <div class="ps-wrap">
+        <h2>Kommande kurser</h2>
+        <div class="ps-table-wrap ps-mt">
+            <table class="ps-table">
+                <caption>Kursstarter de närmaste månaderna</caption>
+                <thead>
+                    <tr><th scope="col">Start</th><th scope="col">Kurs</th><th scope="col">Pris</th><th scope="col">Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in UpcomingCourses)
+                    {
+                        <tr>
+                            <td>@k.Start.ToString("d MMM yyyy", Sv)</td>
+                            <td>@k.Name</td>
+                            <td class="ps-price">@k.Price.ToString("N0", Sv) kr</td>
+                            <td>
+                                @if (k.Full)
+                                {
+                                    <span class="ps-badge ps-badge--full"><span class="material-icons" aria-hidden="true" style="font-size:16px">block</span> Fullt</span>
+                                }
+                                else
+                                {
+                                    <span class="ps-badge ps-badge--open"><span class="material-icons" aria-hidden="true" style="font-size:16px">event_available</span> Platser kvar</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+
+    private record Course(DateTime Start, string Name, decimal Price, bool Full);
+
+    // Mockade kursstarter (motsvarar "Kommande kurser" på exempelsajterna).
+    private static readonly Course[] UpcomingCourses =
+    {
+        new(new DateTime(2026, 7, 2),  "Moped AM",            9995, false),
+        new(new DateTime(2026, 7, 6),  "Riskutbildning 2 MC", 3800, true),
+        new(new DateTime(2026, 7, 14), "Handledarutbildning",  550, false),
+        new(new DateTime(2026, 8, 10), "Intensivkurs B",     14900, false),
+    };
+}

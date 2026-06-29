@@ -1,0 +1,31 @@
+@page "/webb/ehandel"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>E-handel – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>E-handel</h1>
+        <div class="ps-note ps-mt" role="note">
+            E-handeln är under uppbyggnad. Här kommer du snart kunna köpa kurser och tillval direkt på webben.
+            Nedan visas ett urval som exempel.
+        </div>
+
+        <div class="ps-grid ps-grid--3 ps-mt">
+            @foreach (var p in Web.WebProducts.Take(6))
+            {
+                <article class="ps-card">
+                    <div class="ps-card__icon"><span class="material-icons" aria-hidden="true">shopping_cart</span></div>
+                    <h2 style="font-size:1.15rem">@p.Name</h2>
+                    <p class="ps-price" style="font-size:1.25rem;color:var(--ps-ink)">@p.Price.ToString("N0", Sv) kr</p>
+                    <button class="ps-btn ps-btn--outline" type="button" disabled aria-disabled="true">Lägg i varukorg</button>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+}

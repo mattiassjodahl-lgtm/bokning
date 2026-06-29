@@ -1,0 +1,40 @@
+@page "/webb/prislista"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>Prislista – @Web.School.Name</PageTitle>
+
+<section class="ps-section">
+    <div class="ps-wrap">
+        <h1>Prislista</h1>
+        <p class="ps-lead">Aktuella priser för våra webbpublicerade tjänster och produkter. Alla priser anges i kronor.</p>
+
+        <div class="ps-table-wrap ps-mt">
+            <table class="ps-table">
+                <caption>Webbpublicerade produkter och tjänster</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Art.nr</th>
+                        <th scope="col">Produkt / tjänst</th>
+                        <th scope="col">Pris</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Web.WebProducts)
+                    {
+                        <tr>
+                            <td>@p.ArticleNumber</td>
+                            <td>@p.Name</td>
+                            <td class="ps-price">@p.Price.ToString("N0", Sv) kr</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="ps-hint ps-mt">Endast produkter som är webbflaggade i affärssystemet visas här.</p>
+    </div>
+</section>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+}
