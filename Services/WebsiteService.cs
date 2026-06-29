@@ -49,12 +49,31 @@ public class WebsiteService
         {
             if (!File.Exists(_storePath)) return null;
             var json = File.ReadAllText(_storePath);
-            return JsonSerializer.Deserialize<WebsiteContent>(json, JsonOpts);
+            var content = JsonSerializer.Deserialize<WebsiteContent>(json, JsonOpts);
+            if (content != null) Backfill(content);
+            return content;
         }
         catch
         {
             return null; // trasig fil → fall tillbaka på defaults
         }
+    }
+
+    /// <summary>
+    /// Fyller på med standardinnehåll om en sparad fil saknar de nyare
+    /// startsektionerna (USP, steg, kurser) – så att mockdatan inte försvinner
+    /// när en äldre website.json läses in.
+    /// </summary>
+    private void Backfill(WebsiteContent c)
+    {
+        var d = BuildDefaults(_booking).Settings;
+        c.Settings.Usp     ??= new();
+        c.Settings.Steps   ??= new();
+        c.Settings.Courses ??= new();
+        if (c.Settings.Usp.Count == 0)     c.Settings.Usp     = d.Usp;
+        if (c.Settings.Steps.Count == 0)   c.Settings.Steps   = d.Steps;
+        if (c.Settings.Courses.Count == 0) c.Settings.Courses = d.Courses;
+        if (string.IsNullOrWhiteSpace(c.Settings.StepsHeading)) c.Settings.StepsHeading = d.StepsHeading;
     }
 
     /// <summary>Sparar all redigerbar data till JSON. Anropas av admin efter ändringar.</summary>
