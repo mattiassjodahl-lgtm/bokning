@@ -36,6 +36,12 @@ public class WebsiteService
             new() { Days = "Fredag",         Hours = "08.00–16.00" },
             new() { Days = "Lördag–Söndag",  Hours = "Stängt" },
         },
+        Social = new()
+        {
+            new() { Platform = "facebook",  Label = "Facebook",  Url = "#" },
+            new() { Platform = "instagram", Label = "Instagram", Url = "#" },
+            new() { Platform = "youtube",   Label = "YouTube",   Url = "#" },
+        },
     };
 
     // ── Anställda (mock). ShowOnWeb styrs i affärssystemet. ────────────────────
@@ -75,10 +81,38 @@ public class WebsiteService
         SecondaryCtaHref = "/webb/kontakt",
         EducationCards = new()
         {
-            new() { Title = "Personbil (B)",   Description = "Manuell och automat. Hela vägen till uppkörning.", Icon = "directions_car", Image = "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg" },
-            new() { Title = "Släp (BE/B96)",   Description = "Kör lagligt med tyngre släp och husvagn.",         Icon = "rv_hookup",      Image = "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg" },
-            new() { Title = "Moped & EU-moped", Description = "AM-kurs för dig som vill ut på vägarna.",          Icon = "two_wheeler",    Image = "/Img/Webb/martin-nano-yOcUZn6jILI-unsplash.jpg" },
-            new() { Title = "Riskutbildning",  Description = "Risk 1 och Risk 2 – obligatoriskt inför körkort.",  Icon = "warning",        Image = "/Img/Webb/bas-peperzak-tyhpK_QelPo-unsplash.jpg" },
+            new()
+            {
+                Title = "Personbil (B)", Description = "Manuell och automat. Hela vägen till uppkörning.",
+                Icon = "directions_car", Image = "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg",
+                Slug = "personbil-b", PriceFrom = "Från 950 kr/lektion",
+                LongText = "B-körkortet ger dig friheten att köra personbil. Hos oss får du en utbildning anpassad efter din nivå – oavsett om du är nybörjare eller har kört förut. Du väljer manuell eller automat, och vi planerar upplägget tillsammans så att du är trygg hela vägen till uppkörningen.",
+                Highlights = new() { "Introduktionslektion och nivåbedömning", "Manuell eller automatväxlad bil", "Teori varvat med körning", "Förberedelse inför kunskapsprov och uppkörning" },
+            },
+            new()
+            {
+                Title = "Släp (BE/B96)", Description = "Kör lagligt med tyngre släp och husvagn.",
+                Icon = "rv_hookup", Image = "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg",
+                Slug = "slap-be-b96", PriceFrom = "Från 1 200 kr/lektion",
+                LongText = "Med B96 eller BE får du dra tyngre släp, husvagn eller hästtransport. Vi går igenom koppling, lastsäkring och backning med släp så att du känner dig säker även med last bakom bilen.",
+                Highlights = new() { "Koppling och lastsäkring", "Backning och manövrering med släp", "Anpassat för B96 eller fullt BE", "Förberedelse inför uppkörning" },
+            },
+            new()
+            {
+                Title = "Moped & EU-moped", Description = "AM-kurs för dig som vill ut på vägarna.",
+                Icon = "two_wheeler", Image = "/Img/Webb/martin-nano-yOcUZn6jILI-unsplash.jpg",
+                Slug = "moped-am", PriceFrom = "9 995 kr (helkurs)",
+                LongText = "AM-körkortet låter dig köra EU-moped från 15 års ålder. Vår kurs ger dig både teorin och den praktiska körningen du behöver för att klara provet och köra säkert i trafiken.",
+                Highlights = new() { "Teori om trafikregler och säkerhet", "Praktisk körning i trafikmiljö", "Kursmaterial ingår", "Små grupper" },
+            },
+            new()
+            {
+                Title = "Riskutbildning", Description = "Risk 1 och Risk 2 – obligatoriskt inför körkort.",
+                Icon = "warning", Image = "/Img/Webb/bas-peperzak-tyhpK_QelPo-unsplash.jpg",
+                Slug = "riskutbildning", PriceFrom = "Från 1 200 kr",
+                LongText = "Riskutbildningen är obligatorisk för B-körkort. Risk 1 handlar om alkohol, droger, trötthet och riskfaktorer. Risk 2 är den praktiska halkbanan där du tränar på att hantera svåra situationer.",
+                Highlights = new() { "Risk 1 – teori om riskfaktorer", "Risk 2 – praktisk halkbana", "Krävs innan uppkörning", "Boka flera tillfällen via kalendern" },
+            },
         },
         News = new()
         {
@@ -94,9 +128,26 @@ public class WebsiteService
         },
     };
 
+    /// <summary>Hämtar en utbildning/behörighet via dess slug. Null om den inte finns.</summary>
+    public EducationCard? GetEducation(string slug) =>
+        Settings.EducationCards.FirstOrDefault(c => c.Slug == slug);
+
     // ── Prislista: webbflaggade produkter från affärssystemet ─────────────────
     public IEnumerable<Article> WebProducts =>
         _booking.Articles.Where(a => Settings.WebFlaggedArticleIds.Contains(a.Id));
+
+    /// <summary>Grupperar en artikel till en prislistekategori (baserat på artikelnummer).</summary>
+    public static string ProductCategoryFor(Article a)
+    {
+        if (a.ArticleNumber.StartsWith("RISK", StringComparison.OrdinalIgnoreCase)) return "Riskutbildning";
+        if (a.ArticleNumber.StartsWith("UPP", StringComparison.OrdinalIgnoreCase) ||
+            a.ArticleNumber.StartsWith("TEO", StringComparison.OrdinalIgnoreCase))  return "Prov & avgifter";
+        return "Körlektioner";
+    }
+
+    /// <summary>Prislistekategorier i fast ordning (för filterknappar).</summary>
+    public static readonly string[] ProductCategories =
+        { "Körlektioner", "Riskutbildning", "Prov & avgifter" };
 
     // ── Lediga tider: speglar körskolans kalender (riktig demodata) ───────────
     /// <summary>Lediga (obokade) tider från idag och <paramref name="days"/> dagar framåt, grupperade per dag.</summary>

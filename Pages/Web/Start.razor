@@ -10,34 +10,17 @@
     var layoutA = s.Layout == StartLayout.FocusNews;
 }
 
-@* ── Hero ──────────────────────────────────────────────────────────────── *@
-<section class="ps-hero ps-section">
-    <div class="ps-wrap">
-        <div class="ps-hero__grid">
-            <div>
-                <h1>@s.HeroHeading</h1>
-                <p>@s.HeroIngress</p>
-                <div class="ps-hero__cta">
-                    <a class="ps-btn ps-btn--primary" href="@s.PrimaryCtaHref">@s.PrimaryCtaText</a>
-                    @* Andra CTA – endast i Layout B *@
-                    @if (!layoutA && !string.IsNullOrWhiteSpace(s.SecondaryCtaText))
-                    {
-                        <a class="ps-btn ps-btn--ghost" href="@s.SecondaryCtaHref">@s.SecondaryCtaText</a>
-                    }
-                </div>
-            </div>
-            @if (!string.IsNullOrEmpty(s.HeroImage))
+@* ── Hero (full-bleed banner med bild över hela ytan) ─────────────────────── *@
+<section class="ps-hero ps-section" style="background-image:url('@s.HeroImage')">
+    <div class="ps-wrap ps-hero__inner">
+        <h1>@s.HeroHeading</h1>
+        <p>@s.HeroIngress</p>
+        <div class="ps-hero__cta">
+            <a class="ps-btn ps-btn--primary" href="@s.PrimaryCtaHref">@s.PrimaryCtaText</a>
+            @* Andra CTA – endast i Layout B *@
+            @if (!layoutA && !string.IsNullOrWhiteSpace(s.SecondaryCtaText))
             {
-                <div class="ps-photo ps-hero__media" role="img"
-                     aria-label="Elev och trafiklärare under en körlektion"
-                     style="background-image:url('@s.HeroImage')"></div>
-            }
-            else
-            {
-                <div class="ps-photo ps-hero__media" role="img"
-                     aria-label="Platshållare för hero-bild.">
-                    <span><strong>Hero-bild</strong><br><small>1600×900 px · JPG/WebP · max 500 kB</small></span>
-                </div>
+                <a class="ps-btn ps-btn--ghost" href="@s.SecondaryCtaHref">@s.SecondaryCtaText</a>
             }
         </div>
     </div>
@@ -53,7 +36,12 @@
             @for (var i = 0; i < cards.Count; i++)
             {
                 var card = cards[i];
-                <article class="ps-card ps-card--media">
+                <article class="ps-card ps-card--media @(card.HasPage ? "ps-card--link" : null)">
+                    @if (card.HasPage)
+                    {
+                        <a class="ps-card__stretch" href="/webb/utbildning/@card.Slug"
+                           aria-label="Läs mer om @card.Title"></a>
+                    }
                     @if (!string.IsNullOrEmpty(card.Image))
                     {
                         <div class="ps-card__media ps-photo" role="img" aria-label="@card.Title"
@@ -68,6 +56,10 @@
                     <div class="ps-card__body">
                         <h3>@card.Title</h3>
                         <p>@card.Description</p>
+                        @if (card.HasPage)
+                        {
+                            <p class="ps-mt" style="margin:0;color:var(--ps-primary);font-weight:600">Läs mer →</p>
+                        }
                     </div>
                 </article>
             }

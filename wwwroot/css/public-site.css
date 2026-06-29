@@ -146,25 +146,29 @@ body:has(.ps-site) {
 .ps-photo--3 { background: linear-gradient(135deg, #7a2f12, #c8511b); }
 .ps-photo--4 { background: linear-gradient(135deg, #3b2f6b, #6a4fb0); }
 
-/* ── Hero ─────────────────────────────────────────────────────────────── */
+/* ── Hero (full-bleed banner med bild över hela ytan) ─────────────────────
+   Bilden läggs som background-image via inline-style. ::before lägger en mörk
+   vänster→höger-gradient så att texten alltid håller AA-kontrast, oavsett bild. */
 .ps-hero {
-    color: #fff;
-    background:
-        radial-gradient(1200px 500px at 85% -10%, rgba(200,81,27,.35), transparent 60%),
-        radial-gradient(900px 600px at 0% 110%, rgba(42,161,154,.30), transparent 55%),
-        linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary));
+    position: relative; color: #fff;
+    background: linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary));
+    background-size: cover; background-position: center;
 }
-.ps-hero__grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 3rem; align-items: center; }
-.ps-hero h1 { color: #fff; }
-.ps-hero p { font-size: 1.2rem; color: #eef5fb; max-width: 40ch; }
+.ps-hero::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(5,22,40,.86) 0%, rgba(5,22,40,.62) 42%, rgba(5,22,40,.20) 78%, rgba(5,22,40,.10) 100%);
+}
+.ps-hero__inner {
+    position: relative; z-index: 1;
+    min-height: clamp(420px, 56vh, 600px);
+    display: flex; flex-direction: column; justify-content: center;
+}
+.ps-hero h1 { color: #fff; max-width: 16ch; text-shadow: 0 2px 12px rgba(0,0,0,.25); }
+.ps-hero p { font-size: 1.25rem; color: #eef5fb; max-width: 44ch; }
 .ps-hero__cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.75rem; }
-/* Hero-bild: gradient-platshållare som visar bildkraven. Byt till riktig bild via background-image. */
-.ps-hero__media {
-    aspect-ratio: 16 / 10; display: grid; place-items: center; text-align: center; padding: 1.25rem;
-    box-shadow: 0 18px 40px rgba(4,20,38,.35);
+@media (max-width: 600px) {
+    .ps-hero::before { background: linear-gradient(180deg, rgba(5,22,40,.55), rgba(5,22,40,.78)); }
 }
-.ps-hero__media small { color: #dfeaf4; }
-@media (max-width: 860px) { .ps-hero__grid { grid-template-columns: 1fr; } .ps-hero__media { aspect-ratio: 16/8; } }
 
 /* ── USP-band ─────────────────────────────────────────────────────────── */
 .ps-usp { background: linear-gradient(135deg, var(--ps-primary-dark), var(--ps-primary)); color: #fff; }
@@ -204,6 +208,23 @@ body:has(.ps-site) {
     display: grid; place-items: center;
 }
 .ps-card__icon .material-icons { font-size: 28px; }
+
+/* Klickbart kort: hela kortet blir en länk (stretched link, tillgängligt). */
+.ps-card--link { position: relative; padding: 0; }
+.ps-card__stretch { position: absolute; inset: 0; z-index: 2; }
+.ps-card__stretch:focus-visible { outline: 3px solid var(--ps-accent); outline-offset: -3px; border-radius: var(--ps-radius); }
+.ps-card--link:hover { transform: translateY(-3px); transition: transform .15s; box-shadow: 0 8px 22px rgba(11,79,138,.16); }
+
+/* Checklista (behörighetssidor) */
+.ps-checklist { list-style: none; padding: 0; margin: 1.25rem 0; display: grid; gap: .65rem; }
+.ps-checklist li { display: flex; align-items: flex-start; gap: .6rem; }
+.ps-checklist li::before {
+    content: "check_circle"; font-family: "Material Icons"; color: var(--ps-primary);
+    font-size: 22px; line-height: 1.4; flex-shrink: 0;
+}
+
+/* Sub-hero (mindre banner på undersidor) */
+.ps-hero--sub .ps-hero__inner { min-height: clamp(260px, 36vh, 360px); }
 
 /* Kort med bild-banner (utbildningar, e-handel) */
 .ps-card--media { padding: 0; overflow: hidden; }
@@ -280,6 +301,16 @@ body:has(.ps-site) {
 .ps-footer dt { color: #9fb0bf; font-size: .85rem; margin-top: .6rem; }
 .ps-footer dd { margin: 0; }
 .ps-footer__bottom { border-top: 1px solid #303a43; margin-top: 2rem; padding-top: 1.25rem; font-size: .9rem; color: #9fb0bf; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+
+/* Sociala medier */
+.ps-social { display: flex; gap: .6rem; margin-top: 2rem; }
+.ps-social__link {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,.08); color: #cfe0f1;
+    transition: background .15s, color .15s;
+}
+.ps-social__link:hover { background: var(--ps-primary); color: #fff; }
 
 /* Endast för skärmläsare */
 .visually-hidden {

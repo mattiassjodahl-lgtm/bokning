@@ -40,6 +40,18 @@ public class SchoolProfile
     public string OrgNumber   { get; set; } = "";
     /// <summary>Öppettider, en rad per intervall, t.ex. ("Måndag–Torsdag", "08.00–16.30").</summary>
     public List<OpeningHour> OpeningHours { get; set; } = new();
+    /// <summary>Sociala medier-länkar som visas i footern.</summary>
+    public List<SocialLink> Social { get; set; } = new();
+}
+
+/// <summary>En länk till ett socialt medium. Platform styr vilken ikon som visas.</summary>
+public class SocialLink
+{
+    /// <summary>Nyckel för ikonen: "facebook", "instagram" eller "youtube".</summary>
+    public string Platform { get; set; } = "";
+    /// <summary>Visningsnamn för skärmläsare, t.ex. "Facebook".</summary>
+    public string Label    { get; set; } = "";
+    public string Url      { get; set; } = "#";
 }
 
 public class OpeningHour
@@ -69,7 +81,7 @@ public class NewsItem
     public DateOnly Date { get; set; }
 }
 
-/// <summary>Utbildningskort i hero-sektionen (start­sidan).</summary>
+/// <summary>Utbildningskort på startsidan + innehåll för dess behörighetssida.</summary>
 public class EducationCard
 {
     public string Title       { get; set; } = "";
@@ -78,6 +90,18 @@ public class EducationCard
     public string Icon        { get; set; } = "directions_car";
     /// <summary>Sökväg till kort-bild under wwwroot, t.ex. "/Img/Webb/bil.jpg". Tom = visa ikon.</summary>
     public string Image       { get; set; } = "";
+
+    // ── Behörighetssida (/webb/utbildning/{Slug}) ─────────────────────────────
+    /// <summary>URL-segment, t.ex. "personbil-b". Tomt = ingen egen sida.</summary>
+    public string Slug        { get; set; } = "";
+    /// <summary>Längre brödtext på behörighetssidan.</summary>
+    public string LongText    { get; set; } = "";
+    /// <summary>Punktlista med vad utbildningen innehåller.</summary>
+    public List<string> Highlights { get; set; } = new();
+    /// <summary>Prisindikation, t.ex. "Från 950 kr/lektion". Tomt = visas ej.</summary>
+    public string PriceFrom   { get; set; } = "";
+
+    public bool HasPage => !string.IsNullOrEmpty(Slug);
 }
 
 /// <summary>Innehåll och inställningar för hela hemsidan (en körskola).</summary>

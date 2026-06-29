@@ -9,32 +9,74 @@
         <h1>Prislista</h1>
         <p class="ps-lead">Aktuella priser för våra webbpublicerade tjänster och produkter. Alla priser anges i kronor.</p>
 
-        <div class="ps-table-wrap ps-mt">
-            <table class="ps-table">
-                <caption>Webbpublicerade produkter och tjänster</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Art.nr</th>
-                        <th scope="col">Produkt / tjänst</th>
-                        <th scope="col">Pris</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var p in Web.WebProducts)
+        @* ── Filter ──────────────────────────────────────────────────────── *@
+        <div class="ps-filterbar ps-mt">
+            <fieldset class="ps-fieldset">
+                <legend>Kategori</legend>
+                <div class="ps-filters">
+                    <button type="button" class="ps-chip" aria-pressed="@(_selected.Count == 0 ? "true" : "false")"
+                            @onclick="Clear">Alla</button>
+                    @foreach (var c in PresentCategories)
                     {
-                        <tr>
-                            <td>@p.ArticleNumber</td>
-                            <td>@p.Name</td>
-                            <td class="ps-price">@p.Price.ToString("N0", Sv) kr</td>
-                        </tr>
+                        <button type="button" class="ps-chip" aria-pressed="@(_selected.Contains(c) ? "true" : "false")"
+                                @onclick="() => Toggle(c)">@c</button>
                     }
-                </tbody>
-            </table>
+                </div>
+            </fieldset>
         </div>
+
+        @{ var rows = Web.WebProducts.Where(Matches).ToList(); }
+        @if (rows.Count == 0)
+        {
+            <div class="ps-note ps-mt" role="status">Inga produkter matchar ditt val.</div>
+        }
+        else
+        {
+            <div class="ps-table-wrap ps-mt">
+                <table class="ps-table">
+                    <caption>Webbpublicerade produkter och tjänster</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Art.nr</th>
+                            <th scope="col">Produkt / tjänst</th>
+                            <th scope="col">Kategori</th>
+                            <th scope="col">Pris</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in rows)
+                        {
+                            <tr>
+                                <td>@p.ArticleNumber</td>
+                                <td>@p.Name</td>
+                                <td>@WebsiteService.ProductCategoryFor(p)</td>
+                                <td class="ps-price">@p.Price.ToString("N0", Sv) kr</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
         <p class="ps-hint ps-mt">Endast produkter som är webbflaggade i affärssystemet visas här.</p>
     </div>
 </section>
 
 @code {
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+
+    private readonly HashSet<string> _selected = new();
+
+    // Kategorier som faktiskt förekommer bland webbprodukterna (fast ordning).
+    private IEnumerable<string> PresentCategories =>
+        WebsiteService.ProductCategories.Where(c => Web.WebProducts.Any(p => WebsiteService.ProductCategoryFor(p) == c));
+
+    private bool Matches(Article a) =>
+        _selected.Count == 0 || _selected.Contains(WebsiteService.ProductCategoryFor(a));
+
+    private void Toggle(string c)
+    {
+        if (!_selected.Remove(c)) _selected.Add(c);
+    }
+
+    private void Clear() => _selected.Clear();
 }
