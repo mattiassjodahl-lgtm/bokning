@@ -5,11 +5,12 @@ html, body {
     overflow: hidden;
 }
 
-/* Admin-sidor (t.ex. hemsideadministration): tillåt normal sidscroll –
-   annars låser overflow:hidden ovan hela sidan på desktop. */
-html:has(.admin-page), body:has(.admin-page) {
-    height: auto !important;
-    overflow-y: auto !important;
+/* Admin-sidor (t.ex. hemsideadministration): egen scroll-yta. Body är låst
+   till overflow:hidden globalt, så innehållet måste scrolla internt – samma
+   mönster som kalender-appen använder. */
+.admin-page {
+    height: 100vh;
+    overflow-y: auto;
 }
 
 #blazor-error-ui {
