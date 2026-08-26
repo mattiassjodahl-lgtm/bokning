@@ -52,6 +52,7 @@ public class OpenAIReportAgent : IReportAgent
         new("Lärare", "Vilken lärare omsätter mest?"),
 
         new("Elever", "Hur många nya elever har vi fått i år?"),
+        new("Elever", "Vilka elever ligger efter i utbildningen?"),
 
         new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
 

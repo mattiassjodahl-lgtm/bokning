@@ -39,6 +39,7 @@ public class TestLlmReportAgent : IReportAgent
 
         new("Elever", "Hur många nya elever har vi fått i år?"),
         new("Elever", "Vad är godkännandegraden på uppkörningen?"),
+        new("Elever", "Vilka elever ligger efter i utbildningen?"),
 
         new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
 
@@ -113,6 +114,9 @@ public class TestLlmReportAgent : IReportAgent
                 ? ("get_margin_per_teacher", "{}")
                 : ("get_margin_per_lesson_type", "{}");
         }
+
+        if (ContainsAny(q, "riskzon", "riskerar", "ligger efter", "hänger efter", "hanger efter", "halkar efter", "hoppa av", "bortfall"))
+            return ("get_students_at_risk", "{}");
 
         if (ContainsAny(q, "elev", "uppkörning", "uppkorning", "teoriprov", "godkänn", "godkann", "körkort", "korkort"))
             return ("get_student_stats", "{}");

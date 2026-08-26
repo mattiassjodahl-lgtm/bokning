@@ -99,6 +99,13 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_students_at_risk",
+                Description = "Elever som riskerar att ligga efter i utbildningen, baserat på praktiskt och teoretiskt framsteg jämfört med förväntad takt sedan de skrevs in.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildStudentRiskReport(booking),
+            },
+            new AgentTool
+            {
                 Name = "get_cancellations",
                 Description = "Avbokningar och no-show: frekvens, trend, förlorad intäkt och no-show per lärare.",
                 ParametersSchema = EmptyObjectSchema,
@@ -617,6 +624,97 @@ public static class ReportTools
                         {
                             m, $"{newStudents[i]:F0}", $"{finishedLicenses[i]:F0}"
                         }).ToList()
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildStudentRiskReport(BookingService booking)
+    {
+        const int targetDays = 150; // förväntad tid till godkänd uppkörning (samma antagande som elevstatistiken)
+
+        var raw = booking.Students.Select(s =>
+        {
+            var profile = booking.GetStudentProfile(s.Name);
+            var category = profile.LicenseCategories.FirstOrDefault() ?? "B";
+
+            var practical = profile.TrainingStepsByCategory.TryGetValue(category, out var p) ? p : new List<TrainingStep>();
+            var theory    = profile.TheoryStepsByCategory.TryGetValue(category, out var t) ? t : new List<TrainingStep>();
+
+            var practicalPct = practical.Count > 0 ? practical.Count(x => x.Score > 0) * 100.0 / practical.Count : 0.0;
+            var theoryPct    = theory.Count    > 0 ? theory.Count(x => x.Score > 0)    * 100.0 / theory.Count    : 0.0;
+
+            return new { profile.Name, profile.CreatedAt, practicalPct, theoryPct };
+        }).ToList();
+
+        // Ankra "nu" till den senaste inskrivningen i elevlistan, så förväntad-takt-beräkningen
+        // inte glider iväg när demot körs långt efter att mock-datat skrevs.
+        var referenceDate = raw.Max(r => r.CreatedAt);
+
+        var scored = raw.Select(r =>
+        {
+            var avgProgress = (r.practicalPct + r.theoryPct) / 2.0;
+            var daysEnrolled = Math.Max(1, (referenceDate - r.CreatedAt).Days);
+            var expectedPct = Math.Min(100.0, daysEnrolled / (double)targetDays * 100.0);
+            var riskScore = Math.Clamp(expectedPct - avgProgress, 0, 100);
+            return new { r.Name, r.practicalPct, r.theoryPct, avgProgress, expectedPct, riskScore };
+        })
+        .OrderByDescending(x => x.riskScore)
+        .ToList();
+
+        var atRisk = scored.Where(x => x.riskScore >= 20).Take(8).ToList();
+        if (atRisk.Count == 0) atRisk = scored.Take(5).ToList(); // fallback om ingen sticker ut
+
+        static string RiskLabel(double score) => score switch
+        {
+            >= 50 => "Hög",
+            >= 20 => "Medel",
+            _     => "Låg",
+        };
+
+        var top = atRisk.First();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"**{atRisk.Count} elever** ligger efter jämfört med förväntad takt. " +
+                   $"**{top.Name}** ligger mest efter: {top.avgProgress:F0}% klart (praktik {top.practicalPct:F0}%, teori {top.theoryPct:F0}%) mot förväntat {top.expectedPct:F0}%.",
+            Report = new AgentReport
+            {
+                Title = "Elever i riskzon",
+                Summary = "Praktiskt och teoretiskt framsteg vs. förväntad takt sedan inskrivning",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Elever i riskzon",     Value = $"{atRisk.Count}" },
+                            new() { Label = "Snitt eftersläpning",  Value = $"{atRisk.Average(x => x.expectedPct - x.avgProgress):F0} pp" },
+                            new() { Label = "Mest eftersläpande",   Value = top.Name, Trend = $"{top.riskScore:F0} riskpoäng" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Riskpoäng per elev",
+                        Categories = atRisk.Select(x => x.Name).ToList(),
+                        Series = { new ChartSeries { Name = "Riskpoäng", Values = atRisk.Select(x => x.riskScore).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Elev", "Praktik klart", "Teori klart", "Förväntat", "Risknivå" },
+                        Rows = atRisk.Select(x => new List<string>
+                        {
+                            x.Name,
+                            $"{x.practicalPct:F0}%",
+                            $"{x.theoryPct:F0}%",
+                            $"{x.expectedPct:F0}%",
+                            RiskLabel(x.riskScore),
+                        }).ToList(),
                     }
                 }
             }
