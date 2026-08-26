@@ -1428,6 +1428,53 @@ public class BookingService
             ResourceIds     = new List<int> { 1 },
         });
 
+        // ── Historik: några tidigare lektioner per elev ──────────────────────
+        // Stödjer AI-analysen "nästa bästa tid" (lärarkontinuitet, tid sedan senaste
+        // lektion, föredragen upphämtningsplats). Var 6:e elev lämnas helt utan
+        // historik för att representera helt nya elever (edge case för algoritmen).
+        var continuityTeacherIds = new[] { 1, 2, 3, 4, 5, 6 };
+        var carIds = new[] { 1, 2, 3 };
+        var mcIds  = new[] { 8, 9 };
+
+        foreach (var student in Students)
+        {
+            if (student.Id % 6 == 0) continue; // ny elev, ingen historik än
+
+            var profile  = GetStudentProfile(student.Name);
+            var category = profile.LicenseCategories.FirstOrDefault() ?? "B";
+
+            var teacherId = continuityTeacherIds[(student.Id - 1) % continuityTeacherIds.Length];
+            var pickupId  = ((student.Id - 1) % PickupLocations.Count) + 1;
+            var hour      = 9 + (student.Id % 7);
+
+            // Dagar sedan senaste lektionen varierar per elev (3, 7, 11, 15 eller 19 dagar).
+            var lastGapDays = 3 + ((student.Id - 1) % 5) * 4;
+
+            for (int k = 0; k < 3; k++)
+            {
+                List<int> resourceIds = category switch
+                {
+                    "A1"        => new() { mcIds[student.Id % mcIds.Length] },
+                    "B" or "BE" => new() { carIds[student.Id % carIds.Length] },
+                    _           => new(),
+                };
+
+                var start = monday.AddDays(-(lastGapDays + k * 11)).AddHours(hour);
+                _events.Add(new CalendarEvent
+                {
+                    Id               = id++,
+                    TeacherId        = teacherId,
+                    StartTime        = start,
+                    EndTime          = start.AddMinutes(50),
+                    IsBooked         = true,
+                    StudentName      = student.Name,
+                    LessonTypeId     = 2, // Körlektion B
+                    ResourceIds      = resourceIds,
+                    PickupLocationId = pickupId,
+                });
+            }
+        }
+
         _nextEventId = id;
     }
 
