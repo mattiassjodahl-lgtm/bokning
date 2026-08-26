@@ -43,6 +43,8 @@ public class TestLlmReportAgent : IReportAgent
 
         new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
 
+        new("Schema", "Vad är nästa bästa tid för Alice Bergström?"),
+
         // Kombo-frågor (kör flera tools på en gång):
         new("Kombinerade", "Visa omsättning och beläggning för året"),
         new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
@@ -138,6 +140,9 @@ public class TestLlmReportAgent : IReportAgent
         if (ContainsAny(q, "prognos", "framtid", "kommande veckor", "nästa veckorna") &&
             !ContainsAny(q, "intäkt", "intakt", "omsätt", "omsatt", "kronor", "sek", "sålt", "salt", "försäljning", "forsaljning"))
             return ("get_demand_forecast", "{}");
+
+        if (ContainsAny(q, "bästa tid", "basta tid", "föreslå tid", "foresla tid", "nästa lektion åt", "schemaförslag", "schemaforslag"))
+            return ("get_next_best_slot", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {

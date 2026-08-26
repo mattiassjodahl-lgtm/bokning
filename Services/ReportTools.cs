@@ -106,6 +106,21 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_next_best_slot",
+                Description = "Föreslår nästa bästa lediga tid för en specifik elev, rankat efter lärarkontinuitet, rätt fordonstyp, upphämtningsplats och hur länge sedan elevens senaste lektion.",
+                ParametersSchema = """
+                {
+                  "type": "object",
+                  "properties": {
+                    "student_name": { "type": "string", "description": "Elevens namn. Tom = exempelelev." }
+                  },
+                  "required": []
+                }
+                """,
+                Execute = args => BuildNextBestSlotReport(booking, GetString(args, "student_name")),
+            },
+            new AgentTool
+            {
                 Name = "get_cancellations",
                 Description = "Avbokningar och no-show: frekvens, trend, förlorad intäkt och no-show per lärare.",
                 ParametersSchema = EmptyObjectSchema,
@@ -714,6 +729,127 @@ public static class ReportTools
                             $"{x.theoryPct:F0}%",
                             $"{x.expectedPct:F0}%",
                             RiskLabel(x.riskScore),
+                        }).ToList(),
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildNextBestSlotReport(BookingService booking, string? studentNameArg)
+    {
+        var name = string.IsNullOrWhiteSpace(studentNameArg) ? "Alice Bergström" : studentNameArg;
+        var match = booking.Students.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                 ?? booking.Students.FirstOrDefault(s => s.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+        var resolvedName = match?.Name ?? name;
+
+        var profile  = booking.GetStudentProfile(resolvedName);
+        var category = profile.LicenseCategories.FirstOrDefault() ?? "B";
+
+        var history = booking.GetEventsForStudent(resolvedName).ToList();
+        var lastLesson = history.FirstOrDefault();
+        int? daysSinceLast = lastLesson is null ? null : (int)Math.Round((DateTime.Now - lastLesson.StartTime).TotalDays);
+
+        int? preferredTeacherId = history.Count > 0
+            ? history.GroupBy(e => e.TeacherId).OrderByDescending(g => g.Count()).First().Key
+            : null;
+        int? preferredPickupId = history
+            .Where(e => e.PickupLocationId.HasValue)
+            .GroupBy(e => e.PickupLocationId!.Value)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (int?)g.Key)
+            .FirstOrDefault();
+
+        // Alla lärare inkluderade oavsett vad som råkar vara ikryssat i kalenderfiltret just nu.
+        var filter = new CalendarFilter { SelectedTeacherIds = booking.Teachers.Select(t => t.Id).ToList() };
+        var rangeStart = DateTime.Now;
+        var rangeEnd   = DateTime.Now.AddDays(10);
+
+        var candidates = booking.GetEventsForRange(rangeStart, rangeEnd, filter)
+            .Where(e => !e.IsBooked && e.LessonTypeId.HasValue
+                     && (booking.GetLessonType(e.LessonTypeId.Value)?.IsBookable ?? false))
+            .ToList();
+
+        var scored = candidates.Select(e =>
+        {
+            double score = 0;
+            var reasons = new List<string>();
+
+            if (preferredTeacherId.HasValue && e.TeacherId == preferredTeacherId.Value)
+            {
+                score += 40;
+                reasons.Add("samma lärare som tidigare");
+            }
+            if (preferredPickupId.HasValue && e.PickupLocationId == preferredPickupId)
+            {
+                score += 15;
+                reasons.Add("vanlig upphämtningsplats");
+            }
+            if (e.ResourceIds.Count > 0)
+            {
+                var resourceTypes = booking.GetResourcesById(e.ResourceIds).Select(r => r.Type).ToList();
+                var wantsMc = category == "A1";
+                if (resourceTypes.Any(t => wantsMc ? t == ResourceType.Motorcycle : t == ResourceType.Car))
+                {
+                    score += 15;
+                    reasons.Add("rätt fordonstyp för körkortskategorin");
+                }
+            }
+            var daysAhead = (e.StartTime - DateTime.Now).TotalDays;
+            score += Math.Max(0, 15 - daysAhead * 1.5);
+            if (daysAhead < 3) reasons.Add("ledigt inom kort");
+
+            return new { Slot = e, Score = score, Reasons = reasons };
+        })
+        .OrderByDescending(x => x.Score)
+        .ThenBy(x => x.Slot.StartTime)
+        .Take(5)
+        .ToList();
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("sv-SE");
+        string FormatSlot(CalendarEvent e) => e.StartTime.ToString("ddd d MMM HH:mm", culture);
+
+        var top = scored.FirstOrDefault();
+        var lastLessonText = daysSinceLast is null ? "ingen tidigare lektion registrerad" : $"{daysSinceLast} dagar sedan senaste lektionen";
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = top is null
+                ? $"Hittade inga lediga pass inom 10 dagar för **{resolvedName}** just nu."
+                : $"Bästa förslaget för **{resolvedName}** ({lastLessonText}): **{FormatSlot(top.Slot)}** med {booking.GetTeacher(top.Slot.TeacherId)?.Name} – {string.Join(", ", top.Reasons)}.",
+            Report = new AgentReport
+            {
+                Title = $"Nästa bästa tid – {resolvedName}",
+                Summary = "Rankade lediga pass kommande 10 dagar",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Elev",             Value = resolvedName },
+                            new() { Label = "Senaste lektion",  Value = daysSinceLast is null ? "Ny elev" : $"{daysSinceLast} dgr sedan" },
+                            new() { Label = "Ordinarie lärare", Value = preferredTeacherId is int pt ? (booking.GetTeacher(pt)?.Name ?? "—") : "Ingen ännu" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Poäng per föreslagen tid",
+                        Categories = scored.Select(x => FormatSlot(x.Slot)).ToList(),
+                        Series = { new ChartSeries { Name = "Poäng", Values = scored.Select(x => Math.Round(x.Score, 0)).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Tid", "Lärare", "Motivering" },
+                        Rows = scored.Select(x => new List<string>
+                        {
+                            FormatSlot(x.Slot),
+                            booking.GetTeacher(x.Slot.TeacherId)?.Name ?? "—",
+                            x.Reasons.Count > 0 ? string.Join(", ", x.Reasons) : "Ledigt pass",
                         }).ToList(),
                     }
                 }

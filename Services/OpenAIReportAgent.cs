@@ -56,6 +56,8 @@ public class OpenAIReportAgent : IReportAgent
 
         new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
 
+        new("Schema", "Vad är nästa bästa tid för Alice Bergström?"),
+
         // Kombo-frågor (LLM väljer flera tools samtidigt):
         new("Kombinerade", "Visa omsättning och beläggning för året"),
         new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
