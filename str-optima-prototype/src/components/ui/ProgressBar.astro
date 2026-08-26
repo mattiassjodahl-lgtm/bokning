@@ -1,0 +1,24 @@
+---
+interface Props {
+	label: string;
+	percent: number;
+	/** Small badge shown before the label, e.g. a licence category like "AM". */
+	tag?: string;
+}
+
+const { label, percent, tag } = Astro.props;
+const clamped = Math.max(0, Math.min(100, percent));
+---
+
+<div>
+	<div class="mb-1 flex items-center justify-between text-sm">
+		<span class="flex items-center gap-1.5 text-gray-700">
+			{tag && <span class="font-semibold text-brand-700">{tag}</span>}
+			{label}
+		</span>
+		<span class="text-gray-500">{clamped}%</span>
+	</div>
+	<div class="h-2 w-full overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-valuenow={clamped} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+		<div class="h-full rounded-full bg-brand-600" style={`width: ${clamped}%`}></div>
+	</div>
+</div>

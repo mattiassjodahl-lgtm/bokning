@@ -1,0 +1,91 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Badge from '../../components/ui/Badge.astro';
+import Button from '../../components/ui/Button.astro';
+import AddElevDialog from '../../components/ui/AddElevDialog.astro';
+import { elever } from '../../utils/mockData';
+
+const statusVariant = {
+	Aktiv: 'success' as const,
+	Väntar: 'warning' as const,
+	Inaktiv: 'neutral' as const,
+};
+---
+
+<Layout title="Elever – Optima">
+	<div class="mb-2 flex flex-wrap items-start justify-between gap-4">
+		<div>
+			<h1 class="text-2xl font-bold text-gray-900">Elever</h1>
+			<p class="max-w-xl text-sm text-gray-500">
+				Sök och filtrera bland skolans elever. Klicka på en rad för att öppna elevens profil.
+			</p>
+		</div>
+		<div class="flex gap-2">
+			<Button variant="secondary">Exportera till Excel</Button>
+			<Button data-opens="lagg-till-elev-dialog">
+				<span aria-hidden="true">+</span> Lägg till elev
+			</Button>
+		</div>
+	</div>
+
+	<div class="my-4 flex flex-wrap items-center gap-2">
+		<label class="relative min-w-[220px] flex-1">
+			<span class="sr-only">Sök elev</span>
+			<input
+				type="search"
+				placeholder="Sök namn, personnummer…"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+			/>
+		</label>
+		<select class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700">
+			<option>Utbildning: Alla</option>
+			<option>AM</option>
+			<option>B</option>
+		</select>
+		<select class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700">
+			<option>Status: Alla</option>
+			<option>Aktiv</option>
+			<option>Väntar</option>
+			<option>Inaktiv</option>
+		</select>
+	</div>
+
+	<div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+		<table class="w-full min-w-[800px] text-sm">
+			<thead>
+				<tr class="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+					<th scope="col" class="px-4 py-3 font-medium">Namn</th>
+					<th scope="col" class="px-4 py-3 font-medium">Personnummer</th>
+					<th scope="col" class="px-4 py-3 font-medium">Mobil</th>
+					<th scope="col" class="px-4 py-3 font-medium">Behörighet</th>
+					<th scope="col" class="px-4 py-3 font-medium">Registrerad</th>
+					<th scope="col" class="px-4 py-3 font-medium">Status</th>
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-gray-100">
+				{
+					elever.map((elev) => (
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-3">
+								<a href={`/elever/${elev.id}`} class="font-medium text-brand-700 hover:underline">
+									{elev.namn}
+								</a>
+							</td>
+							<td class="px-4 py-3 text-gray-600">{elev.personnummer}</td>
+							<td class="px-4 py-3 text-gray-600">{elev.mobil}</td>
+							<td class="px-4 py-3 text-gray-600">{elev.behorighet.join(', ')}</td>
+							<td class="px-4 py-3 text-gray-600">{elev.registrerad}</td>
+							<td class="px-4 py-3">
+								<Badge variant={statusVariant[elev.status]}>{elev.status}</Badge>
+							</td>
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</div>
+
+	<p class="mt-3 text-sm text-gray-500">Visar 1–{elever.length} av {elever.length}</p>
+
+	<AddElevDialog id="lagg-till-elev-dialog" />
+</Layout>

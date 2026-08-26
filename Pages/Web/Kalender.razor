@@ -7,7 +7,7 @@
 <section class="ps-section">
     <div class="ps-wrap">
         <h1>Bokningskalender</h1>
-        <p class="ps-lead">Lediga tider de närmaste två veckorna. Filtrera på behörighet och välj dag för att hitta det som passar dig.</p>
+        <p class="ps-lead">Lediga tider den kommande veckan. Vill du titta längre fram – välj ett datum nedan.</p>
 
         @* ── Filter ──────────────────────────────────────────────────────── *@
         <div class="ps-filterbar ps-mt">
@@ -16,7 +16,7 @@
                 <div class="ps-filters">
                     <button type="button" class="ps-chip" aria-pressed="@(_selectedBeh.Count == 0 ? "true" : "false")"
                             @onclick="ClearBeh">Alla</button>
-                    @foreach (var b in PresentBehorigheter)
+                    @foreach (var b in PresentBehorigheter(CurrentDays))
                     {
                         <button type="button" class="ps-chip" aria-pressed="@(_selectedBeh.Contains(b) ? "true" : "false")"
                                 @onclick="() => ToggleBeh(b)">@b</button>
@@ -24,27 +24,40 @@
                 </div>
             </fieldset>
 
-            <fieldset class="ps-fieldset">
-                <legend>Välj dag</legend>
-                <div class="ps-filters">
-                    <button type="button" class="ps-chip" aria-pressed="@(_selectedDay is null ? "true" : "false")"
-                            @onclick="() => _selectedDay = null">Alla dagar</button>
-                    @foreach (var d in DaysWithMatches)
-                    {
-                        <button type="button" class="ps-chip" aria-pressed="@(_selectedDay == d ? "true" : "false")"
-                                @onclick="() => _selectedDay = d">
-                            @d.ToDateTime(TimeOnly.MinValue).ToString("ddd d/M", Sv)
-                        </button>
-                    }
-                </div>
-            </fieldset>
+            <div class="ps-field" style="max-width:260px">
+                <label for="kaldatum">Titta längre fram</label>
+                <input id="kaldatum" type="date" class="ps-input"
+                       min="@DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd")"
+                       value="@(_pickedDate?.ToString("yyyy-MM-dd"))"
+                       @onchange="OnPickDate" />
+            </div>
         </div>
 
-        @* ── Resultat ────────────────────────────────────────────────────── *@
-        @{ var result = Filtered().ToList(); }
+        @{
+            var days = CurrentDays;
+            var result = days
+                .Select(d => new AvailableDay(d.Date, d.Slots.Where(MatchesBeh).ToList()))
+                .Where(d => d.Slots.Count > 0)
+                .ToList();
+        }
+
+        <p class="ps-hint ps-mt" aria-live="polite" role="status">
+            @if (_pickedDate is null)
+            {
+                <text>Visar lediga tider kommande vecka.</text>
+            }
+            else
+            {
+                <text>
+                    Visar <strong>@_pickedDate.Value.ToDateTime(TimeOnly.MinValue).ToString("dddd d MMMM", Sv)</strong>.
+                    <button type="button" class="ps-linkbtn" @onclick="ResetDate">← Tillbaka till kommande vecka</button>
+                </text>
+            }
+        </p>
+
         @if (result.Count == 0)
         {
-            <div class="ps-note ps-mt" role="status">Inga lediga tider matchar ditt val. Prova att ta bort ett filter eller kontakta oss.</div>
+            <div class="ps-note ps-mt" role="status">Inga lediga tider matchar ditt val. Prova ett annat datum eller ta bort behörighetsfiltret, eller kontakta oss.</div>
         }
         else
         {
@@ -84,41 +97,30 @@
 @code {
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
 
-    private IReadOnlyList<AvailableDay> _allDays = new List<AvailableDay>();
     private readonly HashSet<string> _selectedBeh = new();
-    private DateOnly? _selectedDay;
+    private DateOnly? _pickedDate;
 
-    protected override void OnInitialized() => _allDays = Web.GetAvailableSlots(14);
+    // Kommande vecka som standard; annars den valda dagen.
+    private IReadOnlyList<AvailableDay> CurrentDays =>
+        _pickedDate is null ? Web.GetAvailableSlots(7) : Web.GetAvailableSlots(_pickedDate.Value, 1);
 
-    // Behörigheter som faktiskt förekommer bland lediga tider (i fast ordning).
-    private IEnumerable<string> PresentBehorigheter =>
-        WebsiteService.Behorigheter.Where(b => _allDays.Any(d => d.Slots.Any(s => s.Behorighet == b)));
-
-    // Dagar som har minst en tid givet aktuellt behörighetsfilter.
-    private IEnumerable<DateOnly> DaysWithMatches =>
-        _allDays.Where(d => d.Slots.Any(MatchesBeh)).Select(d => d.Date);
+    private IEnumerable<string> PresentBehorigheter(IReadOnlyList<AvailableDay> days) =>
+        WebsiteService.Behorigheter.Where(b => days.Any(d => d.Slots.Any(s => s.Behorighet == b)));
 
     private bool MatchesBeh(AvailableSlot s) => _selectedBeh.Count == 0 || _selectedBeh.Contains(s.Behorighet);
-
-    private IEnumerable<AvailableDay> Filtered()
-    {
-        foreach (var day in _allDays)
-        {
-            if (_selectedDay is not null && day.Date != _selectedDay) continue;
-            var slots = day.Slots.Where(MatchesBeh).ToList();
-            if (slots.Count > 0) yield return new AvailableDay(day.Date, slots);
-        }
-    }
 
     private void ToggleBeh(string b)
     {
         if (!_selectedBeh.Remove(b)) _selectedBeh.Add(b);
-        // Om vald dag inte längre har träffar, nollställ dagvalet.
-        if (_selectedDay is not null && !DaysWithMatches.Contains(_selectedDay.Value)) _selectedDay = null;
     }
 
-    private void ClearBeh()
+    private void ClearBeh() => _selectedBeh.Clear();
+
+    private void OnPickDate(ChangeEventArgs e)
     {
-        _selectedBeh.Clear();
+        var v = e.Value?.ToString();
+        _pickedDate = DateOnly.TryParse(v, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
     }
+
+    private void ResetDate() => _pickedDate = null;
 }

@@ -1,0 +1,113 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { bokningar, veckodagar } from '../utils/mockData';
+
+const startTimme = 6;
+const slutTimme = 20;
+const timmar = Array.from({ length: slutTimme - startTimme + 1 }, (_, i) => startTimme + i);
+
+const datum = ['10 aug', '11 aug', '12 aug', '13 aug', '14 aug', '15 aug', '16 aug'];
+const idagIndex = 3; // torsdag 13 aug, matches the Figma concept's highlighted column
+---
+
+<Layout title="Kalender – Optima">
+	<div class="mb-4 flex flex-wrap items-start justify-between gap-4">
+		<div>
+			<h1 class="text-2xl font-bold text-gray-900">Kalender – Vecka 33</h1>
+			<p class="text-sm text-gray-500">10 aug - 16 aug 2026</p>
+			<nav class="mt-1 flex gap-4 text-sm">
+				<a href="#" class="text-gray-500 hover:text-brand-700">‹ Föregående vecka</a>
+				<a href="#" class="font-medium text-brand-700">Denna vecka</a>
+				<a href="#" class="text-gray-500 hover:text-brand-700">Nästa vecka ›</a>
+			</nav>
+		</div>
+		<div class="text-right">
+			<p class="text-xs uppercase tracking-wide text-gray-400">Typ av bokningar</p>
+			<div class="mt-1 flex gap-4 text-sm">
+				<span class="font-medium text-brand-700">Lärare</span>
+				<span class="text-gray-400">Resurser</span>
+			</div>
+			<div class="mt-1 flex justify-end gap-4 text-sm">
+				<span class="text-gray-400">Dag</span>
+				<span class="font-medium text-brand-700">Vecka</span>
+			</div>
+		</div>
+	</div>
+
+	<div class="mb-4 flex flex-wrap items-center gap-2">
+		<label class="relative flex-1 min-w-[200px]">
+			<span class="sr-only">Sök i kalender</span>
+			<input
+				type="search"
+				placeholder="Sök i kalender…"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+			/>
+		</label>
+		<a href="#" class="text-sm font-medium text-gray-500 hover:text-brand-700">↺ Återställ filter</a>
+
+		<details class="relative">
+			<summary class="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+				Filter
+			</summary>
+			<div class="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 bg-white p-3 text-sm shadow-lg">
+				<p class="mb-2 font-medium text-gray-900">Visa bokningar för</p>
+				<label class="flex items-center gap-2 py-1"><input type="checkbox" checked /> Körlektion</label>
+				<label class="flex items-center gap-2 py-1"><input type="checkbox" checked /> Teorilektion</label>
+				<label class="flex items-center gap-2 py-1"><input type="checkbox" /> Riskettan</label>
+			</div>
+		</details>
+
+		<button
+			type="button"
+			class="inline-flex items-center gap-1.5 rounded-md bg-brand-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-800"
+		>
+			Mathijs van Wijnen ⌄
+		</button>
+	</div>
+
+	<div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+		<div class="grid min-w-[900px] grid-cols-[4rem_repeat(7,1fr)] text-sm">
+			<div class="border-b border-r border-gray-100 bg-white"></div>
+			{
+				veckodagar.map((dag, i) => (
+					<div
+						class:list={[
+							'border-b border-gray-100 px-2 py-2 text-center font-medium',
+							i === idagIndex ? 'bg-amber-50 text-amber-700' : 'bg-white text-gray-700',
+						]}
+					>
+						{dag} {datum[i]}
+					</div>
+				))
+			}
+
+			{
+				timmar.map((timme) => (
+					<>
+						<div class="border-r border-b border-gray-100 px-2 py-3 text-right text-xs text-gray-400">
+							{String(timme).padStart(2, '0')}:00
+						</div>
+						{veckodagar.map((_, dagIndex) => {
+							const bokning = bokningar.find((b) => b.dag === dagIndex && b.startTimme === timme);
+							return (
+								<div
+									class:list={[
+										'relative min-h-[2.75rem] border-b border-gray-100',
+										dagIndex === idagIndex ? 'bg-amber-50/60' : dagIndex % 2 === 0 ? 'bg-blue-50/40' : 'bg-white',
+									]}
+								>
+									{bokning && (
+										<div class="absolute inset-0.5 rounded bg-brand-600/90 px-1.5 py-1 text-[11px] leading-tight text-white">
+											<p class="font-medium">{bokning.titel}</p>
+											<p class="opacity-80">{bokning.larare}</p>
+										</div>
+									)}
+								</div>
+							);
+						})}
+					</>
+				))
+			}
+		</div>
+	</div>
+</Layout>

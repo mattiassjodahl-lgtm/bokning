@@ -33,6 +33,7 @@ public class TestLlmReportAgent : IReportAgent
         new("Beläggning", "Hur ser beläggningen ut kommande vecka?"),
         new("Beläggning", "Vilka tider är mest bokade?"),
         new("Beläggning", "Hur full är beläggningen per lärare?"),
+        new("Beläggning", "Vad är prognosen för beläggning kommande veckor?"),
 
         new("Lärare", "Vilken lärare omsätter mest?"),
 
@@ -129,6 +130,10 @@ public class TestLlmReportAgent : IReportAgent
             }
             return ("get_revenue_overview", "{}");
         }
+
+        if (ContainsAny(q, "prognos", "framtid", "kommande veckor", "nästa veckorna") &&
+            !ContainsAny(q, "intäkt", "intakt", "omsätt", "omsatt", "kronor", "sek", "sålt", "salt", "försäljning", "forsaljning"))
+            return ("get_demand_forecast", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {

@@ -154,9 +154,14 @@ public class WebsiteService
         { "Körlektioner", "Riskutbildning", "Prov & avgifter" };
 
     // ── Lediga tider: speglar körskolans kalender (riktig demodata) ───────────
-    public IReadOnlyList<AvailableDay> GetAvailableSlots(int days = 14)
+    /// <summary>Lediga tider <paramref name="days"/> dagar framåt från idag.</summary>
+    public IReadOnlyList<AvailableDay> GetAvailableSlots(int days = 7)
+        => GetAvailableSlots(DateOnly.FromDateTime(DateTime.Today), days);
+
+    /// <summary>Lediga (obokade) tider från och med <paramref name="fromDate"/> och <paramref name="days"/> dagar framåt.</summary>
+    public IReadOnlyList<AvailableDay> GetAvailableSlots(DateOnly fromDate, int days)
     {
-        var from = DateTime.Today;
+        var from = fromDate.ToDateTime(TimeOnly.MinValue);
         var to   = from.AddDays(days);
         var filter = new CalendarFilter { ShowAvailable = true, ShowBooked = false };
 

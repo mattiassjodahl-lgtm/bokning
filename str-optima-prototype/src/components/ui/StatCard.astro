@@ -1,0 +1,32 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+	icon: 'calendar' | 'user-group' | 'graduation-cap' | 'invoice';
+	label: string;
+	value: string | number;
+	href?: string;
+	linkLabel?: string;
+}
+
+const { icon, label, value, href, linkLabel } = Astro.props;
+---
+
+<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+	<div class="flex items-center gap-3">
+		<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+			<Icon name={icon} class="h-5 w-5" />
+		</span>
+		<div>
+			<p class="text-2xl font-semibold leading-none text-gray-900">{value}</p>
+			<p class="mt-1 text-sm text-gray-500">{label}</p>
+		</div>
+	</div>
+	{
+		href && (
+			<a href={href} class="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline">
+				{linkLabel ?? 'Visa mer'} →
+			</a>
+		)
+	}
+</div>

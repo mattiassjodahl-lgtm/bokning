@@ -1,0 +1,133 @@
+---
+import Button from './Button.astro';
+
+interface Props {
+	/** id used both on the wrapping element and as the trigger's data-opens target. */
+	id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<add-elev-dialog id={id}>
+	<dialog class="w-full max-w-lg rounded-lg p-0 backdrop:bg-gray-900/40 open:animate-none">
+		<form method="dialog" class="flex max-h-[85vh] flex-col">
+			<header class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+				<h2 class="text-base font-semibold text-gray-900">Lägg till elev</h2>
+				<button
+					type="button"
+					data-close
+					class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+					aria-label="Stäng"
+				>
+					✕
+				</button>
+			</header>
+
+			<div class="flex-1 space-y-6 overflow-y-auto px-5 py-4">
+				<p class="text-sm text-gray-500">
+					Det kan behövas en introduktion av eleven eller adressen. Lorem ipsum dolor sit amet, consectetur adipiscing
+					elit.
+				</p>
+
+				<fieldset>
+					<legend class="mb-2 text-sm font-semibold text-gray-900">Identitet</legend>
+					<div class="grid grid-cols-2 gap-3">
+						<label class="text-sm text-gray-700">
+							Förnamn
+							<input
+								type="text"
+								name="fornamn"
+								required
+								class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+							/>
+						</label>
+						<label class="text-sm text-gray-700">
+							Efternamn
+							<input
+								type="text"
+								name="efternamn"
+								required
+								class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+							/>
+						</label>
+					</div>
+					<label class="mt-3 block text-sm text-gray-700">
+						Personnummer
+						<input
+							type="text"
+							name="personnummer"
+							placeholder="ÅÅÅÅMMDD-XXXX"
+							class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+						/>
+					</label>
+					<label class="mt-2 flex items-center gap-2 text-sm text-gray-600">
+						<input type="checkbox" name="saknar_personnummer" class="rounded border-gray-300" />
+						Har inte personnummer
+					</label>
+				</fieldset>
+
+				<fieldset>
+					<legend class="mb-2 text-sm font-semibold text-gray-900">Personuppgifter</legend>
+					<div class="grid grid-cols-2 gap-3">
+						<label class="text-sm text-gray-700">
+							E-post
+							<input type="email" name="epost" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+						</label>
+						<label class="text-sm text-gray-700">
+							Telefon
+							<input type="tel" name="telefon" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+						</label>
+					</div>
+					<label class="mt-3 block text-sm text-gray-700">
+						Adress
+						<input type="text" name="adress" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+					</label>
+					<div class="mt-3 grid grid-cols-2 gap-3">
+						<label class="text-sm text-gray-700">
+							Postnummer
+							<input
+								type="text"
+								name="postnummer"
+								class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+							/>
+						</label>
+						<label class="text-sm text-gray-700">
+							Ort
+							<input type="text" name="ort" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+						</label>
+					</div>
+				</fieldset>
+
+				<fieldset>
+					<legend class="mb-2 text-sm font-semibold text-gray-900">Utbildning</legend>
+					<div class="flex gap-4 text-sm text-gray-700">
+						<label class="flex items-center gap-2">
+							<input type="radio" name="utbildningstyp" value="frivillig" checked /> Frivillig
+						</label>
+						<label class="flex items-center gap-2">
+							<input type="radio" name="utbildningstyp" value="obligatorisk" /> Obligatorisk
+						</label>
+					</div>
+					<label class="mt-3 block text-sm text-gray-700">
+						Körkortsbehörighet
+						<select name="behorighet" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
+							<option>AM</option>
+							<option>B</option>
+							<option>BE</option>
+						</select>
+					</label>
+				</fieldset>
+			</div>
+
+			<footer class="flex flex-col gap-2 border-t border-gray-100 px-5 py-4">
+				<Button type="submit" class="w-full justify-center">Lägg till elev</Button>
+				<Button variant="secondary" data-close class="w-full justify-center">Avbryt</Button>
+			</footer>
+		</form>
+	</dialog>
+</add-elev-dialog>
+
+<script>
+	import '../../web-components/add-elev-dialog.js';
+</script>

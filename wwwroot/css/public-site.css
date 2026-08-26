@@ -293,6 +293,7 @@ body:has(.ps-site) {
 .ps-filterbar { display: grid; gap: 1.25rem; padding: 1.25rem 1.5rem; background: var(--ps-bg-soft); border: 1px solid var(--ps-line); border-radius: var(--ps-radius); }
 .ps-input { font: inherit; padding: .7rem .9rem; border: 2px solid var(--ps-line); border-radius: 10px; background: #fff; width: 100%; }
 .ps-input:hover { border-color: var(--ps-muted); }
+.ps-linkbtn { background: none; border: 0; padding: 0; font: inherit; color: var(--ps-primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
 
 /* Prislista – kategorigrupper */
 .ps-pricegroup { margin-top: 1.75rem; }

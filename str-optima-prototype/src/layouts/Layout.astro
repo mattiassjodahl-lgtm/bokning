@@ -1,0 +1,104 @@
+---
+import LayoutBase from './LayoutBase.astro';
+import Icon from '../components/ui/Icon.astro';
+
+interface Props {
+	/** Document `<title>`. */
+	title: string;
+	/** Heading shown at the top of the content area (defaults to the title). */
+	heading?: string;
+}
+
+const { title, heading } = Astro.props;
+const path = Astro.url.pathname;
+
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+
+const nav = [
+	{ href: '/', label: 'Instrumentpanel', icon: 'dashboard' as const },
+	{ href: '/kalender', label: 'Kalender', icon: 'calendar' as const },
+	{ href: '/elever', label: 'Elever', icon: 'graduation-cap' as const },
+	{ href: '/personal', label: 'Personal', icon: 'users' as const },
+	{ href: '/foretag', label: 'Företag', icon: 'building' as const },
+	{ href: '/resurser', label: 'Resurser', icon: 'box' as const },
+];
+---
+
+<LayoutBase title={title}>
+	<div class="flex min-h-screen flex-col">
+		<header class="flex h-14 shrink-0 items-center justify-between bg-brand-700 px-4 text-white">
+			<button
+				type="button"
+				class="flex items-center gap-2 rounded p-1.5 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+				aria-label="Öppna meny"
+			>
+				<Icon name="menu" class="h-5 w-5" />
+				<span class="hidden text-sm font-medium sm:inline">Meny</span>
+			</button>
+			<a href="/" class="text-lg font-semibold tracking-wide">OPTIMA</a>
+			<div class="flex items-center gap-2">
+				<span class="hidden text-sm sm:inline">Mathijs van Wijnen</span>
+				<span
+					class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-300 text-sm font-semibold text-brand-900"
+					aria-hidden="true">MV</span
+				>
+			</div>
+		</header>
+
+		<div class="flex flex-1">
+			<nav aria-label="Huvudmeny" class="hidden w-56 shrink-0 border-r border-gray-200 bg-white py-4 md:block">
+				<ul class="space-y-0.5 px-2">
+					{
+						nav.map((item) => (
+							<li>
+								<a
+									href={item.href}
+									aria-current={isActive(item.href) ? 'page' : undefined}
+									class:list={[
+										'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+										isActive(item.href)
+											? 'bg-brand-50 text-brand-700'
+											: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+									]}
+								>
+									<Icon name={item.icon} class="h-5 w-5" />
+									{item.label}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+
+				<div class="mt-4 border-t border-gray-100 px-2 pt-4">
+					<p class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600">
+						<Icon name="chart" class="h-5 w-5" />
+						Rapporter
+						<Icon name="chevron-down" class="ml-auto h-4 w-4" />
+					</p>
+					<p class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-brand-700">
+						<Icon name="cog" class="h-5 w-5" />
+						Schemaläggning
+						<Icon name="chevron-down" class="ml-auto h-4 w-4" />
+					</p>
+					<ul class="ml-8 space-y-0.5 text-sm text-gray-500">
+						<li><a href="#" class="block rounded px-2 py-1.5 hover:bg-gray-50">Lektionsmallar</a></li>
+						<li><a href="#" class="block rounded px-2 py-1.5 hover:bg-gray-50">Schemamallar</a></li>
+						<li><a href="#" class="block rounded px-2 py-1.5 hover:bg-gray-50">Scheman</a></li>
+					</ul>
+				</div>
+
+				<div class="mt-4 border-t border-gray-100 px-2 pt-4">
+					<p class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600">
+						<Icon name="cog" class="h-5 w-5" />
+						Inställningar
+					</p>
+				</div>
+			</nav>
+
+			<main class="flex-1 bg-gray-50 px-4 py-6 sm:px-8 sm:py-8">
+				{heading && <h1 class="mb-6 text-2xl font-bold text-gray-900">{heading}</h1>}
+				<slot />
+			</main>
+		</div>
+	</div>
+</LayoutBase>

@@ -474,7 +474,7 @@
                     @if (!string.IsNullOrWhiteSpace(_request.StudentName) && GetStudentBalance(_request.StudentName) is var bal && bal != null)
                     {
                         <div style="background:#f5f5f5;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-top:-4px">
-                            <MudIcon Icon="@Icons.Material.Filled.AccountBalanceWallet" Style="font-size:20px;color:#1565C0" />
+                            <MudIcon Icon="@Icons.Material.Filled.AccountBalanceWallet" Style="font-size:20px;color:#1f5551" />
                             <div style="flex:1;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px">
                                 <span style="font-weight:600;color:#1a1a1a">@bal.PrepaidLessons lektioner kvar</span>
                                 <span style="color:#757575">·</span>

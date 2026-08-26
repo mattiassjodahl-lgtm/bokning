@@ -85,6 +85,13 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_demand_forecast",
+                Description = "Prognos för bokad lektionsvolym kommande 4 veckor, baserat på trenden i de senaste 8 veckornas beläggning.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildDemandForecastReport(),
+            },
+            new AgentTool
+            {
                 Name = "get_student_stats",
                 Description = "Elev-statistik: aktiva elever, nya elever per månad, klara körkort, godkännandegrad teori/uppkörning, snittid.",
                 ParametersSchema = EmptyObjectSchema,
@@ -477,6 +484,81 @@ public static class ReportTools
                         Heading = "Beläggningsgrad (%)",
                         Categories = teachers.Select(t => t.Name).ToList(),
                         Series = { new ChartSeries { Name = "Beläggning", Values = teacherLoad } }
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildDemandForecastReport()
+    {
+        // Deterministisk mock-historik: bokade lektionstimmar per vecka, senaste 8 veckorna.
+        var actual = new[] { 168.0, 172, 165, 180, 176, 188, 182, 190 };
+
+        var weekLabels = new List<string>();
+        var currentWeek = System.Globalization.ISOWeek.GetWeekOfYear(DateTime.Now);
+        for (int i = 7; i >= 0; i--) weekLabels.Add($"V{currentWeek - i}");
+        for (int i = 1; i <= 4; i++) weekLabels.Add($"V{currentWeek + i}");
+
+        // Enkel trendprognos: senaste 4 veckornas snitt + dämpad trend framåt
+        // (samma princip som prognosen i get_year_overview).
+        var recentAvg = actual.Skip(4).Average();
+        var trend = (actual[^1] - actual[4]) / 3.0;
+        var forecast = new double[4];
+        for (int i = 0; i < 4; i++)
+            forecast[i] = Math.Round(recentAvg + trend * (i + 1) * 0.7, 0);
+
+        var forecastNextWeek = forecast[0];
+        var pctVsAvg = (forecastNextWeek - recentAvg) / recentAvg * 100.0;
+
+        // "Faktisk" fortsätter platt från sista kända värdet (vi vet inte facit än).
+        // "Prognos" ligger platt på samma nivå under historiken och viker av
+        // först i de fyra kommande veckorna – så de två linjerna möts i nutid.
+        var faktiskSeries = actual.Concat(Enumerable.Repeat(actual[^1], 4)).ToList();
+        var prognosSeries = Enumerable.Repeat(actual[^1], 8).Concat(forecast).ToList();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"Beläggningen har legat på ca **{recentAvg:F0} lektionstimmar/vecka** de senaste 4 veckorna. " +
+                   $"Baserat på trenden väntas nästa vecka landa på **{forecastNextWeek:F0} timmar** ({(pctVsAvg >= 0 ? "+" : "")}{pctVsAvg:F0}% mot snittet).",
+            Report = new AgentReport
+            {
+                Title = "Prognos – bokad lektionsvolym",
+                Summary = "Senaste 8 veckorna + prognos 4 veckor framåt",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Snitt senaste 4 v.",  Value = $"{recentAvg:F0} tim" },
+                            new() { Label = "Prognos nästa vecka", Value = $"{forecastNextWeek:F0} tim", Trend = $"{(pctVsAvg >= 0 ? "+" : "")}{pctVsAvg:F0}% vs snitt" },
+                            new() { Label = "Prognos 4 veckor",    Value = $"{forecast.Sum():F0} tim" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.LineChart,
+                        Heading = "Bokade lektionstimmar per vecka – faktisk och prognos",
+                        Categories = weekLabels,
+                        Series =
+                        {
+                            new ChartSeries { Name = "Faktisk", Values = faktiskSeries },
+                            new ChartSeries { Name = "Prognos", Values = prognosSeries },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Vecka", "Bokade timmar", "Prognos" },
+                        Rows = weekLabels.Select((w, i) => new List<string>
+                        {
+                            w,
+                            i < 8 ? $"{actual[i]:F0}" : "—",
+                            i < 8 ? "—" : $"{forecast[i - 8]:F0}",
+                        }).ToList(),
                     }
                 }
             }

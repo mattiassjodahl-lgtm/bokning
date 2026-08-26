@@ -1,0 +1,194 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Badge from '../../components/ui/Badge.astro';
+import ProgressBar from '../../components/ui/ProgressBar.astro';
+import Button from '../../components/ui/Button.astro';
+import { elever } from '../../utils/mockData';
+import type { Kommentar } from '../../types/optima';
+
+export function getStaticPaths() {
+	return elever.map((elev) => ({ params: { id: elev.id }, props: { elev } }));
+}
+
+const { elev } = Astro.props;
+
+const kommentarer: Kommentar[] = [
+	{ datum: '13 jun 2026', forfattare: 'Anders Andersson', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+	{ datum: '20 jan 2026', forfattare: 'Anders Andersson', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+	{ datum: '13 dec 2025', forfattare: 'Anders Andersson', text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+];
+---
+
+<Layout title={`${elev.namn} – Optima`}>
+	<a href="/elever" class="mb-4 inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-brand-700">
+		‹ Elever
+	</a>
+
+	<div class="mb-6 flex flex-wrap items-center gap-3">
+		<span
+			class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-base font-semibold text-brand-800"
+			aria-hidden="true"
+		>
+			{elev.namn.split(' ').map((n) => n[0]).join('')}
+		</span>
+		<div>
+			<h1 class="text-xl font-bold text-gray-900">{elev.namn}</h1>
+			<div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+				<span>{elev.personnummer}</span>
+				<Badge variant={elev.status === 'Aktiv' ? 'success' : 'neutral'}>{elev.status}</Badge>
+				{elev.behorighet.map((b) => <Badge variant="info">{b}</Badge>)}
+			</div>
+		</div>
+	</div>
+
+	<tab-group>
+		<div role="tablist" aria-label="Elevvyer" class="mb-6 flex gap-6 border-b border-gray-200 text-sm font-medium">
+			<button
+				role="tab"
+				data-tab="oversikt"
+				aria-selected="true"
+				tabindex="0"
+				class="border-b-2 border-transparent px-1 pb-3 text-gray-500 hover:text-gray-700 aria-selected:border-brand-700 aria-selected:text-brand-700"
+			>
+				Översikt
+			</button>
+			<button
+				role="tab"
+				data-tab="utbildning"
+				aria-selected="false"
+				tabindex="-1"
+				class="border-b-2 border-transparent px-1 pb-3 text-gray-500 hover:text-gray-700 aria-selected:border-brand-700 aria-selected:text-brand-700"
+			>
+				Utbildning
+			</button>
+			<button
+				role="tab"
+				data-tab="elevkontra"
+				aria-selected="false"
+				tabindex="-1"
+				class="border-b-2 border-transparent px-1 pb-3 text-gray-500 hover:text-gray-700 aria-selected:border-brand-700 aria-selected:text-brand-700"
+			>
+				Elevkontra
+			</button>
+		</div>
+
+		<div role="tabpanel" data-tab="oversikt">
+			<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+				<div class="space-y-6">
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<div class="mb-3 flex items-center justify-between">
+							<h2 class="text-sm font-semibold text-gray-900">Personuppgifter</h2>
+							<a href="#" class="text-xs font-medium text-brand-700 hover:underline">Ändra val</a>
+						</div>
+						<dl class="space-y-2 text-sm">
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Namn</dt><dd class="text-right text-gray-900">{elev.namn}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Adress</dt><dd class="text-right text-gray-900">{elev.adress}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Mobil</dt><dd class="text-right text-gray-900">{elev.mobil}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">E-post</dt><dd class="text-right text-gray-900">{elev.epost}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Personnummer</dt><dd class="text-right text-gray-900">{elev.personnummer}</dd></div>
+						</dl>
+					</section>
+
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="mb-3 text-sm font-semibold text-gray-900">Elevkonto</h2>
+						<dl class="space-y-2 text-sm">
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Status</dt><dd><Badge variant={elev.status === 'Aktiv' ? 'success' : 'neutral'}>{elev.status}</Badge></dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Saldo</dt><dd class="text-right text-gray-900">{elev.saldo.toLocaleString('sv-SE')} SEK</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Lektionssaldo</dt><dd class="text-right text-gray-900">{elev.lektionssaldo}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Skapad</dt><dd class="text-right text-gray-900">{elev.skapad}</dd></div>
+							<div class="flex justify-between gap-4"><dt class="text-gray-500">Senast ändrad</dt><dd class="text-right text-gray-900">{elev.senastAndrad}</dd></div>
+						</dl>
+					</section>
+
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<div class="mb-3 flex items-center justify-between">
+							<h2 class="text-sm font-semibold text-gray-900">Kontaktpersoner</h2>
+							<a href="#" class="text-xs font-medium text-brand-700 hover:underline">+ Lägg till</a>
+						</div>
+						{
+							elev.vardnadshavare ? (
+								<p class="text-sm text-gray-900">
+									Vårdnadshavare <span class="block text-gray-500">{elev.vardnadshavare}</span>
+								</p>
+							) : (
+								<p class="text-sm text-gray-400">Inga kontaktpersoner tillagda.</p>
+							)
+						}
+					</section>
+				</div>
+
+				<div class="space-y-6">
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="mb-3 text-sm font-semibold text-gray-900">Kommande lektioner</h2>
+						<p class="text-sm text-gray-400">Inga kommande lektioner.</p>
+					</section>
+
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="mb-3 text-sm font-semibold text-gray-900">Status på prov</h2>
+						<ul class="space-y-2 text-sm">
+							<li class="flex items-center justify-between">
+								<span class="flex items-center gap-2"><Badge variant="neutral">B</Badge> Teoriprov</span>
+								<a href="#" class="font-medium text-brand-700 hover:underline">boka +</a>
+							</li>
+							<li class="flex items-center justify-between">
+								<span class="flex items-center gap-2"><Badge variant="neutral">B</Badge> Praktiskt prov</span>
+								<a href="#" class="font-medium text-brand-700 hover:underline">boka +</a>
+							</li>
+						</ul>
+					</section>
+
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="mb-3 text-sm font-semibold text-gray-900">Status per behörighet</h2>
+						<div class="space-y-4">
+							<ProgressBar tag="AM" label="Teori" percent={100} />
+							<ProgressBar tag="AM" label="Praktik" percent={50} />
+							<ProgressBar tag="B" label="Teori" percent={100} />
+							<ProgressBar tag="B" label="Praktik" percent={50} />
+						</div>
+					</section>
+				</div>
+
+				<div>
+					<section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+						<h2 class="mb-3 text-sm font-semibold text-gray-900">Kommentarer</h2>
+						<ul class="space-y-3">
+							{
+								kommentarer.map((k) => (
+									<li class="rounded-md bg-blue-50/60 p-3 text-sm">
+										<p class="mb-1 flex justify-between text-xs text-gray-500">
+											<span>{k.datum}</span>
+											<span>{k.forfattare}</span>
+										</p>
+										<p class="text-gray-700">{k.text}</p>
+									</li>
+								))
+							}
+						</ul>
+						<form class="mt-4">
+							<label class="sr-only" for="ny-kommentar">Skriv en kommentar</label>
+							<textarea
+								id="ny-kommentar"
+								rows="3"
+								placeholder="Skriv en kommentar…"
+								class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+							></textarea>
+							<Button type="submit" class="mt-2 w-full justify-center">+ Lägg till kommentar</Button>
+						</form>
+					</section>
+				</div>
+			</div>
+		</div>
+
+		<div role="tabpanel" data-tab="utbildning" hidden>
+			<p class="text-sm text-gray-500">Utbildningshistorik och kursplan visas här.</p>
+		</div>
+
+		<div role="tabpanel" data-tab="elevkontra" hidden>
+			<p class="text-sm text-gray-500">Elevens transaktioner och betalningar visas här.</p>
+		</div>
+	</tab-group>
+</Layout>
+
+<script>
+	import '../../web-components/tab-group.js';
+</script>

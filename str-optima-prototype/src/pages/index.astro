@@ -1,0 +1,82 @@
+---
+import Layout from '../layouts/Layout.astro';
+import StatCard from '../components/ui/StatCard.astro';
+import { bokningsgrad, elever } from '../utils/mockData';
+
+const aktivaElever = elever.filter((e) => e.status === 'Aktiv').length;
+
+const idagPaSkolan = [
+	{ tid: '10:00', titel: 'Körlektion 45 min', larare: 'Mathijs van Wijnen', platser: '0/1' },
+	{ tid: '10:15', titel: 'Körlektion 45 min', larare: 'Jimmie Ahlberg', platser: '0/1' },
+	{ tid: '11:30', titel: 'Körlektion 45 min', larare: 'Jimmie Ahlberg', platser: '1/1' },
+	{ tid: '13:00', titel: 'Körlektion 45 min', larare: 'Mathijs van Wijnen', platser: '0/1' },
+];
+---
+
+<Layout title="Instrumentpanel – Optima">
+	<h1 class="mb-1 text-2xl font-bold text-gray-900">Hej Mathijs!</h1>
+	<p class="mb-6 text-sm text-gray-500">Här är en snabb sammanfattning av det viktigaste för dig och din skola.</p>
+
+	<div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<StatCard icon="calendar" label="Lektioner idag" value={6} href="/kalender" linkLabel="Till dagskalender" />
+		<StatCard icon="user-group" label="Lärare" value={6} href="/personal" linkLabel="Till personal" />
+		<StatCard icon="graduation-cap" label="Elev" value={aktivaElever} href="/elever" linkLabel="Till elever" />
+		<StatCard icon="invoice" label="Öppna fakturor" value={6} href="#" linkLabel="Till kundekonomi" />
+	</div>
+
+	<section class="mb-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+		<h2 class="mb-4 text-sm font-semibold text-gray-900">Skolans bokningsgrad</h2>
+		<div class="flex h-40 items-end gap-2 overflow-x-auto">
+			{
+				bokningsgrad.map((dag) => (
+					<div class="flex min-w-[2.5rem] flex-1 flex-col items-center gap-1">
+						<span class="text-xs text-gray-500">{dag.procent}%</span>
+						<div class="flex h-28 w-full items-end">
+							<div
+								class:list={['w-full rounded-t', dag.idag ? 'bg-amber-400' : 'bg-brand-600']}
+								style={`height: ${dag.procent}%`}
+							/>
+						</div>
+						<span class:list={['text-xs', dag.idag ? 'font-semibold text-amber-600' : 'text-gray-500']}>
+							{dag.dag}
+						</span>
+						<span class="text-[10px] text-gray-400">{dag.datum}</span>
+					</div>
+				))
+			}
+		</div>
+		<a href="/kalender" class="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline">
+			Till veckokalender →
+		</a>
+	</section>
+
+	<section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+		<h2 class="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-gray-900">Idag på skolan</h2>
+		<table class="w-full text-sm">
+			<caption class="sr-only">Bokade lektioner idag</caption>
+			<thead class="sr-only">
+				<tr>
+					<th scope="col">Tid</th>
+					<th scope="col">Lektion</th>
+					<th scope="col">Platser</th>
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-gray-100">
+				{
+					idagPaSkolan.map((rad) => (
+						<tr>
+							<th scope="row" class="w-20 px-5 py-3 text-left font-medium text-gray-900">
+								{rad.tid}
+							</th>
+							<td class="px-2 py-3">
+								<p class="font-medium text-gray-900">{rad.titel}</p>
+								<p class="text-gray-500">{rad.larare}</p>
+							</td>
+							<td class="px-5 py-3 text-right text-gray-500">{rad.platser}</td>
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</section>
+</Layout>
