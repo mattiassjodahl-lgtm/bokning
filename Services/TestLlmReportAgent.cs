@@ -29,6 +29,7 @@ public class TestLlmReportAgent : IReportAgent
         new("Ekonomi", "Visa omsättning senaste 12 månaderna med prognos"),
         new("Ekonomi", "Vilken lektionstyp är mest lönsam?"),
         new("Ekonomi", "Visa kostnader och marginal per lärare"),
+        new("Ekonomi", "Finns det några prisförslag baserat på beläggning?"),
 
         new("Beläggning", "Hur ser beläggningen ut kommande vecka?"),
         new("Beläggning", "Vilka tider är mest bokade?"),
@@ -154,6 +155,9 @@ public class TestLlmReportAgent : IReportAgent
 
         if (ContainsAny(q, "avvikelse", "avvikelser", "ovanligt", "sticker ut", "larm", "varning", "varningar", "bör jag känna till", "bor jag kanna till"))
             return ("get_anomalies", "{}");
+
+        if (ContainsAny(q, "prisförslag", "prisforslag", "prisjustering", "höja priset", "hoja priset", "sänka priset", "sanka priset", "kampanj", "rabatt"))
+            return ("get_pricing_suggestions", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {

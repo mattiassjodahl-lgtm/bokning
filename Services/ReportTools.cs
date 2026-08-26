@@ -143,6 +143,13 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_pricing_suggestions",
+                Description = "Föreslår prisjusteringar per lektionstyp baserat på beläggning: höjning vid hög beläggning, kampanj/rabatt vid låg. Bygger på samma marginal- och beläggningsdata som övriga rapporter.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildPricingSuggestionsReport(booking),
+            },
+            new AgentTool
+            {
                 Name = "get_cancellations",
                 Description = "Avbokningar och no-show: frekvens, trend, förlorad intäkt och no-show per lärare.",
                 ParametersSchema = EmptyObjectSchema,
@@ -1092,6 +1099,97 @@ public static class ReportTools
                         Rows = alerts.Count > 0
                             ? alerts.OrderByDescending(a => a.Severity == "Hög").Select(a => new List<string> { a.Severity, a.Text }).ToList()
                             : new() { new List<string> { "—", "Inga avvikelser just nu" } },
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildPricingSuggestionsReport(BookingService booking)
+    {
+        // Samma pris/kostnad-data som get_margin_per_lesson_type, kopplat till en resurstyp
+        // så vi kan återanvända samma beläggningsberäkning som resursrapporterna (UtilizationFor).
+        var rows = new (string Type, decimal Price, decimal Cost, ResourceType Resource)[]
+        {
+            ("Körlektion B, 60 min",  680m, 410m, ResourceType.Car),
+            ("Körlektion B, 90 min",  995m, 600m, ResourceType.Car),
+            ("Riskutbildning 1+2",  2_400m, 1_350m, ResourceType.Classroom),
+            ("Motorvägslektion",      850m, 560m, ResourceType.Car),
+            ("Intro / övrigt",        450m, 240m, ResourceType.Car),
+        };
+
+        var utilByType = booking.Resources
+            .Where(r => r.Type != ResourceType.Other)
+            .GroupBy(r => r.Type)
+            .ToDictionary(g => g.Key, g => g.Average(UtilizationFor));
+
+        var suggestions = rows.Select(r =>
+        {
+            var util = utilByType.TryGetValue(r.Resource, out var u) ? u : 50.0;
+
+            (double AdjustPct, string Reason) suggestion = util switch
+            {
+                >= 80 => (8.0,  "hög beläggning – utrymme att höja"),
+                >= 65 => (3.0,  "stabil beläggning – liten justering"),
+                <= 45 => (-10.0, "låg beläggning – kampanj kan öka volym"),
+                _     => (0.0,  "balanserad beläggning – ingen ändring"),
+            };
+
+            var newPrice = Math.Round(r.Price * (decimal)(1 + suggestion.AdjustPct / 100.0) / 10m) * 10m;
+
+            return new
+            {
+                r.Type, r.Price, Utilization = util,
+                AdjustPct = suggestion.AdjustPct, Reason = suggestion.Reason, NewPrice = newPrice,
+            };
+        })
+        .OrderByDescending(x => Math.Abs(x.AdjustPct))
+        .ToList();
+
+        var raises = suggestions.Count(x => x.AdjustPct > 0);
+        var cuts   = suggestions.Count(x => x.AdjustPct < 0);
+        var top    = suggestions.First();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = $"**{raises} lektionstyper** har utrymme för prishöjning och **{cuts}** kan behöva kampanj/rabatt. " +
+                   $"Störst förslag: **{top.Type}** ({(top.AdjustPct >= 0 ? "+" : "")}{top.AdjustPct:F0}%, {top.Reason}).",
+            Report = new AgentReport
+            {
+                Title = "Prisförslag per lektionstyp",
+                Summary = "Baserat på beläggning per kopplad resurstyp",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Förslag om höjning", Value = $"{raises}" },
+                            new() { Label = "Förslag om rabatt",  Value = $"{cuts}" },
+                            new() { Label = "Störst justering",   Value = top.Type, Trend = $"{(top.AdjustPct >= 0 ? "+" : "")}{top.AdjustPct:F0}%" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Föreslagen prisjustering (%)",
+                        Categories = suggestions.Select(x => x.Type).ToList(),
+                        Series = { new ChartSeries { Name = "Justering %", Values = suggestions.Select(x => x.AdjustPct).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Lektionstyp", "Nuvarande pris", "Beläggning", "Förslag", "Nytt pris (ca)" },
+                        Rows = suggestions.Select(x => new List<string>
+                        {
+                            x.Type,
+                            $"{x.Price:N0} kr",
+                            $"{x.Utilization:F0}%",
+                            $"{(x.AdjustPct >= 0 ? "+" : "")}{x.AdjustPct:F0}% – {x.Reason}",
+                            $"{x.NewPrice:N0} kr",
+                        }).ToList(),
                     }
                 }
             }

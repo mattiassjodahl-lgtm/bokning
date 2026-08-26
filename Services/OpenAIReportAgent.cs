@@ -45,6 +45,7 @@ public class OpenAIReportAgent : IReportAgent
         new("Ekonomi", "Visa intäkter per månad senaste 12 mån"),
         new("Ekonomi", "Vilken lektionstyp är mest lönsam?"),
         new("Ekonomi", "Visa kostnader och marginal per lärare"),
+        new("Ekonomi", "Finns det några prisförslag baserat på beläggning?"),
 
         new("Beläggning", "Hur ser beläggningen ut kommande vecka?"),
         new("Beläggning", "Vad är prognosen för beläggning kommande veckor?"),
