@@ -136,6 +136,13 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_anomalies",
+                Description = "Automatisk avvikelsedetektion: flaggar ovanliga mönster i beläggning, no-show/avbokningar och elevrisk jämfört med förväntat – utan att man behöver fråga specifikt om varje område.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildAnomalyReport(booking),
+            },
+            new AgentTool
+            {
                 Name = "get_cancellations",
                 Description = "Avbokningar och no-show: frekvens, trend, förlorad intäkt och no-show per lärare.",
                 ParametersSchema = EmptyObjectSchema,
@@ -995,6 +1002,96 @@ public static class ReportTools
                             $"{x.AvgProgress:F0}%",
                             $"{(x.AvgPaceGap >= 0 ? "+" : "")}{x.AvgPaceGap:F0} pp",
                         }).ToList(),
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildAnomalyReport(BookingService booking)
+    {
+        var alerts = new List<(string Severity, string Text)>();
+
+        // 1) Beläggning per lärare – flagga om den lägsta avviker klart från snittet.
+        //    Samma mock-data som get_occupancy_per_teacher använder.
+        var teachersOcc = booking.Teachers.Where(t => t.IsSelected || t.Group == 1).Take(6).ToList();
+        var occLoad = new[] { 94.0, 91, 87, 82, 76, 68 };
+        var occAvg = occLoad.Average();
+        var occMinIdx = Array.IndexOf(occLoad, occLoad.Min());
+        if (occMinIdx >= 0 && occMinIdx < teachersOcc.Count && occLoad.Min() < occAvg - 15)
+            alerts.Add(("Medel", $"Beläggningen hos **{teachersOcc[occMinIdx].Name}** ligger på {occLoad.Min():F0}%, klart under snittet ({occAvg:F0}%) – kan tyda på ledig kapacitet att fylla."));
+
+        // 2) No-show per lärare – flagga om den högsta avviker klart från snittet.
+        //    Samma mock-data som get_cancellations använder.
+        var teachersNs = booking.Teachers.Take(5).ToList();
+        var noShow = new[] { 1.2, 2.4, 3.1, 3.8, 4.5 };
+        var nsAvg = noShow.Average();
+        var nsMaxIdx = Array.IndexOf(noShow, noShow.Max());
+        if (nsMaxIdx >= 0 && nsMaxIdx < teachersNs.Count && noShow.Max() > nsAvg * 1.5)
+            alerts.Add(("Hög", $"No-show-frekvensen hos **{teachersNs[nsMaxIdx].Name}** ligger på {noShow.Max():F1}%, mer än 1,5x snittet ({nsAvg:F1}%) – värt att följa upp."));
+
+        // 3) Avbokningstrend – flagga om senaste månaden avviker markant uppåt.
+        var cancellations = new[] { 38.0, 42, 35, 47, 41, 44 };
+        var lastMonthCancel = cancellations[^1];
+        var priorCancelAvg  = cancellations.Take(cancellations.Length - 1).Average();
+        if (lastMonthCancel > priorCancelAvg * 1.2)
+            alerts.Add(("Medel", $"Avbokningarna senaste månaden ({lastMonthCancel:F0}) ligger {((lastMonthCancel / priorCancelAvg - 1) * 100):F0}% över snittet för tidigare månader ({priorCancelAvg:F0})."));
+
+        // 4) Elevrisk – återanvänder samma modell som get_students_at_risk (förväntad takt vs framsteg).
+        const int targetDays = 150;
+        var studentProgress = booking.Students.Select(s =>
+        {
+            var profile  = booking.GetStudentProfile(s.Name);
+            var category = profile.LicenseCategories.FirstOrDefault() ?? "B";
+            var practical = profile.TrainingStepsByCategory.TryGetValue(category, out var p) ? p : new List<TrainingStep>();
+            var theory    = profile.TheoryStepsByCategory.TryGetValue(category, out var t) ? t : new List<TrainingStep>();
+            var practicalPct = practical.Count > 0 ? practical.Count(x => x.Score > 0) * 100.0 / practical.Count : 0.0;
+            var theoryPct    = theory.Count    > 0 ? theory.Count(x => x.Score > 0)    * 100.0 / theory.Count    : 0.0;
+            return new { profile.CreatedAt, avgProgress = (practicalPct + theoryPct) / 2.0 };
+        }).ToList();
+        var referenceDate = studentProgress.Max(r => r.CreatedAt);
+        var highRiskCount = studentProgress.Count(r =>
+        {
+            var daysEnrolled = Math.Max(1, (referenceDate - r.CreatedAt).Days);
+            var expectedPct  = Math.Min(100.0, daysEnrolled / (double)targetDays * 100.0);
+            return (expectedPct - r.avgProgress) >= 50; // matchar "Hög" i get_students_at_risk
+        });
+        if (highRiskCount >= 3)
+            alerts.Add(("Hög", $"{highRiskCount} elever ligger i hög riskzon (mer än 50 procentenheter efter förväntad takt) – se elevrisk-rapporten för detaljer."));
+
+        var highCount = alerts.Count(a => a.Severity == "Hög");
+        var medCount  = alerts.Count(a => a.Severity == "Medel");
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = alerts.Count == 0
+                ? "Inga avvikelser hittades just nu – beläggning, avbokningar och elevframsteg ligger inom normala intervall."
+                : $"Hittade **{alerts.Count} avvikelser** ({highCount} hög prioritet, {medCount} medel). " +
+                  $"Mest angeläget: {alerts.OrderByDescending(a => a.Severity == "Hög").First().Text}",
+            Report = new AgentReport
+            {
+                Title = "Avvikelser & varningar",
+                Summary = "Automatisk genomgång av beläggning, avbokningar/no-show och elevrisk",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Avvikelser hittade", Value = $"{alerts.Count}" },
+                            new() { Label = "Hög prioritet",      Value = $"{highCount}" },
+                            new() { Label = "Kontrollerat",       Value = DateTime.Now.ToString("d MMM HH:mm", System.Globalization.CultureInfo.GetCultureInfo("sv-SE")) },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Nivå", "Beskrivning" },
+                        Rows = alerts.Count > 0
+                            ? alerts.OrderByDescending(a => a.Severity == "Hög").Select(a => new List<string> { a.Severity, a.Text }).ToList()
+                            : new() { new List<string> { "—", "Inga avvikelser just nu" } },
                     }
                 }
             }

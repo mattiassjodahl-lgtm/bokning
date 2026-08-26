@@ -44,6 +44,8 @@ public class TestLlmReportAgent : IReportAgent
 
         new("Avbokningar", "Hur ser avbokningsfrekvensen ut?"),
 
+        new("Avvikelser", "Finns det några avvikelser jag bör känna till?"),
+
         new("Schema", "Vad är nästa bästa tid för Alice Bergström?"),
 
         // Kombo-frågor (kör flera tools på en gång):
@@ -147,6 +149,9 @@ public class TestLlmReportAgent : IReportAgent
 
         if (ContainsAny(q, "matcha", "matchning", "passar bäst", "passar bast", "bästa läraren", "basta lararen", "vilken lärare ska", "vilken larare ska"))
             return ("get_teacher_student_match", "{}");
+
+        if (ContainsAny(q, "avvikelse", "avvikelser", "ovanligt", "sticker ut", "larm", "varning", "varningar", "bör jag känna till", "bor jag kanna till"))
+            return ("get_anomalies", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {
