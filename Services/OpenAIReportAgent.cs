@@ -50,6 +50,7 @@ public class OpenAIReportAgent : IReportAgent
         new("Beläggning", "Vad är prognosen för beläggning kommande veckor?"),
 
         new("Lärare", "Vilken lärare omsätter mest?"),
+        new("Lärare", "Vilken lärare passar bäst för en ny elev?"),
 
         new("Elever", "Hur många nya elever har vi fått i år?"),
         new("Elever", "Vilka elever ligger efter i utbildningen?"),

@@ -36,6 +36,7 @@ public class TestLlmReportAgent : IReportAgent
         new("Beläggning", "Vad är prognosen för beläggning kommande veckor?"),
 
         new("Lärare", "Vilken lärare omsätter mest?"),
+        new("Lärare", "Vilken lärare passar bäst för en ny elev?"),
 
         new("Elever", "Hur många nya elever har vi fått i år?"),
         new("Elever", "Vad är godkännandegraden på uppkörningen?"),
@@ -143,6 +144,9 @@ public class TestLlmReportAgent : IReportAgent
 
         if (ContainsAny(q, "bästa tid", "basta tid", "föreslå tid", "foresla tid", "nästa lektion åt", "schemaförslag", "schemaforslag"))
             return ("get_next_best_slot", "{}");
+
+        if (ContainsAny(q, "matcha", "matchning", "passar bäst", "passar bast", "bästa läraren", "basta lararen", "vilken lärare ska", "vilken larare ska"))
+            return ("get_teacher_student_match", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {

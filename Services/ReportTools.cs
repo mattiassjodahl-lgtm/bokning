@@ -121,6 +121,21 @@ public static class ReportTools
             },
             new AgentTool
             {
+                Name = "get_teacher_student_match",
+                Description = "Visar hur elever presterar hos olika lärare (snitt framsteg vs förväntad takt) och rekommenderar lärare för en ny elev utifrån arbetsbelastning och track record. Ange gärna elevnamn för en specifik rekommendation.",
+                ParametersSchema = """
+                {
+                  "type": "object",
+                  "properties": {
+                    "student_name": { "type": "string", "description": "Elevens namn, om frågan gäller en specifik elev. Tom = generell rekommendation." }
+                  },
+                  "required": []
+                }
+                """,
+                Execute = args => BuildTeacherMatchReport(booking, GetString(args, "student_name")),
+            },
+            new AgentTool
+            {
                 Name = "get_cancellations",
                 Description = "Avbokningar och no-show: frekvens, trend, förlorad intäkt och no-show per lärare.",
                 ParametersSchema = EmptyObjectSchema,
@@ -850,6 +865,135 @@ public static class ReportTools
                             FormatSlot(x.Slot),
                             booking.GetTeacher(x.Slot.TeacherId)?.Name ?? "—",
                             x.Reasons.Count > 0 ? string.Join(", ", x.Reasons) : "Ledigt pass",
+                        }).ToList(),
+                    }
+                }
+            }
+        };
+    }
+
+    private static AgentMessage BuildTeacherMatchReport(BookingService booking, string? studentNameArg)
+    {
+        const int targetDays = 150; // samma antagande som elevrisk-toolet
+
+        var studentData = booking.Students.Select(s =>
+        {
+            var profile  = booking.GetStudentProfile(s.Name);
+            var category = profile.LicenseCategories.FirstOrDefault() ?? "B";
+
+            var practical = profile.TrainingStepsByCategory.TryGetValue(category, out var p) ? p : new List<TrainingStep>();
+            var theory    = profile.TheoryStepsByCategory.TryGetValue(category, out var t) ? t : new List<TrainingStep>();
+            var practicalPct = practical.Count > 0 ? practical.Count(x => x.Score > 0) * 100.0 / practical.Count : 0.0;
+            var theoryPct    = theory.Count    > 0 ? theory.Count(x => x.Score > 0)    * 100.0 / theory.Count    : 0.0;
+            var avgProgress  = (practicalPct + theoryPct) / 2.0;
+
+            var history = booking.GetEventsForStudent(s.Name).ToList();
+            int? teacherId = history.Count > 0
+                ? history.GroupBy(e => e.TeacherId).OrderByDescending(g => g.Count()).First().Key
+                : null;
+
+            return new { s.Name, profile.CreatedAt, avgProgress, TeacherId = teacherId };
+        }).ToList();
+
+        // Ankra "nu" till senaste inskrivningen i elevlistan (samma trick som elevrisk-toolet)
+        // så förväntad-takt-beräkningen inte glider iväg när demot körs länge efter mock-datat skrevs.
+        var referenceDate = studentData.Max(r => r.CreatedAt);
+
+        var withGap = studentData.Select(r =>
+        {
+            var daysEnrolled = Math.Max(1, (referenceDate - r.CreatedAt).Days);
+            var expectedPct  = Math.Min(100.0, daysEnrolled / (double)targetDays * 100.0);
+            var paceGap      = expectedPct - r.avgProgress; // negativ = före förväntad takt
+            return new { r.Name, r.TeacherId, r.avgProgress, paceGap };
+        }).ToList();
+
+        var perTeacher = withGap
+            .Where(x => x.TeacherId.HasValue)
+            .GroupBy(x => x.TeacherId!.Value)
+            .Select(g => new
+            {
+                TeacherId    = g.Key,
+                TeacherName  = booking.GetTeacher(g.Key)?.Name ?? $"Lärare {g.Key}",
+                StudentCount = g.Count(),
+                AvgProgress  = g.Average(x => x.avgProgress),
+                AvgPaceGap   = g.Average(x => x.paceGap),
+            })
+            .OrderBy(x => x.AvgPaceGap) // mest före förväntad takt överst
+            .ToList();
+
+        var maxLoad = perTeacher.Count > 0 ? perTeacher.Max(x => x.StudentCount) : 0;
+        var recommendation = perTeacher
+            .Where(x => x.StudentCount < maxLoad || perTeacher.Count == 1)
+            .OrderBy(x => x.AvgPaceGap)
+            .ThenBy(x => x.StudentCount)
+            .FirstOrDefault() ?? perTeacher.FirstOrDefault();
+
+        // Om ett elevnamn angetts och eleven redan har en ordinarie lärare, visa det istället
+        // för en generell nyelev-rekommendation.
+        string? resolvedName = null;
+        var existing = withGap.FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(studentNameArg))
+        {
+            var match = withGap.FirstOrDefault(x => x.Name.Equals(studentNameArg, StringComparison.OrdinalIgnoreCase))
+                     ?? withGap.FirstOrDefault(x => x.Name.Contains(studentNameArg, StringComparison.OrdinalIgnoreCase));
+            resolvedName = match?.Name;
+            existing = match;
+        }
+
+        string text;
+        if (resolvedName != null && existing?.TeacherId != null)
+        {
+            var t = perTeacher.First(x => x.TeacherId == existing.TeacherId);
+            text = $"**{resolvedName}** går redan hos **{t.TeacherName}** ({t.StudentCount} elever i dennes grupp, snitt {t.AvgProgress:F0}% klart, " +
+                   $"{(t.AvgPaceGap <= 0 ? "före" : "efter")} förväntad takt).";
+        }
+        else
+        {
+            var targetLabel = resolvedName ?? "en ny elev";
+            text = recommendation is null
+                ? "Ingen lärarstatistik tillgänglig ännu."
+                : $"Rekommenderad lärare för **{targetLabel}**: **{recommendation.TeacherName}** " +
+                  $"({recommendation.StudentCount} elever, snitt {recommendation.AvgProgress:F0}% klart, " +
+                  $"{(recommendation.AvgPaceGap <= 0 ? "före" : "efter")} förväntad takt) – bra track record och inte högst arbetsbelastning.";
+        }
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = text,
+            Report = new AgentReport
+            {
+                Title = "Lärare–elev-matchning",
+                Summary = "Snittframsteg per lärares elevgrupp jämfört med förväntad takt",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Rekommenderad lärare", Value = recommendation?.TeacherName ?? "—" },
+                            new() { Label = "Dennes elevantal",     Value = recommendation is null ? "—" : $"{recommendation.StudentCount}" },
+                            new() { Label = "Snitt hela verksamheten", Value = $"{withGap.Average(x => x.avgProgress):F0}% klart" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Taktgap per lärare (negativt = före förväntad takt)",
+                        Categories = perTeacher.Select(x => x.TeacherName).ToList(),
+                        Series = { new ChartSeries { Name = "Taktgap (pp)", Values = perTeacher.Select(x => Math.Round(x.AvgPaceGap, 0)).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Columns = new() { "Lärare", "Antal elever", "Snitt framsteg", "Taktgap" },
+                        Rows = perTeacher.Select(x => new List<string>
+                        {
+                            x.TeacherName,
+                            $"{x.StudentCount}",
+                            $"{x.AvgProgress:F0}%",
+                            $"{(x.AvgPaceGap >= 0 ? "+" : "")}{x.AvgPaceGap:F0} pp",
                         }).ToList(),
                     }
                 }
