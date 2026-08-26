@@ -48,6 +48,8 @@ public class TestLlmReportAgent : IReportAgent
 
         new("Schema", "Vad är nästa bästa tid för Alice Bergström?"),
 
+        new("Kombinerade", "Varför gick marginalen ner i mars?"),
+
         // Kombo-frågor (kör flera tools på en gång):
         new("Kombinerade", "Visa omsättning och beläggning för året"),
         new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
