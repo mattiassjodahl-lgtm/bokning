@@ -23,7 +23,7 @@ builder.Services.AddSingleton<ReportExcelExporter>();
 
 // Tools delas mellan TestLlmReportAgent och OpenAIReportAgent.
 builder.Services.AddSingleton<IReadOnlyList<AgentTool>>(sp =>
-    ReportTools.Create(sp.GetRequiredService<BookingService>()));
+    ReportTools.Create(sp.GetRequiredService<BookingService>(), sp.GetRequiredService<WebsiteService>()));
 
 // Auto-välj agent: OpenAI om nyckel finns, annars deterministisk TestLlm.
 // Ger samma användarupplevelse i båda fallen – samma tools, samma rapporter.

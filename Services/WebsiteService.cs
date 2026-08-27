@@ -42,6 +42,27 @@ public class WebsiteService
 
     public IEnumerable<Employee> WebEmployees => Employees.Where(e => e.ShowOnWeb);
 
+    // ── Webbleads (mockdata, ej persisterad – se WebLead-kommentaren) ─────────
+    public List<WebLead> Leads { get; } = new()
+    {
+        new() { Id = 1,  Name = "Oscar Lindberg",   Email = "oscar.lindberg@example.com",   Message = "Vill boka B-körkort så snart som möjligt, när kan jag börja?",                          Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-2).AddHours(-3),  ResponseTimeHours = 4,  Converted = true  },
+        new() { Id = 2,  Name = "Sofia Bergqvist",   Email = "sofia.bergqvist@example.com",   Message = "Undrar vad ett paket för B-körkort kostar totalt.",                                     Source = "Kontaktformulär",  SubmittedAt = DateTime.Now.AddDays(-1).AddHours(-5),  ResponseTimeHours = 18, Converted = false },
+        new() { Id = 3,  Name = "Anton Wikström",    Email = "anton.wikstrom@example.com",    Message = "Hej! Jag vill boka in en provlektion snarast, är intresserad av att börja direkt.",     Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-1).AddHours(-1),  ResponseTimeHours = 2,  Converted = false },
+        new() { Id = 4,  Name = "Elin Åhman",        Email = "elin.ahman@example.com",        Message = "Får man nyhetsbrevet fast man inte är elev än?",                                        Source = "Nyhetsbrev",       SubmittedAt = DateTime.Now.AddDays(-9),               ResponseTimeHours = 48, Converted = false },
+        new() { Id = 5,  Name = "Marcus Fransén",    Email = "marcus.fransen@example.com",    Message = "Jag är intresserad av MC-körkort, vad kostar det och när finns lediga tider?",          Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-3).AddHours(-2),  ResponseTimeHours = 6,  Converted = true  },
+        new() { Id = 6,  Name = "Wilma Ekvall",      Email = "wilma.ekvall@example.com",      Message = "Undrar bara lite allmänt vad ni erbjuder för utbildningar.",                            Source = "Kontaktformulär",  SubmittedAt = DateTime.Now.AddDays(-6),               ResponseTimeHours = 30, Converted = false },
+        new() { Id = 7,  Name = "Simon Broberg",     Email = "simon.broberg@example.com",     Message = "Vill boka in intro-lektion snarast, kan börja redan nästa vecka.",                      Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-1),               ResponseTimeHours = 3,  Converted = true  },
+        new() { Id = 8,  Name = "Amanda Sjölin",     Email = "amanda.sjolin@example.com",     Message = "Hej, jag fyller 18 snart och vill börja ta B-körkort, vad är priset?",                  Source = "Kontaktformulär",  SubmittedAt = DateTime.Now.AddDays(-4).AddHours(-4),  ResponseTimeHours = 20, Converted = false },
+        new() { Id = 9,  Name = "Noah Kvist",        Email = "noah.kvist@example.com",        Message = "Bara nyfiken, har ingen brådska men undrar om ni har riskutbildning.",                  Source = "Nyhetsbrev",       SubmittedAt = DateTime.Now.AddDays(-14),              ResponseTimeHours = 60, Converted = false },
+        new() { Id = 10, Name = "Isabelle Dahl",     Email = "isabelle.dahl@example.com",     Message = "Vill boka provlektion, är redo att börja direkt om det finns tid denna vecka.",          Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddHours(-14),             ResponseTimeHours = 1,  Converted = false },
+        new() { Id = 11, Name = "Leo Sandvall",      Email = "leo.sandvall@example.com",      Message = "Jag undrar hur lång tid det brukar ta att ta B-körkort hos er.",                        Source = "Kontaktformulär",  SubmittedAt = DateTime.Now.AddDays(-7),               ResponseTimeHours = 26, Converted = false },
+        new() { Id = 12, Name = "Tuva Renberg",      Email = "tuva.renberg@example.com",      Message = "Vill boka B-körkort, har redan teorin klar via annan skola, kan jag börja praktik snarast?", Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-2),          ResponseTimeHours = 5,  Converted = true  },
+        new() { Id = 13, Name = "Kevin Ahlgren",     Email = "kevin.ahlgren@example.com",     Message = "Hej, är detta rätt ställe att fråga om öppettider?",                                    Source = "Kontaktformulär",  SubmittedAt = DateTime.Now.AddDays(-11),              ResponseTimeHours = 40, Converted = false },
+        new() { Id = 14, Name = "Ellinor Nyström",   Email = "ellinor.nystrom@example.com",   Message = "Vill boka in mig för AM-körkort (moped) snarast möjligt.",                              Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddHours(-20),             ResponseTimeHours = 3,  Converted = false },
+        new() { Id = 15, Name = "Rasmus Öhrn",       Email = "rasmus.ohrn@example.com",       Message = "Fick era nyheter i mejlen, undrar bara om ni har fler kurser på gång.",                 Source = "Nyhetsbrev",       SubmittedAt = DateTime.Now.AddDays(-16),              ResponseTimeHours = 52, Converted = false },
+        new() { Id = 16, Name = "Signe Hallberg",    Email = "signe.hallberg@example.com",    Message = "Vill boka provlektion för B-körkort, kan börja redan denna vecka om möjligt.",          Source = "Boka provlektion", SubmittedAt = DateTime.Now.AddDays(-1).AddHours(-6),  ResponseTimeHours = 5,  Converted = true  },
+    };
+
     // ── Persistens ────────────────────────────────────────────────────────────
     private WebsiteContent? Load()
     {

@@ -216,3 +216,24 @@ public class WebsiteContent
     public List<Employee>  Employees { get; set; } = new();
     public ThemeSettings   Theme     { get; set; } = new();
 }
+
+// ── Webbleads (intresseanmälningar) ───────────────────────────────────────────
+
+/// <summary>
+/// En inkommande förfrågan från hemsidan (kontaktformulär, "boka provlektion"-knapp
+/// eller nyhetsbrevsanmälan). Mockdata för AI-analysen "leadscoring" – ingår INTE i
+/// WebsiteContent och sparas alltså inte till JSON, utan genereras i minnet vid start
+/// precis som övrig demodata i BookingService.
+/// </summary>
+public class WebLead
+{
+    public int    Id                { get; set; }
+    public string Name              { get; set; } = "";
+    public string Email             { get; set; } = "";
+    public string Message           { get; set; } = "";
+    /// <summary>T.ex. "Boka provlektion", "Kontaktformulär", "Nyhetsbrev".</summary>
+    public string Source            { get; set; } = "";
+    public DateTime SubmittedAt     { get; set; }
+    public double ResponseTimeHours { get; set; }
+    public bool   Converted         { get; set; }
+}

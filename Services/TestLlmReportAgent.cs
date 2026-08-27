@@ -51,6 +51,8 @@ public class TestLlmReportAgent : IReportAgent
 
         new("Kombinerade", "Varför gick marginalen ner i mars?"),
 
+        new("Leads", "Vilka leads bör vi prioritera just nu?"),
+
         // Kombo-frågor (kör flera tools på en gång):
         new("Kombinerade", "Visa omsättning och beläggning för året"),
         new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
@@ -158,6 +160,9 @@ public class TestLlmReportAgent : IReportAgent
 
         if (ContainsAny(q, "prisförslag", "prisforslag", "prisjustering", "höja priset", "hoja priset", "sänka priset", "sanka priset", "kampanj", "rabatt"))
             return ("get_pricing_suggestions", "{}");
+
+        if (ContainsAny(q, "lead", "leads", "förfrågan", "forfragan", "förfrågningar", "forfragningar", "prioritera"))
+            return ("get_lead_scores", "{}");
 
         if (ContainsAny(q, "bel", "boka", "schema", "ledig", "full"))
         {

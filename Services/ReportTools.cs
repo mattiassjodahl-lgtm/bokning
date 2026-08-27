@@ -14,7 +14,7 @@ public static class ReportTools
     private static readonly Random _rng = new(42); // deterministisk demo
 
     /// <summary>Bygger hela toolset:et. Kallas en gång vid app-start och delas mellan agenter.</summary>
-    public static IReadOnlyList<AgentTool> Create(BookingService booking)
+    public static IReadOnlyList<AgentTool> Create(BookingService booking, WebsiteService website)
     {
         return new[]
         {
@@ -147,6 +147,13 @@ public static class ReportTools
                 Description = "Föreslår prisjusteringar per lektionstyp baserat på beläggning: höjning vid hög beläggning, kampanj/rabatt vid låg. Bygger på samma marginal- och beläggningsdata som övriga rapporter.",
                 ParametersSchema = EmptyObjectSchema,
                 Execute = _ => BuildPricingSuggestionsReport(booking),
+            },
+            new AgentTool
+            {
+                Name = "get_lead_scores",
+                Description = "Poängsätter inkommande leads/förfrågningar från hemsidan efter sannolikhet att bli betalande elev, baserat på källa, meddelandets köpsignaler och hur nytt leadet är.",
+                ParametersSchema = EmptyObjectSchema,
+                Execute = _ => BuildLeadScoresReport(website),
             },
             new AgentTool
             {
@@ -1189,6 +1196,90 @@ public static class ReportTools
                             $"{x.Utilization:F0}%",
                             $"{(x.AdjustPct >= 0 ? "+" : "")}{x.AdjustPct:F0}% – {x.Reason}",
                             $"{x.NewPrice:N0} kr",
+                        }).ToList(),
+                    }
+                }
+            }
+        };
+    }
+
+    private static readonly string[] HighIntentLeadWords = { "boka", "snarast", "redo", "direkt", "möjligt" };
+
+    private static AgentMessage BuildLeadScoresReport(WebsiteService website)
+    {
+        var leads = website.Leads;
+
+        // Konverteringsgrad per källa – räknas på ALLA leads (även konverterade), används
+        // som en del av poängen för de leads som ännu inte konverterat.
+        var conversionBySource = leads
+            .GroupBy(l => l.Source)
+            .ToDictionary(g => g.Key, g => g.Count(l => l.Converted) * 100.0 / g.Count());
+
+        var open = leads.Where(l => !l.Converted).Select(l =>
+        {
+            var daysSince = (DateTime.Now - l.SubmittedAt).TotalDays;
+            var highIntent = HighIntentLeadWords.Any(w => l.Message.Contains(w, StringComparison.OrdinalIgnoreCase));
+            var sourceRate = conversionBySource.TryGetValue(l.Source, out var r) ? r : 0.0;
+
+            var score = sourceRate * 0.4
+                      + (highIntent ? 30 : 0)
+                      + Math.Max(0, 10 - daysSince) * 2;
+
+            return new
+            {
+                l.Name, l.Source, l.Message, l.SubmittedAt,
+                DaysSince = daysSince, HighIntent = highIntent, Score = Math.Round(score, 0),
+            };
+        })
+        .OrderByDescending(x => x.Score)
+        .Take(8)
+        .ToList();
+
+        var bestSource = conversionBySource.OrderByDescending(kv => kv.Value).First();
+        var top = open.FirstOrDefault();
+
+        return new AgentMessage
+        {
+            Role = AgentRole.Agent,
+            Text = top is null
+                ? "Inga öppna leads att poängsätta just nu."
+                : $"**{top.Name}** har högst prioritet just nu ({top.Score:F0} poäng) – {(top.HighIntent ? "tydlig köpsignal i meddelandet" : "hög källkonvertering")} och {top.DaysSince:F0} dagar sedan förfrågan. " +
+                  $"Bäst konverterande kanal är **{bestSource.Key}** ({bestSource.Value:F0}%).",
+            Report = new AgentReport
+            {
+                Title = "Leadscoring – hemsidans förfrågningar",
+                Summary = "Öppna leads rankade efter köpsignaler, källa och hur nytt leadet är",
+                Blocks =
+                {
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.KeyFigures,
+                        Figures =
+                        {
+                            new() { Label = "Öppna leads",         Value = $"{leads.Count(l => !l.Converted)}" },
+                            new() { Label = "Bäst konverterande",  Value = bestSource.Key, Trend = $"{bestSource.Value:F0}%" },
+                            new() { Label = "Högst prioriterade",  Value = top?.Name ?? "—" },
+                        }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.BarChart,
+                        Heading = "Konverteringsgrad per källa",
+                        Categories = conversionBySource.Keys.ToList(),
+                        Series = { new ChartSeries { Name = "Konvertering %", Values = conversionBySource.Values.Select(v => Math.Round(v, 0)).ToList() } }
+                    },
+                    new ReportBlock
+                    {
+                        Kind = BlockKind.Table,
+                        Heading = "Topp öppna leads",
+                        Columns = new() { "Namn", "Källa", "Dagar sedan", "Köpsignal", "Poäng" },
+                        Rows = open.Select(x => new List<string>
+                        {
+                            x.Name,
+                            x.Source,
+                            $"{x.DaysSince:F0}",
+                            x.HighIntent ? "Ja" : "Nej",
+                            $"{x.Score:F0}",
                         }).ToList(),
                     }
                 }

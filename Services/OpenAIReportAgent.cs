@@ -64,6 +64,8 @@ public class OpenAIReportAgent : IReportAgent
 
         new("Kombinerade", "Varför gick marginalen ner i mars?"),
 
+        new("Leads", "Vilka leads bör vi prioritera just nu?"),
+
         // Kombo-frågor (LLM väljer flera tools samtidigt):
         new("Kombinerade", "Visa omsättning och beläggning för året"),
         new("Kombinerade", "Hur är elevstatistik och avbokningsfrekvens?"),
