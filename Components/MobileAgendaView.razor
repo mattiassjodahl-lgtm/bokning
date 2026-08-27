@@ -58,7 +58,7 @@
                 var resources = BookingService.GetResourcesById(evt.ResourceIds);
 
                 <div class="agenda-event @(evt.IsBooked ? "agenda-event-booked" : "agenda-event-free")"
-                     style="border-left-color: @(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                     style="border-left-color: @(evt.IsBooked ? (lt?.Color ?? "#297380") : "#2E7D32")"
                      @onclick="@(() => OnEventClick(evt))">
 
                     @* Time column *@

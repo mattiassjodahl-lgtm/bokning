@@ -400,8 +400,8 @@
                                     var blockRef = block;
                                     <div class="plan-block @(lt?.IsBookable == false ? "plan-block-nonbookable" : "") @(_draggingBlock?.Id == blockId ? "plan-block-dragging" : "")"
                                          style="top:@(topPx)px; height:@(heightPx)px;
-                                                background-color:@(lt?.LightColor ?? "#d3e7e5");
-                                                border-left-color:@(lt?.Color ?? "#1f5551")"
+                                                background-color:@(lt?.LightColor ?? "#d5e4e6");
+                                                border-left-color:@(lt?.Color ?? "#297380")"
                                          draggable="true"
                                          @ondragstart="@(() => OnBlockDragStart(blockRef))"
                                          @ondragstart:stopPropagation="true"

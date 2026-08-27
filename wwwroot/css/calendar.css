@@ -151,10 +151,10 @@
     margin: 2px auto 0;
 }
 
-.cal-today-header .cal-day-name { color: #c9822d; }
+.cal-today-header .cal-day-name { color: #246467; }
 
 .cal-today-circle {
-    background-color: #c9822d;
+    background-color: #297380;
     color: #fff !important;
     border-radius: 50%;
 }
@@ -239,7 +239,7 @@
 
 .cal-event {
     position: absolute;
-    border-left: 3px solid #1f5551;
+    border-left: 3px solid #297380;
     border-radius: 3px;
     padding: 2px 4px;
     cursor: pointer;
@@ -525,7 +525,7 @@
 }
 
 .cal-month-today {
-    background: #f9e4cd;
+    background: #f2f7f7;
 }
 
 .cal-month-date {
@@ -542,7 +542,7 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background-color: #c9822d;
+    background-color: #297380;
     color: #fff;
     font-weight: 700;
 }
@@ -569,7 +569,7 @@
 
 .cal-month-more {
     font-size: 10px;
-    color: #1f5551;
+    color: #297380;
     font-weight: 500;
     padding-left: 4px;
     cursor: pointer;
@@ -685,7 +685,7 @@
 }
 
 .mob-wk-today-hdr {
-    background: #f9e4cd;
+    background: #f2f7f7;
 }
 
 .mob-wk-day-name {
@@ -704,7 +704,7 @@
 }
 
 .mob-wk-today-circle {
-    background: #c9822d;
+    background: #297380;
     color: #fff !important;
     border-radius: 50%;
     width: 22px;
@@ -860,14 +860,14 @@
 .agenda-day-chip:hover { background: #f0f0f0; }
 
 .agenda-day-selected {
-    background: #1f5551 !important;
+    background: #297380 !important;
     color: #fff;
 }
 .agenda-day-selected .agenda-chip-name,
 .agenda-day-selected .agenda-chip-num { color: #fff; }
 
 .agenda-day-today .agenda-chip-num {
-    color: #c9822d;
+    color: #246467;
     font-weight: 700;
 }
 .agenda-day-selected.agenda-day-today .agenda-chip-num { color: #fff; }
@@ -889,7 +889,7 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: #1f5551;
+    background: #297380;
     margin-top: 3px;
 }
 .agenda-day-selected .agenda-chip-dot { background: rgba(255,255,255,0.8); }
@@ -920,7 +920,7 @@
     gap: 12px;
     background: #fff;
     border-radius: 12px;
-    border-left: 4px solid #1f5551;
+    border-left: 4px solid #297380;
     padding: 12px;
     margin-bottom: 8px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
@@ -1069,13 +1069,13 @@
 }
 
 .plan-lt-chip:hover {
-    background: #d3e7e5 !important;
+    background: #d5e4e6 !important;
     box-shadow: 0 1px 4px rgba(0,0,0,.12);
 }
 
 .plan-lt-chip-active {
     box-shadow: 0 2px 6px rgba(0,0,0,.18) !important;
-    outline: 2px solid #1f5551;
+    outline: 2px solid #297380;
     outline-offset: 1px;
 }
 
@@ -1139,7 +1139,7 @@
     white-space: nowrap;
 }
 
-.plan-schema-chip:hover { background: #d3e7e5; }
+.plan-schema-chip:hover { background: #d5e4e6; }
 
 .plan-schema-chip-active {
     background: #e8f5e9;
@@ -1339,11 +1339,11 @@
     transition: color .15s, border-color .15s;
 }
 
-.plan-week-tab:hover { color: #1f5551; }
+.plan-week-tab:hover { color: #297380; }
 
 .plan-week-tab-active {
-    color: #1f5551 !important;
-    border-bottom-color: #1f5551;
+    color: #297380 !important;
+    border-bottom-color: #297380;
 }
 
 .plan-week-tab-add, .plan-week-tab-remove {
@@ -1464,7 +1464,7 @@
     position: absolute;
     left: 2px;
     right: 2px;
-    border-left: 4px solid #1f5551;
+    border-left: 4px solid #297380;
     border-radius: 4px;
     box-sizing: border-box;
     padding: 2px 4px 2px 6px;
@@ -1517,7 +1517,7 @@
 /* Block under drag */
 .plan-block-dragging {
     opacity: .45;
-    outline: 2px dashed #1f5551;
+    outline: 2px dashed #297380;
 }
 
 /* ── Tid i block ── */
@@ -1537,10 +1537,10 @@
 .plan-block-time-edit {
     width: 46px;
     font-size: 10px;
-    color: #1f5551;
+    color: #297380;
     font-weight: 600;
     border: none;
-    border-bottom: 1px solid #1f5551;
+    border-bottom: 1px solid #297380;
     background: transparent;
     padding: 0;
     outline: none;
@@ -1643,7 +1643,7 @@
     transition: border-color .15s, color .15s;
 }
 
-.plan-schema-new:hover { border-color: #1f5551; color: #1f5551; }
+.plan-schema-new:hover { border-color: #297380; color: #297380; }
 
 /* ── Empty state ────────────────────────────────────────────────────────────── */
 
@@ -1780,8 +1780,8 @@
 }
 
 .tcw-day-today {
-    background: #f9e4cd;
-    color: #c9822d;
+    background: #f2f7f7;
+    color: #246467;
     font-weight: 700;
 }
 
@@ -1811,7 +1811,7 @@
 .tcw-drop-slot[dragover],
 .tcw-drop-slot.drag-over {
     background: rgba(33,150,243,.2);
-    outline: 2px dashed #1f5551;
+    outline: 2px dashed #297380;
 }
 
 /* ── Ledigt pass (template-slot) ─────────────────────────────────────────── */
@@ -1841,7 +1841,7 @@
     position: absolute;
     left: 1px;
     right: 1px;
-    border-left: 3px solid #1f5551;
+    border-left: 3px solid #297380;
     border-radius: 3px;
     padding: 1px 3px;
     cursor: pointer;
@@ -1871,7 +1871,7 @@
 
 /* Elevens egna pass – tydlig markering med ring och full opacitet */
 .cal-student-highlight {
-    outline: 2px solid #1f5551;
+    outline: 2px solid #297380;
     outline-offset: -1px;
     box-shadow: 0 0 0 3px rgba(31, 85, 81, .25);
     z-index: 2;
@@ -1885,7 +1885,7 @@
 
 /* MonthView-varianter */
 .cal-mv-tl-event.cal-student-highlight {
-    outline: 2px solid #1f5551;
+    outline: 2px solid #297380;
     outline-offset: -1px;
     box-shadow: 0 0 0 3px rgba(31, 85, 81, .2);
 }
@@ -1896,7 +1896,7 @@
 
 /* TeacherWeekView-varianter */
 .tcw-evt-booked.cal-student-highlight {
-    outline: 2px solid #1f5551;
+    outline: 2px solid #297380;
     outline-offset: -1px;
     box-shadow: 0 0 0 3px rgba(31, 85, 81, .25);
 }
@@ -2014,7 +2014,7 @@
     font-size: 13px;
     font-weight: 500;
     color: #263238;
-    border-left: 3px solid #1f5551;
+    border-left: 3px solid #297380;
     padding-left: 8px;
 }
 

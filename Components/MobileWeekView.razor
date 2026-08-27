@@ -74,7 +74,7 @@
                         var lt      = evt.LessonTypeId.HasValue
                                           ? BookingService.GetLessonType(evt.LessonTypeId.Value)
                                           : null;
-                        var bg = evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#43a047";
+                        var bg = evt.IsBooked ? (lt?.Color ?? "#297380") : "#43a047";
                         var h  = pe.Height;
 
                         // Tooltip

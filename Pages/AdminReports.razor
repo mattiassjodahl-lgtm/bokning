@@ -35,7 +35,7 @@
                 @if (_messages.Count == 0)
                 {
                     <div class="rp-empty">
-                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Large" Style="color:#1565C0" />
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Large" Style="color:#297380" />
                         <MudText Typo="Typo.h6" Class="mt-2">Hej! Vad vill du veta?</MudText>
                         <MudText Typo="Typo.body2" Style="color:#616161">Jag har tillgång till körskolans försäljning och bokningar.</MudText>
                     </div>
@@ -57,7 +57,7 @@
                         <div class="rp-bubble">
                             @if (m.Role == AgentRole.Agent)
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Style="color:#1565C0;margin-right:6px;vertical-align:middle" />
+                                <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Size="Size.Small" Style="color:#297380;margin-right:6px;vertical-align:middle" />
                             }
                             @((MarkupString)RenderBasicMarkdown(m.Text))
                         </div>
@@ -258,7 +258,7 @@
         font-size: 14px;
         line-height: 1.45;
     }
-    .rp-msg-user .rp-bubble  { background: #1565C0; color: white; border-bottom-right-radius: 4px; }
+    .rp-msg-user .rp-bubble  { background: #297380; color: white; border-bottom-right-radius: 4px; }
     .rp-msg-agent .rp-bubble { background: #F5F5F5; color: #212121; border-bottom-left-radius: 4px; }
     .rp-thinking { display: inline-flex; align-items: center; }
     .rp-suggestions-wrap {
@@ -290,10 +290,10 @@
     .rp-chip-row { padding: 4px 12px 10px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
     .rp-chip {
         font-size: 12px; padding: 6px 12px; border-radius: 14px;
-        border: 1px solid #BBDEFB; background: #E3F2FD; color: #1565C0;
+        border: 1px solid #a8c9cd; background: #d5e4e6; color: #297380;
         cursor: pointer;
     }
-    .rp-chip:hover { background: #1565C0; color: white; }
+    .rp-chip:hover { background: #297380; color: white; }
     .rp-chip-fav {
         border-color: #FFE082; background: #FFF8E1; color: #F57F17;
     }
@@ -350,7 +350,7 @@
     }
     .rp-kf { padding: 10px 12px; border: 1px solid #E0E0E0; border-radius: 8px; background: #FAFAFA; }
     .rp-kf-label { font-size: 11px; color: #757575; text-transform: uppercase; letter-spacing: 0.5px; }
-    .rp-kf-value { font-size: 22px; font-weight: 700; color: #1565C0; margin-top: 2px; }
+    .rp-kf-value { font-size: 22px; font-weight: 700; color: #297380; margin-top: 2px; }
     .rp-kf-trend { font-size: 11px; color: #388E3C; margin-top: 2px; }
 
     @@media (max-width: 900px) {
@@ -604,7 +604,7 @@
             {
                 var val = series[si].Values.ElementAtOrDefault(ci);
                 var h = (int)(val / max * 180);
-                var color = si == 0 ? "#1565C0" : "#00897B";
+                var color = si == 0 ? "#297380" : "#00897B";
 
                 builder.OpenElement(7, "div");
                 builder.AddAttribute(8, "title", $"{series[si].Name}: {val:N0}");
@@ -631,7 +631,7 @@
             builder.AddAttribute(21, "style", "display:flex;gap:16px;margin-top:8px;font-size:12px;color:#616161");
             for (int si = 0; si < series.Count; si++)
             {
-                var color = si == 0 ? "#1565C0" : "#00897B";
+                var color = si == 0 ? "#297380" : "#00897B";
                 builder.OpenElement(22, "div");
                 builder.AddAttribute(23, "style", "display:flex;align-items:center;gap:6px");
                 builder.OpenElement(24, "span");

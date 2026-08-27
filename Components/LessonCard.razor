@@ -47,7 +47,7 @@
                 <span style="font-size:10px;padding:1px 6px;border-radius:10px;background:@MomentStatusColor(m.Score);color:white;white-space:nowrap;@(needsComment ? "outline:2px solid #FF6D00;outline-offset:1px" : "")">@m.Title</span>
             }
         </div>
-        @if (!string.IsNullOrEmpty(Evt.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#1565C0;flex-shrink:0;margin-top:2px" /> }
+        @if (!string.IsNullOrEmpty(Evt.LessonComment)) { <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:15px;color:#297380;flex-shrink:0;margin-top:2px" /> }
         <MudIcon Icon="@(isExp ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Style="color:#9E9E9E;flex-shrink:0;margin-top:1px" />
     </div>
     @if (isExp)
@@ -66,12 +66,12 @@
                             var active   = _activeSectionIdx == idx;
                             var label    = !string.IsNullOrEmpty(sec.Mark) ? sec.Mark : sec.Title;
                             <button type="button"
-                                    style="font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid @(active ? "#1565C0" : "#E0E0E0");background:@(active ? "#1565C0" : "white");color:@(active ? "white" : "#212121");cursor:pointer;display:inline-flex;align-items:center;gap:4px"
+                                    style="font-size:12px;padding:4px 10px;border-radius:14px;border:1px solid @(active ? "#297380" : "#E0E0E0");background:@(active ? "#297380" : "white");color:@(active ? "white" : "#212121");cursor:pointer;display:inline-flex;align-items:center;gap:4px"
                                     @onclick="() => ToggleSection(idx)">
                                 @label
                                 @if (selected > 0)
                                 {
-                                    <span style="font-size:10px;font-weight:700;padding:0 5px;border-radius:8px;background:@(active ? "white" : "#1565C0");color:@(active ? "#1565C0" : "white")">@selected/@total</span>
+                                    <span style="font-size:10px;font-weight:700;padding:0 5px;border-radius:8px;background:@(active ? "white" : "#297380");color:@(active ? "#297380" : "white")">@selected/@total</span>
                                 }
                             </button>
                         }
@@ -80,7 +80,7 @@
                     {
                         var activeSec = EduPlan.Sections[activeIdx];
                         <div style="padding:8px 12px;border-top:1px solid #E0E0E0;background:white">
-                            <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                            <div style="font-size:11px;font-weight:700;color:#297380;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
                                 @if (!string.IsNullOrEmpty(activeSec.Mark)) { <span style="margin-right:4px">@activeSec.Mark</span> }
                                 @activeSec.Title
                             </div>
@@ -108,7 +108,7 @@
             @foreach (var grp in mGroups)
             {
                 <div style="margin-bottom:12px">
-                    <div style="font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+                    <div style="font-size:11px;font-weight:700;color:#297380;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
                         @if (!string.IsNullOrEmpty(grp.Item1.Mark)) { <span style="margin-right:4px">@grp.Item1.Mark</span> }
                         @grp.Item1.Title
                     </div>
@@ -138,7 +138,7 @@
                                 <MudCheckBox T="bool" Value="@moc.Independent" ValueChanged="@(v => { moc.Independent = v; StateHasChanged(); })" Label="Självständigt" Dense="true" Size="Size.Small" Color="Color.Primary" />
                             </div>
                             <div style="display:flex;align-items:center;gap:6px">
-                                <span style="font-size:11px;color:#1565C0;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ck)">
+                                <span style="font-size:11px;color:#297380;cursor:pointer;display:flex;align-items:center;gap:3px" @onclick="() => ToggleComment(ck)">
                                     <MudIcon Icon="@Icons.Material.Filled.Comment" Style="font-size:13px" />
                                     @(IsCommentOpen(ck) ? "Dölj kommentar" : (string.IsNullOrEmpty(moc.Comment) ? "Lägg till kommentar" : "Visa kommentar"))
                                 </span>

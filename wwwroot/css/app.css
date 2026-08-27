@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Inter', 'Roboto', sans-serif;
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
     height: 100%;
     margin: 0;
     overflow: hidden;
@@ -11,7 +11,7 @@ html, body {
 .mud-input,
 .mud-chip,
 .mud-table {
-    font-family: 'Inter', 'Roboto', sans-serif;
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
 }
 
 :root {
@@ -133,7 +133,7 @@ html, body {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #1f5551;
+    background: #297380;
     border: 2px solid white;
     box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     cursor: pointer;
@@ -142,7 +142,7 @@ html, body {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #1f5551;
+    background: #297380;
     border: 2px solid white;
     box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     cursor: pointer;

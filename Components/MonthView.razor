@@ -50,8 +50,8 @@
                                  : null;
 
                     <div class="cal-mv-tl-event @(evt.IsBooked ? "" : "cal-mv-tl-event-free") @StudentFilterClass(evt)"
-                         style="background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#E3F2FD") : "#E8F5E9");
-                                border-top-color:@(evt.IsBooked ? (lt?.Color ?? "#1565C0") : "#2E7D32")"
+                         style="background-color:@(evt.IsBooked ? (lt?.LightColor ?? "#d5e4e6") : "#E8F5E9");
+                                border-top-color:@(evt.IsBooked ? (lt?.Color ?? "#297380") : "#2E7D32")"
                          title="@(evt.IsBooked
                                      ? $"{evt.StudentName} – {lt?.Name}"
                                      : $"Ledig: {lt?.Name ?? "okänd typ"}")"

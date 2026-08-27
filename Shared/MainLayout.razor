@@ -10,16 +10,26 @@
 </MudLayout>
 
 @code {
-    // Optima-teal (UX-koncept "STR - Design Mockups") ersätter tidigare blått tema.
+    // Matchar skarpa produkten optimasmart.se (avläst 2026-08-27) — ersätter tidigare UX-mockup-teal.
     private MudTheme _theme = new MudTheme()
     {
         PaletteLight = new PaletteLight()
         {
-            Primary = "#1f5551",
-            Secondary = "#33827c",
-            AppbarBackground = "#1f5551",
+            Primary = "#297380",
+            Secondary = "#63a336",
+            Tertiary = "#fd8d3b",
+            Info = "#3ca6ac",
+            Success = "#45a78f",
+            Warning = "#fd8d3b",
+            Error = "#c62828",
+            AppbarBackground = "#297380",
+            AppbarText = "#ffffff",
+            DrawerBackground = "#ffffff",
+            DrawerText = "#246467",
             Background = "#F5F5F5",
             Surface = "#FFFFFF",
+            TextPrimary = "#246467",
+            TextSecondary = "#3a3a3a",
         }
     };
 }

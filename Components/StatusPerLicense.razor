@@ -19,7 +19,7 @@
         <div style="margin-bottom:18px">
             @if (Profile.LicenseCategories.Count > 1)
             {
-                <div style="font-size:12px;font-weight:700;color:#1f5551;margin-bottom:8px;display:flex;align-items:center;gap:4px">
+                <div style="font-size:12px;font-weight:700;color:#297380;margin-bottom:8px;display:flex;align-items:center;gap:4px">
                     <MudIcon Icon="@Icons.Material.Filled.DriveEta" Style="font-size:14px" />
                     Behörighet @cat
                 </div>
@@ -40,7 +40,7 @@
                 @if (Profile.EduPlan != null)
                 {
                     <div style="display:flex;justify-content:flex-end;margin-top:4px">
-                        <span style="font-size:11px;color:#1f5551;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                        <span style="font-size:11px;color:#297380;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
                               @onclick="() => TogglePraktikDetails(cat)">
                             @if (_praktikDetailsExpanded.Contains(cat))
                             {
@@ -91,7 +91,7 @@
                 @if (Profile.TheoryAreaProgress.Count > 0)
                 {
                     <div style="display:flex;justify-content:flex-end;margin-top:4px">
-                        <span style="font-size:11px;color:#1f5551;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
+                        <span style="font-size:11px;color:#297380;cursor:pointer;user-select:none;display:flex;align-items:center;gap:2px"
                               @onclick="() => ToggleTheoryDetails(lcat)">
                             @if (areaExpanded)
                             {
@@ -110,7 +110,7 @@
                     {
                         <div style="margin-top:6px;padding:10px 12px;background:#FAFAFA;border:1px solid #E8E8E8;border-radius:8px">
                             <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-                                <div style="width:2px;height:10px;background:#1f5551;border-radius:1px;flex-shrink:0"></div>
+                                <div style="width:2px;height:10px;background:#297380;border-radius:1px;flex-shrink:0"></div>
                                 <span style="font-size:10px;color:#757575">= 75 % (målnivå)</span>
                             </div>
                             @foreach (var area in Profile.TheoryAreaProgress)
@@ -125,7 +125,7 @@
                                         <div style="height:6px;background:#E0E0E0;border-radius:4px;overflow:hidden">
                                             <div style="width:@(area.Percentage)%;height:100%;background:@pctColor;border-radius:4px"></div>
                                         </div>
-                                        <div style="position:absolute;top:-2px;left:75%;transform:translateX(-50%);width:2px;height:10px;background:#1f5551;border-radius:1px;pointer-events:none"></div>
+                                        <div style="position:absolute;top:-2px;left:75%;transform:translateX(-50%);width:2px;height:10px;background:#297380;border-radius:1px;pointer-events:none"></div>
                                     </div>
                                 </div>
                             }
