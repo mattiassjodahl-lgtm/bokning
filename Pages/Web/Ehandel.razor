@@ -1,47 +1,47 @@
 @page "/webb/ehandel"
 @layout PublicLayout
+@implements IAsyncDisposable
 @inject WebsiteService Web
+@inject IConfiguration Config
+@inject IJSRuntime JS
 
 <PageTitle>E-handel – @Web.School.Name</PageTitle>
 
 <section class="ps-section">
     <div class="ps-wrap">
         <h1>E-handel</h1>
-        <div class="ps-note ps-mt" role="note">
-            E-handeln är under uppbyggnad. Här kommer du snart kunna köpa kurser och tillval direkt på webben.
-            Nedan visas ett urval som exempel.
-        </div>
+        <p class="ps-mt">Köp kurser och tillval direkt här på webben.</p>
 
-        <div class="ps-grid ps-grid--3 ps-mt">
-            @{ var products = Web.WebProducts.Take(6).ToList(); }
-            @for (var i = 0; i < products.Count; i++)
-            {
-                var p = products[i];
-                <article class="ps-card ps-card--media">
-                    <div class="ps-card__media ps-photo" role="img" aria-label="@p.Name"
-                         style="background-image:url('@Banners[i % Banners.Length]')"></div>
-                    <div class="ps-card__body">
-                        <h2 style="font-size:1.15rem">@p.Name</h2>
-                        <p class="ps-price" style="font-size:1.25rem;color:var(--ps-ink)">@p.Price.ToString("N0", Sv) kr</p>
-                        <button class="ps-btn ps-btn--outline" type="button" disabled aria-disabled="true">Lägg i varukorg</button>
-                    </div>
-                </article>
-            }
-        </div>
+        @* Optima Store monteras in i denna div via JS-interop, se wwwroot/js/optimaStore.js.
+           Nycklarna hämtas från appsettings.json (OptimaStore-sektionen). *@
+        <div id="optima-store" class="ps-mt"></div>
     </div>
 </section>
 
 @code {
-    private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
+    private const string ContainerId = "optima-store";
 
-    // Bild-banners som roteras över produktkorten (mock).
-    private static readonly string[] Banners =
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        "/Img/Webb/sara-kurfess-bHNip8GaOso-unsplash.jpg",
-        "/Img/Webb/mira-kireeva-GXA2XiAsko8-unsplash.jpg",
-        "/Img/Webb/foto-k-FYhEP1UMfcY-unsplash.jpg",
-        "/Img/Webb/art-markiv-zAm1sdicGXc-unsplash.jpg",
-        "/Img/Webb/rolando-garrido-R4y4_dvpYXU-unsplash.jpg",
-        "/Img/Webb/michael-kahn-Hfyrh5vUhuY-unsplash.jpg",
-    };
+        if (!firstRender) return;
+
+        await JS.InvokeVoidAsync("optimaStore.mount", ContainerId, new
+        {
+            scriptUrl = Config["OptimaStore:ScriptUrl"],
+            apiKey = Config["OptimaStore:ApiKey"],
+            apiUrl = Config["OptimaStore:BaseApiUrl"],
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("optimaStore.unmount", ContainerId);
+        }
+        catch (JSDisconnectedException)
+        {
+            // SignalR-kretsen är redan nedkopplad (t.ex. sidan stängd) – inget att städa upp.
+        }
+    }
 }
