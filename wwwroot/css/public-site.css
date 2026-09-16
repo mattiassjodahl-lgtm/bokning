@@ -93,6 +93,20 @@ body:has(.ps-site) {
     position: sticky; top: 0; z-index: 50;
     background: var(--ps-header-bg); border-bottom: 1px solid var(--ps-line);
 }
+
+/* Utility-list (Elev / Körkortsboken / STR m.fl. mockade länkar) – samma yta
+   som headern, en tunn linje skiljer den från huvudmenyn under. */
+.ps-utility { border-bottom: 1px solid var(--ps-line); }
+.ps-utility__inner {
+    display: flex; justify-content: flex-end; align-items: center; gap: 1.1rem;
+    padding-top: .4rem; padding-bottom: .4rem;
+}
+.ps-utility a {
+    font-size: .8rem; font-weight: 500; color: var(--ps-muted); text-decoration: none;
+}
+.ps-utility a:hover { color: var(--ps-primary); }
+.ps-utility a[target="_blank"]::after { content: " ↗"; font-size: .8em; }
+
 .ps-header__inner { display: flex; align-items: center; gap: 1rem; min-height: 72px; }
 .ps-brand { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: var(--ps-header-ink); font-weight: 700; }
 .ps-logo {

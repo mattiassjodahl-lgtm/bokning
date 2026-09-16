@@ -31,6 +31,16 @@
     <a class="ps-skip" href="#ps-main">Hoppa till innehåll</a>
 
     <header class="ps-header">
+        @* Utility-list: mockade/externa länkar – ligger ovanför huvudmenyn, samma yta som headern *@
+        <div class="ps-utility">
+            <div class="ps-wrap ps-wrap--full ps-utility__inner">
+                @foreach (var ext in ExternalLinks)
+                {
+                    <a href="@ext.Href" target="_blank" rel="noopener" title="Mockad länk – kopplas i affärssystemet">@ext.Label</a>
+                }
+            </div>
+        </div>
+
         <div class="ps-wrap ps-wrap--full ps-header__inner">
             <a class="ps-brand" href="/webb/start">
                 @if (!string.IsNullOrEmpty(Web.School.LogoImage))
@@ -58,10 +68,6 @@
                                aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a>
                         </li>
                     }
-                    @foreach (var ext in ExternalLinks)
-                    {
-                        <li><a href="@ext.Href" target="_blank" rel="noopener" title="Mockad länk – kopplas i affärssystemet">@ext.Label</a></li>
-                    }
                 </ul>
             </nav>
 
@@ -73,10 +79,6 @@
                         @foreach (var item in NavItems)
                         {
                             <li><a href="@item.Href" aria-current="@(IsCurrent(item.Href) ? "page" : null)">@item.Label</a></li>
-                        }
-                        @foreach (var ext in ExternalLinks)
-                        {
-                            <li><a href="@ext.Href" target="_blank" rel="noopener">@ext.Label ↗</a></li>
                         }
                     </ul>
                 </div>
