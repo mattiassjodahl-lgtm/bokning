@@ -62,7 +62,7 @@
                                              Dense="true"
                                              StopClickPropagation="true"
                                              ValueChanged="@((bool v) => OnMembershipChanged(tc.Id, g.Id, v))" />
-                                <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:9px;flex-shrink:0")"
+                                <MudAvatar Style="@($"background-color:{tc.Color};color:white;width:20px;height:20px;font-size:8px;letter-spacing:-0.4px;flex-shrink:0")"
                                            Size="Size.Small">@tc.Initials</MudAvatar>
                                 <span style="font-size:13px">@tc.Name</span>
                                 @if (tc.Group != 0 && tc.Group != g.Id)

@@ -13,18 +13,18 @@ public class BookingService
     public List<Teacher> Teachers { get; } = new()
     {
         // ── Grupp 1 ──────────────────────────────────────────────────────────
-        new() { Id = 1, Name = "Anna Lindgren",    Initials = "AL", Color = "#1565C0", LightColor = "#BBDEFB", IsSelected = true,  Group = 1 },
-        new() { Id = 2, Name = "Erik Svensson",    Initials = "ES", Color = "#00695C", LightColor = "#B2DFDB", IsSelected = true,  Group = 1 },
-        new() { Id = 3, Name = "Maria Johansson",  Initials = "MJ", Color = "#6A1B9A", LightColor = "#E1BEE7", IsSelected = true,  Group = 1 },
-        new() { Id = 4, Name = "Johan Persson",    Initials = "JP", Color = "#E65100", LightColor = "#FFE0B2", IsSelected = false, Group = 1 },
-        new() { Id = 5, Name = "Petra Nilsson",    Initials = "PN", Color = "#558B2F", LightColor = "#DCEDC8", IsSelected = false, Group = 1 },
-        new() { Id = 6, Name = "Lars Karlsson",    Initials = "LK", Color = "#880E4F", LightColor = "#FCE4EC", IsSelected = false, Group = 1 },
+        new() { Id = 1, Name = "Anna Lindgren",    Initials = "ALI", Color = "#1565C0", LightColor = "#BBDEFB", IsSelected = true,  Group = 1 },
+        new() { Id = 2, Name = "Erik Svensson",    Initials = "ESV", Color = "#00695C", LightColor = "#B2DFDB", IsSelected = true,  Group = 1 },
+        new() { Id = 3, Name = "Maria Johansson",  Initials = "MJO", Color = "#6A1B9A", LightColor = "#E1BEE7", IsSelected = true,  Group = 1 },
+        new() { Id = 4, Name = "Johan Persson",    Initials = "JPE", Color = "#E65100", LightColor = "#FFE0B2", IsSelected = false, Group = 1 },
+        new() { Id = 5, Name = "Petra Nilsson",    Initials = "PNI", Color = "#558B2F", LightColor = "#DCEDC8", IsSelected = false, Group = 1 },
+        new() { Id = 6, Name = "Lars Karlsson",    Initials = "LKA", Color = "#880E4F", LightColor = "#FCE4EC", IsSelected = false, Group = 1 },
         // ── Grupp 2 ──────────────────────────────────────────────────────────
-        new() { Id = 7, Name = "Sara Lindström",   Initials = "SL", Color = "#0277BD", LightColor = "#B3E5FC", IsSelected = false, Group = 2 },
-        new() { Id = 8, Name = "Mikael Berggren",  Initials = "MB", Color = "#C62828", LightColor = "#FFCDD2", IsSelected = false, Group = 2 },
-        new() { Id = 9, Name = "Lena Öberg",       Initials = "LÖ", Color = "#37474F", LightColor = "#CFD8DC", IsSelected = false, Group = 2 },
-        new() { Id =10, Name = "Anders Holm",      Initials = "AH", Color = "#00838F", LightColor = "#E0F7FA", IsSelected = false, Group = 2 },
-        new() { Id =11, Name = "Kristin Fransson", Initials = "KF", Color = "#6D4C41", LightColor = "#EFEBE9", IsSelected = false, Group = 2 },
+        new() { Id = 7, Name = "Sara Lindström",   Initials = "SLI", Color = "#0277BD", LightColor = "#B3E5FC", IsSelected = false, Group = 2 },
+        new() { Id = 8, Name = "Mikael Berggren",  Initials = "MBE", Color = "#C62828", LightColor = "#FFCDD2", IsSelected = false, Group = 2 },
+        new() { Id = 9, Name = "Lena Öberg",       Initials = "LÖB", Color = "#37474F", LightColor = "#CFD8DC", IsSelected = false, Group = 2 },
+        new() { Id =10, Name = "Anders Holm",      Initials = "AHO", Color = "#00838F", LightColor = "#E0F7FA", IsSelected = false, Group = 2 },
+        new() { Id =11, Name = "Kristin Fransson", Initials = "KFR", Color = "#6D4C41", LightColor = "#EFEBE9", IsSelected = false, Group = 2 },
     };
 
     // ── Teacher groups ────────────────────────────────────────────────────────
