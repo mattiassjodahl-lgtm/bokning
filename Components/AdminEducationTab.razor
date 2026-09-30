@@ -36,6 +36,22 @@
                                       ShowAlt="true" AltValue="@c.ImageAlt" AltChanged="@(v => c.ImageAlt = v)" />
                 </MudItem>
                 <MudItem xs="12">
+                    @if (c.HasPage)
+                    {
+                        <AdminSeoFields Title="@c.Title" Path="@EduPath(c)"
+                                        Description="@c.SeoDescription" DescriptionChanged="@(v => c.SeoDescription = v)"
+                                        Image="@c.SeoImage" ImageChanged="@(v => c.SeoImage = v)"
+                                        FallbackDescription="@c.Description" DescriptionSource="den korta beskrivningen"
+                                        ImageFallbackText="Tomt fält: utbildningens bild används, annars skolans standardbild." />
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Utbildningen har ingen egen sida och syns därför inte i sökresultat. Ange en länk ovan för att styra beskrivning och delningsbild.
+                        </MudAlert>
+                    }
+                </MudItem>
+                <MudItem xs="12">
                     <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
                                OnClick="@(() => Web.Settings.EducationCards.Remove(c))">Ta bort utbildning</MudButton>
                 </MudItem>
@@ -51,6 +67,8 @@
 </div>
 
 @code {
+    private static string EduPath(EducationCard c) => "/webb/utbildning/" + c.Slug;
+
     private static List<string> SplitLines(string? text) =>
         (text ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 

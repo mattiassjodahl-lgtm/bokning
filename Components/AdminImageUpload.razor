@@ -78,6 +78,8 @@
     [Parameter] public int MaxKb     { get; set; } = 500;
     /// <summary>Tillåt SVG (logotyper). SVG skalas och pixelkontrolleras inte.</summary>
     [Parameter] public bool AllowSvg { get; set; }
+    /// <summary>Bara JPG och PNG, t.ex. för delningsbilder som inte alla tjänster kan visa som WebP.</summary>
+    [Parameter] public bool JpgPngOnly { get; set; }
     /// <summary>True = konvertera till WebP. False = behåll formatet (logotyper).</summary>
     [Parameter] public bool ConvertToWebp { get; set; } = true;
 
@@ -85,11 +87,12 @@
 
     private string Format => ConvertToWebp ? "webp" : "original";
 
-    private string Accept => AllowSvg
-        ? "image/jpeg,image/png,image/webp,image/gif,.svg"
+    private string Accept =>
+        JpgPngOnly ? "image/jpeg,image/png"
+        : AllowSvg ? "image/jpeg,image/png,image/webp,image/gif,.svg"
         : "image/jpeg,image/png,image/webp,image/gif";
 
-    private ImageRules Rules => new(MinWidth, MinHeight, MaxWidth, MaxKb, AllowSvg);
+    private ImageRules Rules => new(MinWidth, MinHeight, MaxWidth, MaxKb, AllowSvg, JpgPngOnly);
 
     private string Requirements
     {

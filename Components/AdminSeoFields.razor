@@ -1,0 +1,77 @@
+@inject WebsiteService Web
+@inject NavigationManager Nav
+
+@* ════════════════════════════════════════════════════════════════════════
+   Sök och delning: metabeskrivning och delningsbild för en enskild sida.
+   Återanvänds på startsidan, utbildningar, nyheter och övriga sidor.
+   Fälten är valfria; tomt fält ger sidans automatiska text och bild.
+   ════════════════════════════════════════════════════════════════════════ *@
+<div style="border:1px solid #d9dee3; border-radius:8px; padding:1rem; margin-top:.5rem">
+    <MudText Typo="Typo.subtitle2" GutterBottom="true">Sök och delning</MudText>
+    <MudText Typo="Typo.caption" Style="color:#555; display:block; margin-bottom:.75rem">
+        Beskrivningen är den korta texten under rubriken i Googles träfflista. Delningsbilden visas när någon delar
+        länken i sociala medier eller i ett meddelande. Båda avgör om någon klickar sig vidare till sidan.
+        Fälten är valfria: lämnar du dem tomma används den automatiska texten och bilden som anges under fältet.
+    </MudText>
+
+    <MudTextField T="string" Label="Beskrivning i sökresultat" Variant="Variant.Outlined" Lines="2"
+                  Value="@Description" ValueChanged="@(v => DescriptionChanged.InvokeAsync(v))"
+                  Immediate="true" MaxLength="160" Counter="160"
+                  HelperText="@HelperText" />
+
+    <MudText Typo="Typo.caption" Style="display:block; margin:.75rem 0 .25rem; color:#555">Så kan sidan se ut i Google</MudText>
+    <div style="border:1px solid #e3e6ea; border-radius:8px; padding:.75rem 1rem; background:#fff; max-width:600px">
+        <div style="color:#1a0dab; font-size:1.05rem; line-height:1.3">@ResultTitle</div>
+        <div style="color:#188038; font-size:.8rem; margin:.15rem 0">@DisplayUrl</div>
+        @if (string.IsNullOrEmpty(Effective))
+        {
+            <div style="color:#888; font-size:.875rem; font-style:italic">Ingen beskrivning. Google väljer själv en text ur sidan.</div>
+        }
+        else
+        {
+            <div style="color:#4d5156; font-size:.875rem">@Effective</div>
+        }
+    </div>
+
+    @if (string.IsNullOrWhiteSpace(Description))
+    {
+        <MudText Typo="Typo.caption" Style="display:block; margin-top:.25rem; color:#555">
+            Tomt fält: texten hämtas ur @DescriptionSource.
+        </MudText>
+    }
+
+    <MudText Typo="Typo.subtitle2" Style="margin-top:1rem">Delningsbild</MudText>
+    <AdminImageUpload Value="@Image" ValueChanged="@(v => ImageChanged.InvokeAsync(v))"
+                      Subfolder="delning" MinWidth="1200" MinHeight="630" MaxKb="300"
+                      ConvertToWebp="false" JpgPngOnly="true"
+                      Spec="Liggande 1200×630 px (ca 1,9:1). JPG eller PNG, eftersom alla tjänster inte visar WebP. Kanterna beskärs ibland, så lägg det viktiga mot mitten." />
+    @if (string.IsNullOrWhiteSpace(Image))
+    {
+        <MudText Typo="Typo.caption" Style="display:block; color:#555">@ImageFallbackText</MudText>
+    }
+</div>
+
+@code {
+    /// <summary>Sidans rubrik som i webbläsarens flik, utan skolans namn. Tom = bara skolans namn (startsidan).</summary>
+    [Parameter] public string Title { get; set; } = "";
+    /// <summary>Sidans sökväg, t.ex. "/webb/prislista".</summary>
+    [Parameter] public string Path { get; set; } = "";
+
+    [Parameter] public string Description { get; set; } = "";
+    [Parameter] public EventCallback<string> DescriptionChanged { get; set; }
+    [Parameter] public string Image { get; set; } = "";
+    [Parameter] public EventCallback<string> ImageChanged { get; set; }
+
+    /// <summary>Text som används när fältet är tomt, för förhandsvisningen.</summary>
+    [Parameter] public string? FallbackDescription { get; set; }
+    /// <summary>Var den automatiska texten kommer ifrån, t.ex. "nyhetens ingress".</summary>
+    [Parameter] public string DescriptionSource { get; set; } = "sidans standardtext";
+    /// <summary>Hel mening om vilken bild som används när fältet är tomt.</summary>
+    [Parameter] public string ImageFallbackText { get; set; } = "";
+
+    private const string HelperText = "Skriv 120–160 tecken som säger vad besökaren får på sidan. Upprepa inte rubriken.";
+
+    private string ResultTitle => string.IsNullOrWhiteSpace(Title) ? Web.School.Name : $"{Title} – {Web.School.Name}";
+    private string DisplayUrl => new Uri(Nav.BaseUri).Host + Path;
+    private string? Effective => SeoText.Shorten(SeoText.FirstNonBlank(Description, FallbackDescription));
+}

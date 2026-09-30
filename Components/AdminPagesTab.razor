@@ -55,6 +55,29 @@
         }
     </MudItem>
 
+    @* ── Sök och delning för de fasta sidorna ──────────────────────────────── *@
+    <MudItem xs="12">
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.h6" GutterBottom="true">Sök och delning per sida</MudText>
+        <MudText Typo="Typo.caption" Style="color:#666">
+            Beskrivning och delningsbild för de fasta sidorna. Startsidan, utbildningar och nyheter ställs in där de redigeras.
+        </MudText>
+        <MudExpansionPanels MultiExpansion="true" Class="mt-2">
+            @foreach (var (key, label) in Pages)
+            {
+                var k = key;
+                var seo = Web.SeoFor(k);
+                <MudExpansionPanel Text="@label">
+                    <AdminSeoFields Title="@label" Path="@PagePath(k)"
+                                    Description="@seo.Description" DescriptionChanged="@(v => seo.Description = v)"
+                                    Image="@seo.Image" ImageChanged="@(v => seo.Image = v)"
+                                    FallbackDescription="@WebsiteService.DefaultDescription(k)" DescriptionSource="sidans standardtext"
+                                    ImageFallbackText="Tomt fält: skolans standardbild används (startsidans delningsbild, annars hero-bilden)." />
+                </MudExpansionPanel>
+            }
+        </MudExpansionPanels>
+    </MudItem>
+
     @* ── Profil ────────────────────────────────────────────────────────────── *@
     <MudItem xs="12">
         <MudDivider Class="my-4" />
@@ -154,6 +177,17 @@
         (WebPageKey.Personal, "Anställda"),
         (WebPageKey.Nyheter,  "Nyheter"),
         (WebPageKey.Kontakt,  "Kontakta oss"),
+    };
+
+    private static string PagePath(WebPageKey key) => key switch
+    {
+        WebPageKey.Ehandel   => "/webb/ehandel",
+        WebPageKey.Kalender  => "/webb/kalender",
+        WebPageKey.Prislista => "/webb/prislista",
+        WebPageKey.Personal  => "/webb/personal",
+        WebPageKey.Nyheter   => "/webb/nyheter",
+        WebPageKey.Kontakt   => "/webb/kontakt",
+        _                    => "/webb/start",
     };
 
     private string _prodSearch = "";

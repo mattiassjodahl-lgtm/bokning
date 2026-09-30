@@ -56,6 +56,15 @@
     </MudItem>
 
     <MudItem xs="12">
+        @{ var seo = Web.SeoFor(WebPageKey.Start); }
+        <AdminSeoFields Title="" Path="/webb/start"
+                        Description="@seo.Description" DescriptionChanged="@(v => seo.Description = v)"
+                        Image="@seo.Image" ImageChanged="@(v => seo.Image = v)"
+                        FallbackDescription="@StartFallback" DescriptionSource="hero-ingressen"
+                        ImageFallbackText="Tomt fält: hero-bilden används. Den här bilden är också skolans standardbild för sidor utan egen delningsbild." />
+    </MudItem>
+
+    <MudItem xs="12">
         <MudDivider Class="my-2" />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
                    OnClick="Save">Spara</MudButton>
@@ -63,6 +72,9 @@
 </MudGrid>
 
 @code {
+    private string StartFallback =>
+        string.IsNullOrWhiteSpace(Web.Settings.HeroIngress) ? Web.School.Tagline : Web.Settings.HeroIngress;
+
     private bool IsB => Web.Settings.Layout == StartLayout.BroadAction;
 
     // Obligatoriska fält givet vald layout.

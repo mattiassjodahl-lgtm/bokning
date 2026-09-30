@@ -32,6 +32,7 @@ public class WebsiteService
         _imageRoot = Path.Combine(env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot"), "Img", "Webb");
 
         Content = Load() ?? BuildDefaults(_booking);
+        EnsureSeo();
     }
 
     // ── Bekväma accessorer (samma API som tidigare) ───────────────────────────
@@ -115,6 +116,7 @@ public class WebsiteService
     public void ResetToDefaults()
     {
         Content = BuildDefaults(_booking);
+        EnsureSeo();
         Save();
     }
 
@@ -145,6 +147,34 @@ public class WebsiteService
         // Unik prefix så att inget skrivs över av misstag.
         return $"{DateTime.Now:yyyyMMdd-HHmmss}-{cleaned}";
     }
+
+    // ── Sök och delning ───────────────────────────────────────────────────────
+    // Varje sida har alltid ett PageSeo-objekt, så att admin kan binda fälten direkt
+    // och läsning på publika sidor aldrig ändrar något.
+    private void EnsureSeo()
+    {
+        foreach (var key in Enum.GetValues<WebPageKey>())
+            Settings.PageSeoByKey.TryAdd(key, new PageSeo());
+    }
+
+    public PageSeo SeoFor(WebPageKey key) =>
+        Settings.PageSeoByKey.TryGetValue(key, out var seo) ? seo : new PageSeo();
+
+    /// <summary>Delningsbild för sidor utan egen: startsidans delningsbild, annars hero-bilden.</summary>
+    public string DefaultShareImage =>
+        SeoText.FirstNonBlank(SeoFor(WebPageKey.Start).Image, Settings.HeroImage) ?? "";
+
+    /// <summary>Automatisk metabeskrivning för de fasta sidorna när ingen egen är skriven.</summary>
+    public static string? DefaultDescription(WebPageKey? key) => key switch
+    {
+        WebPageKey.Nyheter   => "Det senaste från skolan – kurser, erbjudanden och annat på gång.",
+        WebPageKey.Personal  => "Lär känna lärarna som hjälper dig hela vägen till körkortet.",
+        WebPageKey.Prislista => "Aktuella priser för körkortsutbildning, lektioner och tillval. Sök och filtrera bland skolans webbpublicerade tjänster och produkter.",
+        WebPageKey.Kontakt   => "Kontakta skolan om din utbildning. Du når oss via formulär, telefon eller e-post, och här finns adress och öppettider.",
+        WebPageKey.Kalender  => "Se lediga tider för körlektioner den kommande veckan och boka direkt online.",
+        WebPageKey.Ehandel   => "Köp kurser och tillval direkt på webben.",
+        _ => null,
+    };
 
     // ── Uppslag ────────────────────────────────────────────────────────────────
     public EducationCard? GetEducation(string slug) =>

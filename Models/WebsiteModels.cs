@@ -27,6 +27,13 @@ public enum WebPageKey
     Kontakt,
 }
 
+/// <summary>Egen metabeskrivning och delningsbild för en sida. Tomt fält = automatisk text respektive bild.</summary>
+public class PageSeo
+{
+    public string Description { get; set; } = "";
+    public string Image       { get; set; } = "";
+}
+
 /// <summary>Körskolans profil – visas i header, footer och kontaktsida.</summary>
 public class SchoolProfile
 {
@@ -97,6 +104,12 @@ public class NewsItem
     /// <summary>Alt-text för bilden. Tom = faller tillbaka på rubriken.</summary>
     public string ImageAlt { get; set; } = "";
 
+    // ── Sök och delning ───────────────────────────────────────────────────────
+    /// <summary>Egen metabeskrivning. Tom = ingressen.</summary>
+    public string SeoDescription { get; set; } = "";
+    /// <summary>Egen delningsbild. Tom = nyhetens bild.</summary>
+    public string SeoImage       { get; set; } = "";
+
     // ── Publiceringsplanering ─────────────────────────────────────────────────
     /// <summary>Första dag nyheten visas publikt. Tom = publiceras direkt.</summary>
     public DateOnly? PublishFrom { get; set; }
@@ -141,6 +154,12 @@ public class EducationCard
     /// <summary>Prisindikation, t.ex. "Från 950 kr/lektion". Tomt = visas ej.</summary>
     public string PriceFrom   { get; set; } = "";
 
+    // ── Sök och delning ───────────────────────────────────────────────────────
+    /// <summary>Egen metabeskrivning. Tom = den korta beskrivningen.</summary>
+    public string SeoDescription { get; set; } = "";
+    /// <summary>Egen delningsbild. Tom = utbildningens bild.</summary>
+    public string SeoImage       { get; set; } = "";
+
     public bool HasPage => !string.IsNullOrEmpty(Slug);
 }
 
@@ -177,6 +196,9 @@ public class WebsiteSettings
 
     /// <summary>Vilka sidor som är synliga i menyn. Start är alltid synlig.</summary>
     public Dictionary<WebPageKey, bool> PageVisibility { get; set; } = new();
+
+    /// <summary>Sök och delning per sida (startsidan och övriga fasta sidor). Utbildningar och nyheter har egna fält.</summary>
+    public Dictionary<WebPageKey, PageSeo> PageSeoByKey { get; set; } = new();
 
     // ── Startsidans redigerbara innehåll ──────────────────────────────────────
     public string HeroHeading { get; set; } = "";

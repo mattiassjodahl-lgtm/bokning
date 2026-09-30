@@ -5,7 +5,7 @@
 @inject NavigationManager Nav
 
 <PageTitle>@Web.School.Name</PageTitle>
-<SeoHead Title="@Web.School.Name" Description="@(string.IsNullOrWhiteSpace(Web.Settings.HeroIngress) ? Web.School.Tagline : Web.Settings.HeroIngress)" Path="/webb/start" Image="@Web.Settings.HeroImage" />
+<SeoHead Title="@Web.School.Name" Description="@(string.IsNullOrWhiteSpace(Web.Settings.HeroIngress) ? Web.School.Tagline : Web.Settings.HeroIngress)" Path="/webb/start" Image="@Web.Settings.HeroImage" Page="@WebPageKey.Start" />
 
 @{
     var s = Web.Settings;

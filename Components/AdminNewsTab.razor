@@ -55,6 +55,13 @@
                                       ShowAlt="true" AltValue="@n.ImageAlt" AltChanged="@(v => n.ImageAlt = v)" />
                 </MudItem>
                 <MudItem xs="12">
+                    <AdminSeoFields Title="@n.Title" Path="@NewsPath(n)"
+                                    Description="@n.SeoDescription" DescriptionChanged="@(v => n.SeoDescription = v)"
+                                    Image="@n.SeoImage" ImageChanged="@(v => n.SeoImage = v)"
+                                    FallbackDescription="@n.Summary" DescriptionSource="nyhetens ingress"
+                                    ImageFallbackText="Tomt fält: nyhetens bild används, annars skolans standardbild." />
+                </MudItem>
+                <MudItem xs="12">
                     <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
                                OnClick="@(() => Web.Settings.News.Remove(n))">Ta bort nyhet</MudButton>
                 </MudItem>
@@ -69,6 +76,8 @@
 </div>
 
 @code {
+    private static string NewsPath(NewsItem n) => "/webb/nyheter/" + n.Slug;
+
     private void AddNews() =>
         Web.Settings.News.Add(new() { Title = "", Slug = "", Date = WebsiteService.Today });
 

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace BookingDemo.Helpers;
 
 /// <summary>Krav på en uppladdad bild. MaxWidth är samma värde som webbläsaren skalar ner till.</summary>
-public record ImageRules(int MinWidth = 0, int MinHeight = 0, int MaxWidth = 1600, int MaxKb = 500, bool AllowSvg = false);
+public record ImageRules(int MinWidth = 0, int MinHeight = 0, int MaxWidth = 1600, int MaxKb = 500, bool AllowSvg = false, bool JpgPngOnly = false);
 
 public record ImageCheckResult(string? Error, string Extension = "", string Format = "", int Width = 0, int Height = 0, long Bytes = 0)
 {
@@ -43,6 +43,9 @@ public static class ImageCheck
             return Fail(rules.AllowSvg
                 ? "Filen är ingen bild som stöds. Använd JPG, PNG, WebP, GIF eller SVG."
                 : "Filen är ingen bild som stöds. Använd JPG, PNG, WebP eller GIF.");
+
+        if (rules.JpgPngOnly && kind is not (Kind.Png or Kind.Jpeg))
+            return Fail("Bilden måste vara JPG eller PNG. WebP, GIF och SVG visas inte i alla tjänster.");
 
         if (kind == Kind.Svg)
         {

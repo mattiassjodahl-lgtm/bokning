@@ -4,7 +4,7 @@
 @inject NavigationManager Nav
 
 <PageTitle>@(_news?.Title ?? "Nyhet") – @Web.School.Name</PageTitle>
-<SeoHead Title="@_news?.Title" Description="@_news?.Summary" Path="@SeoPath" Image="@_news?.Image" Type="article" NoIndex="@(_news is null)" />
+<SeoHead Title="@_news?.Title" Description="@_news?.Summary" Path="@SeoPath" Image="@_news?.Image" OverrideDescription="@_news?.SeoDescription" OverrideImage="@_news?.SeoImage" Type="article" NoIndex="@(_news is null)" />
 
 @if (_news is null)
 {
