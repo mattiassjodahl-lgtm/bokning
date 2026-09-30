@@ -1,0 +1,81 @@
+@* ════════════════════════════════════════════════════════════════════════
+   Sökmotor- och delningsdata i <head> för publika sidor:
+   metabeskrivning, canonical, Open Graph, Twitter-kort och robots.
+
+   Läggs en gång per sida, vid sidan av <PageTitle>. Sidor som är dolda i
+   menyn (Page) eller saknar innehåll (NoIndex) får noindex.
+   ════════════════════════════════════════════════════════════════════════ *@
+@inject NavigationManager Nav
+@inject WebsiteService Web
+
+<HeadContent>
+    @if (!string.IsNullOrEmpty(Desc))
+    {
+        <meta name="description" content="@Desc" />
+        <meta property="og:description" content="@Desc" />
+    }
+    <link rel="canonical" href="@CanonicalUrl" />
+    <meta property="og:type" content="@Type" />
+    <meta property="og:site_name" content="@Web.School.Name" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:title" content="@OgTitle" />
+    <meta property="og:url" content="@CanonicalUrl" />
+    @if (!string.IsNullOrEmpty(ImageUrl))
+    {
+        <meta property="og:image" content="@ImageUrl" />
+    }
+    <meta name="twitter:card" content="@(string.IsNullOrEmpty(ImageUrl) ? "summary" : "summary_large_image")" />
+    @if (IsNoIndex)
+    {
+        <meta name="robots" content="noindex" />
+    }
+</HeadContent>
+
+@code {
+    /// <summary>Sidans rubrik för delning. Tom = skolans namn.</summary>
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>Löptext som kortas till max 160 tecken.</summary>
+    [Parameter] public string? Description { get; set; }
+
+    /// <summary>Sidans kanoniska sökväg, t.ex. "/webb/prislista".</summary>
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+
+    /// <summary>Sökväg eller URL till delningsbild. Tom = ingen bild.</summary>
+    [Parameter] public string? Image { get; set; }
+
+    /// <summary>"website" eller "article".</summary>
+    [Parameter] public string Type { get; set; } = "website";
+
+    /// <summary>Sidans menynyckel. Dold sida i admin ger noindex.</summary>
+    [Parameter] public WebPageKey? Page { get; set; }
+
+    /// <summary>Tvinga noindex, t.ex. när innehållet inte hittades.</summary>
+    [Parameter] public bool NoIndex { get; set; }
+
+    private const int MaxDescription = 160;
+
+    private string BaseUrl      => Nav.BaseUri.TrimEnd('/');
+    private string CanonicalUrl => BaseUrl + Path;
+    private string OgTitle      => string.IsNullOrWhiteSpace(Title) ? Web.School.Name : Title!;
+    private string? Desc        => Shorten(Description);
+    private bool IsNoIndex      => NoIndex || (Page is { } p && !Web.Settings.IsVisible(p));
+
+    private string? ImageUrl =>
+        string.IsNullOrWhiteSpace(Image) ? null
+        : Image!.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? Image
+        : BaseUrl + "/" + Image.TrimStart('/');
+
+    /// <summary>Komprimerar blanksteg och kortar vid ordgräns så att sökresultatet inte klipps mitt i ett ord.</summary>
+    private static string? Shorten(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var clean = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (clean.Length <= MaxDescription) return clean;
+
+        var cut = clean[..(MaxDescription - 1)];
+        var lastSpace = cut.LastIndexOf(' ');
+        if (lastSpace > MaxDescription / 2) cut = cut[..lastSpace];
+        return cut.TrimEnd(' ', ',', '.', ';', ':', '–', '-') + "…";
+    }
+}

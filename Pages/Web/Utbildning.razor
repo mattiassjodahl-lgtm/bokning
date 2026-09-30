@@ -4,6 +4,7 @@
 @inject NavigationManager Nav
 
 <PageTitle>@(_edu?.Title ?? "Utbildning") – @Web.School.Name</PageTitle>
+<SeoHead Title="@_edu?.Title" Description="@_edu?.Description" Path="@SeoPath" Image="@_edu?.Image" NoIndex="@(_edu is null)" />
 
 @if (_edu is null)
 {
@@ -60,6 +61,8 @@ else
 }
 
 @code {
+    private string SeoPath => "/webb/utbildning/" + (_edu?.Slug ?? Slug);
+
     [Parameter] public string Slug { get; set; } = "";
 
     private EducationCard? _edu;

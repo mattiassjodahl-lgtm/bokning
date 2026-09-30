@@ -17,4 +17,8 @@ COPY --from=build /app/publish .
 # MudBlazor CSS/JS requires static web assets (same as Development mode)
 ENV ASPNETCORE_ENVIRONMENT=Development
 
+# Railway terminerar TLS framför appen. Utan detta ser appen http:// och bygger
+# canonical-, sitemap- och JSON-LD-länkar med fel schema.
+ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+
 ENTRYPOINT ["dotnet", "BookingDemo.dll"]

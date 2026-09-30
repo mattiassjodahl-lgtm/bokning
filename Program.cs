@@ -1,3 +1,4 @@
+using BookingDemo.Helpers;
 using BookingDemo.Models;
 using BookingDemo.Services;
 using MudBlazor.Services;
@@ -71,7 +72,9 @@ app.Use(async (context, next) =>
         path.StartsWith("/_content",    StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/css/",        StringComparison.OrdinalIgnoreCase) ||
         path.StartsWith("/js/",         StringComparison.OrdinalIgnoreCase) ||
-        path.Equals("/favicon.ico",     StringComparison.OrdinalIgnoreCase);
+        path.Equals("/favicon.ico",     StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/robots.txt",      StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/sitemap.xml",     StringComparison.OrdinalIgnoreCase);
 
     if (!bypass && context.Session.GetString("authenticated") != "true")
     {
@@ -84,6 +87,7 @@ app.Use(async (context, next) =>
 
 app.MapBlazorHub();
 app.MapRazorPages();
+app.MapSeoEndpoints();
 app.MapFallbackToPage("/_Host");
 
 // Railway (and most cloud platforms) inject a PORT env variable.

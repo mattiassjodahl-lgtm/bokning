@@ -4,6 +4,7 @@
 @inject NavigationManager Nav
 
 <PageTitle>@(_news?.Title ?? "Nyhet") – @Web.School.Name</PageTitle>
+<SeoHead Title="@_news?.Title" Description="@_news?.Summary" Path="@SeoPath" Image="@_news?.Image" Type="article" NoIndex="@(_news is null)" />
 
 @if (_news is null)
 {
@@ -50,6 +51,8 @@ else
 }
 
 @code {
+    private string SeoPath => "/webb/nyheter/" + (_news?.Slug ?? Slug);
+
     private static readonly System.Globalization.CultureInfo Sv = new("sv-SE");
 
     [Parameter] public string Slug { get; set; } = "";
