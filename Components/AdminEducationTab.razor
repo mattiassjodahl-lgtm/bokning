@@ -31,7 +31,7 @@
                 </MudItem>
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2" GutterBottom="true">Bild</MudText>
-                    <AdminImageUpload Value="@c.Image" ValueChanged="@(v => c.Image = v)" Subfolder="utbildningar"
+                    <AdminImageUpload Value="@c.Image" ValueChanged="@(v => c.Image = v)" Subfolder="utbildningar" MinWidth="800" MinHeight="450" MaxKb="400"
                                       Spec="Liggande 16:9, ca 800×450 px. JPG/WebP."
                                       ShowAlt="true" AltValue="@c.ImageAlt" AltChanged="@(v => c.ImageAlt = v)" />
                 </MudItem>

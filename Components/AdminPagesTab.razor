@@ -73,7 +73,7 @@
         <MudText Typo="Typo.subtitle2" GutterBottom="true">Logotyp</MudText>
         <AdminImageUpload Value="@Web.School.LogoImage"
                           ValueChanged="@(v => Web.School.LogoImage = v)"
-                          Subfolder="logo"
+                          Subfolder="logo" MinHeight="48" MaxKb="200" AllowSvg="true" ConvertToWebp="false"
                           Spec="SVG (vektorgrafik) rekommenderas – skarp i alla storlekar. Annars PNG med transparent bakgrund, höjd ca 48 px. Töm för att visa initialer istället." />
         @if (!string.IsNullOrEmpty(Web.School.LogoImage))
         {
@@ -91,7 +91,7 @@
     <MudItem xs="12">
         <AdminImageUpload Value="@Web.School.StrLogo"
                           ValueChanged="@(v => Web.School.StrLogo = v)"
-                          Subfolder="logo"
+                          Subfolder="logo" MinHeight="48" MaxKb="200" AllowSvg="true" ConvertToWebp="false"
                           Spec="STR-logga (SVG/PNG). Töm för att visa ett textmärke 'STR' istället. Visas i footerns 'Medlem i'-block." />
         @if (!string.IsNullOrEmpty(Web.School.StrLogo))
         {

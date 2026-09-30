@@ -30,7 +30,7 @@
                 <MudItem xs="12"><MudTextField @bind-Value="n.Body" Label="Brödtext (tom rad = nytt stycke)" Variant="Variant.Outlined" Lines="6" /></MudItem>
                 <MudItem xs="12">
                     <MudText Typo="Typo.subtitle2" GutterBottom="true">Bild</MudText>
-                    <AdminImageUpload Value="@n.Image" ValueChanged="@(v => n.Image = v)" Subfolder="nyheter"
+                    <AdminImageUpload Value="@n.Image" ValueChanged="@(v => n.Image = v)" Subfolder="nyheter" MinWidth="800" MinHeight="450" MaxKb="400"
                                       Spec="Liggande 16:9, ca 800×450 px. JPG/WebP."
                                       ShowAlt="true" AltValue="@n.ImageAlt" AltChanged="@(v => n.ImageAlt = v)" />
                 </MudItem>

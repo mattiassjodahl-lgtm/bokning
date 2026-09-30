@@ -24,10 +24,21 @@
         {
             <MudText Typo="Typo.caption" Style="color:#666; display:block; margin-bottom:.4rem">@Spec</MudText>
         }
-        <InputFile OnChange="OnFile" accept="image/*,.svg" />
+        <MudText Typo="Typo.caption" Style="color:#666; display:block; margin-bottom:.4rem">@Requirements</MudText>
+        @* data-resize aktiverar js/imageResize.js: skalar och komprimerar i webbläsaren före uppladdning. *@
+        <InputFile OnChange="OnFile" accept="@Accept"
+                   data-resize="1" data-max-width="@MaxWidth" data-max-kb="@MaxKb" data-format="@Format" />
         @if (_busy)
         {
             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="ml-2" />
+        }
+        @if (_error is not null)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Error" Style="display:block; margin-top:.3rem" role="alert">@_error</MudText>
+        }
+        else if (_info is not null)
+        {
+            <MudText Typo="Typo.caption" Style="display:block; margin-top:.3rem; color:#2e7d32" role="status">Uppladdad: @_info</MudText>
         }
         @if (!string.IsNullOrEmpty(Value))
         {
@@ -55,7 +66,51 @@
     [Parameter] public string AltValue { get; set; } = "";
     [Parameter] public EventCallback<string> AltChanged { get; set; }
 
+    // ── Bildkrav ──────────────────────────────────────────────────────────────
+    // Webbläsaren skalar ner till MaxWidth och komprimerar mot MaxKb innan uppladdning.
+    // Servern kontrollerar samma krav igen (Helpers/ImageCheck.cs).
+    /// <summary>Minsta bredd/höjd i px. 0 = inget krav.</summary>
+    [Parameter] public int MinWidth  { get; set; }
+    [Parameter] public int MinHeight { get; set; }
+    /// <summary>Bredare bilder skalas ner till detta (px).</summary>
+    [Parameter] public int MaxWidth  { get; set; } = 1600;
+    /// <summary>Högsta filstorlek efter bearbetning.</summary>
+    [Parameter] public int MaxKb     { get; set; } = 500;
+    /// <summary>Tillåt SVG (logotyper). SVG skalas och pixelkontrolleras inte.</summary>
+    [Parameter] public bool AllowSvg { get; set; }
+    /// <summary>True = konvertera till WebP. False = behåll formatet (logotyper).</summary>
+    [Parameter] public bool ConvertToWebp { get; set; } = true;
+
+    private const long HardLimit = 10 * 1024 * 1024;   // taket för vad som läses in alls
+
+    private string Format => ConvertToWebp ? "webp" : "original";
+
+    private string Accept => AllowSvg
+        ? "image/jpeg,image/png,image/webp,image/gif,.svg"
+        : "image/jpeg,image/png,image/webp,image/gif";
+
+    private ImageRules Rules => new(MinWidth, MinHeight, MaxWidth, MaxKb, AllowSvg);
+
+    private string Requirements
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (MinWidth > 0 && MinHeight > 0) parts.Add($"minst {MinWidth}×{MinHeight} px");
+            else if (MinHeight > 0) parts.Add($"minst {MinHeight} px hög");
+            else if (MinWidth > 0) parts.Add($"minst {MinWidth} px bred");
+            parts.Add($"max {MaxKb} kB");
+            var text = "Krav: " + string.Join(" · ", parts) + ". ";
+            text += $"Större bilder skalas ner till {MaxWidth} px bredd";
+            text += ConvertToWebp ? " och konverteras till WebP." : ".";
+            if (AllowSvg) text += " SVG tillåts.";
+            return text;
+        }
+    }
+
     private bool _busy;
+    private string? _error;
+    private string? _info;
 
     private async Task OnFile(InputFileChangeEventArgs e)
     {
@@ -63,11 +118,39 @@
         if (file is null) return;
 
         _busy = true;
-        await using var stream = file.OpenReadStream(10 * 1024 * 1024); // max 10 MB
-        var path = await Web.SaveImageAsync(stream, file.Name,
-            string.IsNullOrWhiteSpace(Subfolder) ? null : Subfolder);
-        _busy = false;
+        _error = null;
+        _info = null;
+        try
+        {
+            if (file.Size > HardLimit)
+            {
+                _error = $"Filen är {ImageCheck.FormatSize(file.Size)}. Max {ImageCheck.FormatSize(HardLimit)} kan laddas upp.";
+                return;
+            }
 
-        await ValueChanged.InvokeAsync(path);
+            using var ms = new MemoryStream();
+            await using (var stream = file.OpenReadStream(HardLimit))
+                await stream.CopyToAsync(ms);
+
+            var check = ImageCheck.Inspect(ms.ToArray(), Rules);
+            if (!check.Ok)
+            {
+                _error = check.Error;
+                return;
+            }
+
+            // Filändelsen följer innehållet, så att servern skickar rätt content type.
+            var name = System.IO.Path.GetFileNameWithoutExtension(file.Name) + check.Extension;
+            ms.Position = 0;
+            var path = await Web.SaveImageAsync(ms, name,
+                string.IsNullOrWhiteSpace(Subfolder) ? null : Subfolder);
+
+            _info = check.Summary;
+            await ValueChanged.InvokeAsync(path);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 }

@@ -51,7 +51,7 @@
         <MudText Typo="Typo.subtitle2" GutterBottom="true">Hero-bild *</MudText>
         <AdminImageUpload Value="@Web.Settings.HeroImage"
                           ValueChanged="@(v => Web.Settings.HeroImage = v)"
-                          Subfolder="hero"
+                          Subfolder="hero" MinWidth="1200" MinHeight="675" MaxKb="500"
                           Spec="Liggande bild, 1600×900 px (16:9). JPG eller WebP, max ~500 kB. Dekorativ bakgrund – rubriken läses av skärmläsare." />
     </MudItem>
 
