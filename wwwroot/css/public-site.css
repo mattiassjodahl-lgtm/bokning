@@ -56,15 +56,20 @@ body:has(.ps-site) {
 .ps-section { padding: clamp(2.5rem, 6vw, 4.5rem) 0; }
 .ps-section--soft { background: var(--ps-bg-soft); }
 
-/* Synligt fokus överallt (tillgänglighet) */
+/* Synligt fokus överallt (WCAG 2.1 AA, 2.4.7).
+   Dubbel ring: accentfärgen kan sammanfalla med bakgrunden eftersom temat
+   sätts i admin, så en ljus och en mörk ring garanterar kontrast oavsett val. */
 .ps-site a:focus-visible,
 .ps-site button:focus-visible,
+.ps-site summary:focus-visible,
 .ps-site input:focus-visible,
 .ps-site textarea:focus-visible,
-.ps-site select:focus-visible {
+.ps-site select:focus-visible,
+.ps-site [tabindex]:focus-visible {
     outline: 3px solid var(--ps-accent);
     outline-offset: 2px;
     border-radius: 4px;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 6px rgba(0, 0, 0, .55);
 }
 
 /* Hoppa-till-innehåll-länk */

@@ -1,6 +1,7 @@
 @page "/webb/prislista"
 @layout PublicLayout
 @inject WebsiteService Web
+@inject NavigationManager Nav
 
 <PageTitle>Prislista – @Web.School.Name</PageTitle>
 
@@ -81,6 +82,8 @@
         }
 
         <p class="ps-hint ps-mt">Endast produkter som är webbflaggade i affärssystemet visas här.</p>
+
+        <JsonLd Json="@StructuredData.PriceList(Web.WebProducts, Nav.BaseUri)" />
     </div>
 </section>
 

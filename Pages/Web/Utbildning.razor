@@ -1,6 +1,7 @@
 @page "/webb/utbildning/{Slug}"
 @layout PublicLayout
 @inject WebsiteService Web
+@inject NavigationManager Nav
 
 <PageTitle>@(_edu?.Title ?? "Utbildning") – @Web.School.Name</PageTitle>
 
@@ -51,6 +52,9 @@ else
             </div>
 
             <p class="ps-mt"><a href="/webb/start">← Tillbaka till startsidan</a></p>
+
+            <JsonLd Json="@CourseJson" />
+            <JsonLd Json="@BreadcrumbJson" />
         </div>
     </section>
 }
@@ -61,4 +65,14 @@ else
     private EducationCard? _edu;
 
     protected override void OnParametersSet() => _edu = Web.GetEducation(Slug);
+
+    // Byggs i kod i stället för i markup: strängargumenten innehåller
+    // citattecken, som inte går att ha inuti ett Razor-attribut.
+    private string CourseJson =>
+        _edu is null ? "" : StructuredData.Course(_edu, Nav.BaseUri);
+
+    private string BreadcrumbJson =>
+        _edu is null ? "" : StructuredData.Breadcrumbs(Nav.BaseUri,
+            ("Hem", "/webb/start"),
+            (_edu.Title, "/webb/utbildning/" + _edu.Slug));
 }

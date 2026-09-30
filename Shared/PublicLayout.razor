@@ -177,6 +177,9 @@
             </div>
         </div>
     </footer>
+
+    @* Skolan som schema.org-organisation – följer med på samtliga publika sidor. *@
+    <JsonLd Json="@StructuredData.School(Web.School, Nav.BaseUri)" />
 </div>
 
 @code {

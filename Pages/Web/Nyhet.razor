@@ -1,6 +1,7 @@
 @page "/webb/nyheter/{Slug}"
 @layout PublicLayout
 @inject WebsiteService Web
+@inject NavigationManager Nav
 
 <PageTitle>@(_news?.Title ?? "Nyhet") – @Web.School.Name</PageTitle>
 
@@ -41,6 +42,9 @@ else
             </div>
 
             <p class="ps-mt"><a href="/webb/nyheter">← Alla nyheter</a></p>
+
+            <JsonLd Json="@ArticleJson" />
+            <JsonLd Json="@BreadcrumbJson" />
         </div>
     </article>
 }
@@ -53,6 +57,17 @@ else
     private NewsItem? _news;
 
     protected override void OnParametersSet() => _news = Web.GetNews(Slug);
+
+    // Byggs i kod i stället för i markup: strängargumenten innehåller
+    // citattecken, som inte går att ha inuti ett Razor-attribut.
+    private string ArticleJson =>
+        _news is null ? "" : StructuredData.NewsArticle(_news, Nav.BaseUri);
+
+    private string BreadcrumbJson =>
+        _news is null ? "" : StructuredData.Breadcrumbs(Nav.BaseUri,
+            ("Hem", "/webb/start"),
+            ("Nyheter", "/webb/nyheter"),
+            (_news.Title, "/webb/nyheter/" + _news.Slug));
 
     // Delar upp brödtexten i stycken på dubbla radbrytningar.
     private IEnumerable<string> Paragraphs =>

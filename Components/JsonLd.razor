@@ -1,0 +1,16 @@
+@* ════════════════════════════════════════════════════════════════════════
+   Renderar ett schema.org-objekt som JSON-LD.
+
+   Tom sträng ger ingen tagg alls – en sida utan relevant innehåll ska inte
+   lägga ut tom uppmärkning. Innehållet byggs i Helpers/StructuredData.cs,
+   som escapar < > och & vid serialiseringen.
+   ════════════════════════════════════════════════════════════════════════ *@
+
+@if (!string.IsNullOrWhiteSpace(Json))
+{
+    <script type="application/ld+json">@((MarkupString)Json)</script>
+}
+
+@code {
+    [Parameter] public string Json { get; set; } = "";
+}

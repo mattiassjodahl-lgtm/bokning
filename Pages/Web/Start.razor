@@ -2,6 +2,7 @@
 @page "/webb/start"
 @layout PublicLayout
 @inject WebsiteService Web
+@inject NavigationManager Nav
 
 <PageTitle>@Web.School.Name</PageTitle>
 
@@ -147,6 +148,8 @@
     <section class="ps-section ps-section--soft">
         <div class="ps-wrap">
             <h2>Kommande kurser</h2>
+            <JsonLd Json="@StructuredData.CourseStarts(s.Courses, Nav.BaseUri)" />
+
             <div class="ps-table-wrap ps-mt">
                 <table class="ps-table">
                     <caption>Kursstarter de närmaste månaderna</caption>
