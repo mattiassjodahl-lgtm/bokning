@@ -13,7 +13,14 @@
         <MudExpansionPanel Text="@(string.IsNullOrWhiteSpace(c.Title) ? "(ny utbildning)" : c.Title)">
             <MudGrid>
                 <MudItem xs="12" md="6"><MudTextField @bind-Value="c.Title" Label="Titel" Variant="Variant.Outlined" /></MudItem>
-                <MudItem xs="12" md="6"><MudTextField @bind-Value="c.Slug" Label="Länk (slug)" Variant="Variant.Outlined" HelperText="t.ex. personbil-b" /></MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="c.Slug" @bind-Value:event="oninput" Immediate="true"
+                                  Label="Länk (slug)" Variant="Variant.Outlined"
+                                  HelperText="t.ex. personbil-b. Tom = ingen egen sida."
+                                  Error="@(SlugError(c) is not null)" ErrorText="@SlugError(c)" />
+                    <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                               OnClick="@(() => c.Slug = SlugUtil.From(c.Title))">Föreslå från titel</MudButton>
+                </MudItem>
                 <MudItem xs="12"><MudTextField @bind-Value="c.Description" Label="Kort beskrivning (på kortet)" Variant="Variant.Outlined" /></MudItem>
                 <MudItem xs="12" md="8"><MudTextField @bind-Value="c.LongText" Label="Brödtext (på sidan)" Variant="Variant.Outlined" Lines="4" /></MudItem>
                 <MudItem xs="12" md="4"><MudTextField @bind-Value="c.PriceFrom" Label="Prisindikation" Variant="Variant.Outlined" HelperText="t.ex. Från 950 kr/lektion" /></MudItem>
@@ -47,8 +54,22 @@
     private static List<string> SplitLines(string? text) =>
         (text ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
+    // En slug blir en publik adress. Två sidor med samma länk gör den andra
+    // onåbar, eftersom uppslaget tar första träffen – därför nekas sparning.
+    private string? SlugError(EducationCard card) =>
+        SlugUtil.Error(card.Slug,
+            Web.Settings.EducationCards.Where(o => !ReferenceEquals(o, card)).Select(o => o.Slug),
+            allowEmpty: true);
+
     private void Save()
     {
+        var trasiga = Web.Settings.EducationCards.Count(c => SlugError(c) is not null);
+        if (trasiga > 0)
+        {
+            Snackbar.Add($"Rätta länken på {trasiga} utbildning(ar) innan du sparar.", Severity.Error);
+            return;
+        }
+
         Web.Save();
         Snackbar.Add("Utbildningar sparade", Severity.Success);
     }

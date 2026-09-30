@@ -18,7 +18,14 @@
                                    Date="@n.Date.ToDateTime(TimeOnly.MinValue)"
                                    DateChanged="@(d => n.Date = DateOnly.FromDateTime(d ?? DateTime.Today))" />
                 </MudItem>
-                <MudItem xs="12"><MudTextField @bind-Value="n.Slug" Label="Länk (slug)" Variant="Variant.Outlined" HelperText="t.ex. sommarkurser-2026" /></MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="n.Slug" @bind-Value:event="oninput" Immediate="true"
+                                  Label="Länk (slug)" Variant="Variant.Outlined"
+                                  HelperText="t.ex. sommarkurser-2026"
+                                  Error="@(SlugError(n) is not null)" ErrorText="@SlugError(n)" />
+                    <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                               OnClick="@(() => n.Slug = SlugUtil.From(n.Title))">Föreslå från rubrik</MudButton>
+                </MudItem>
                 <MudItem xs="12"><MudTextField @bind-Value="n.Summary" Label="Ingress (kort)" Variant="Variant.Outlined" Lines="2" /></MudItem>
                 <MudItem xs="12"><MudTextField @bind-Value="n.Body" Label="Brödtext (tom rad = nytt stycke)" Variant="Variant.Outlined" Lines="6" /></MudItem>
                 <MudItem xs="12">
@@ -45,8 +52,22 @@
     private void AddNews() =>
         Web.Settings.News.Add(new() { Title = "", Slug = "", Date = DateOnly.FromDateTime(DateTime.Today) });
 
+    // Till skillnad från utbildningar måste en nyhet ha en länk: den har
+    // ingen annan väg in än sin egen sida.
+    private string? SlugError(NewsItem news) =>
+        SlugUtil.Error(news.Slug,
+            Web.Settings.News.Where(o => !ReferenceEquals(o, news)).Select(o => o.Slug),
+            allowEmpty: false);
+
     private void Save()
     {
+        var trasiga = Web.Settings.News.Count(n => SlugError(n) is not null);
+        if (trasiga > 0)
+        {
+            Snackbar.Add($"Rätta länken på {trasiga} nyhet(er) innan du sparar.", Severity.Error);
+            return;
+        }
+
         Web.Save();
         Snackbar.Add("Nyheter sparade", Severity.Success);
     }
