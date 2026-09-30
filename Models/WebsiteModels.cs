@@ -96,6 +96,27 @@ public class NewsItem
     public string Image   { get; set; } = "";
     /// <summary>Alt-text för bilden. Tom = faller tillbaka på rubriken.</summary>
     public string ImageAlt { get; set; } = "";
+
+    // ── Publiceringsplanering ─────────────────────────────────────────────────
+    /// <summary>Första dag nyheten visas publikt. Tom = publiceras direkt.</summary>
+    public DateOnly? PublishFrom { get; set; }
+    /// <summary>Sista dag nyheten visas publikt (inklusive). Tom = visas tills den tas bort.</summary>
+    public DateOnly? PublishTo   { get; set; }
+
+    public NewsStatus StatusOn(DateOnly today) =>
+        PublishFrom is { } first && today < first ? NewsStatus.Scheduled
+        : PublishTo is { } last && today > last   ? NewsStatus.Expired
+        : NewsStatus.Published;
+
+    public bool IsPublishedOn(DateOnly today) => StatusOn(today) == NewsStatus.Published;
+}
+
+/// <summary>Var en nyhet befinner sig i sin publiceringsperiod.</summary>
+public enum NewsStatus
+{
+    Published,
+    Scheduled,
+    Expired,
 }
 
 /// <summary>Utbildningskort på startsidan + innehåll för dess behörighetssida.</summary>

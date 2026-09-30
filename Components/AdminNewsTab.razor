@@ -10,13 +10,33 @@
     @foreach (var news in Web.Settings.News)
     {
         var n = news;
-        <MudExpansionPanel Text="@($"{(string.IsNullOrWhiteSpace(n.Title) ? "(ny nyhet)" : n.Title)}  ·  {n.Date:yyyy-MM-dd}")">
+        <MudExpansionPanel Text="@PanelTitle(n)">
             <MudGrid>
                 <MudItem xs="12" md="8"><MudTextField @bind-Value="n.Title" Label="Rubrik" Variant="Variant.Outlined" /></MudItem>
                 <MudItem xs="12" md="4">
                     <MudDatePicker Label="Datum" Variant="Variant.Outlined"
+                                   HelperText="Visas på nyheten"
                                    Date="@n.Date.ToDateTime(TimeOnly.MinValue)"
                                    DateChanged="@(d => n.Date = DateOnly.FromDateTime(d ?? DateTime.Today))" />
+                </MudItem>
+
+                @* ── Publiceringsplanering ────────────────────────────────── *@
+                <MudItem xs="12" md="4">
+                    <MudDatePicker Label="Publicera från" Variant="Variant.Outlined" Clearable="true"
+                                   HelperText="Tom = publiceras direkt"
+                                   Date="@ToDateTime(n.PublishFrom)"
+                                   DateChanged="@(d => n.PublishFrom = ToDateOnly(d))"
+                                   Error="@(PeriodError(n) is not null)" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudDatePicker Label="Avpublicera efter" Variant="Variant.Outlined" Clearable="true"
+                                   HelperText="Tom = visas tills du tar bort den"
+                                   Date="@ToDateTime(n.PublishTo)"
+                                   DateChanged="@(d => n.PublishTo = ToDateOnly(d))"
+                                   Error="@(PeriodError(n) is not null)" ErrorText="@PeriodError(n)" />
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudText Typo="Typo.body2" Color="@StatusColor(n)" Style="padding-top:1rem" role="status">@StatusText(n)</MudText>
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField @bind-Value="n.Slug" @bind-Value:event="oninput" Immediate="true"
@@ -50,7 +70,42 @@
 
 @code {
     private void AddNews() =>
-        Web.Settings.News.Add(new() { Title = "", Slug = "", Date = DateOnly.FromDateTime(DateTime.Today) });
+        Web.Settings.News.Add(new() { Title = "", Slug = "", Date = WebsiteService.Today });
+
+    private static DateTime? ToDateTime(DateOnly? d) => d?.ToDateTime(TimeOnly.MinValue);
+    private static DateOnly? ToDateOnly(DateTime? d) => d is null ? null : DateOnly.FromDateTime(d.Value);
+
+    // Sista dag får inte ligga före första dag.
+    private static string? PeriodError(NewsItem n) =>
+        n.PublishFrom is { } first && n.PublishTo is { } last && last < first
+            ? "Sista dag kan inte vara före första dag."
+            : null;
+
+    private static string PanelTitle(NewsItem n)
+    {
+        var title = string.IsNullOrWhiteSpace(n.Title) ? "(ny nyhet)" : n.Title;
+        var suffix = n.StatusOn(WebsiteService.Today) switch
+        {
+            NewsStatus.Scheduled => "  ·  Planerad",
+            NewsStatus.Expired   => "  ·  Avpublicerad",
+            _                    => "",
+        };
+        return $"{title}  ·  {n.Date:yyyy-MM-dd}{suffix}";
+    }
+
+    private static string StatusText(NewsItem n) => n.StatusOn(WebsiteService.Today) switch
+    {
+        NewsStatus.Scheduled => $"Planerad. Publiceras {n.PublishFrom:yyyy-MM-dd}.",
+        NewsStatus.Expired   => $"Avpublicerad efter {n.PublishTo:yyyy-MM-dd}. Syns inte på webben.",
+        _ => n.PublishTo is { } last ? $"Publicerad. Visas till och med {last:yyyy-MM-dd}." : "Publicerad.",
+    };
+
+    private static Color StatusColor(NewsItem n) => n.StatusOn(WebsiteService.Today) switch
+    {
+        NewsStatus.Scheduled => Color.Info,
+        NewsStatus.Expired   => Color.Warning,
+        _                    => Color.Success,
+    };
 
     // Till skillnad från utbildningar måste en nyhet ha en länk: den har
     // ingen annan väg in än sin egen sida.
@@ -61,10 +116,10 @@
 
     private void Save()
     {
-        var trasiga = Web.Settings.News.Count(n => SlugError(n) is not null);
+        var trasiga = Web.Settings.News.Count(n => SlugError(n) is not null || PeriodError(n) is not null);
         if (trasiga > 0)
         {
-            Snackbar.Add($"Rätta länken på {trasiga} nyhet(er) innan du sparar.", Severity.Error);
+            Snackbar.Add($"Rätta felen på {trasiga} nyhet(er) innan du sparar.", Severity.Error);
             return;
         }
 

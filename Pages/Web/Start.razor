@@ -90,7 +90,7 @@
 }
 
 @* ── Nyheter ─────────────────────────────────────────────────────────────── *@
-@if (s.ShowNews && s.News.Count > 0)
+@if (s.ShowNews && Web.NewsByDate.Count > 0)
 {
     <section class="ps-section ps-section--soft ps-news">
         <div class="ps-wrap">
@@ -99,7 +99,7 @@
                 <a href="/webb/nyheter" style="font-weight:600">Alla nyheter →</a>
             </div>
             <div class="ps-grid ps-grid--3 ps-mt">
-                @foreach (var n in s.News.Take(3))
+                @foreach (var n in Web.NewsByDate.Take(3))
                 {
                     <article class="ps-card ps-card--media ps-card--link">
                         <a class="ps-card__stretch" href="/webb/nyheter/@n.Slug" aria-label="Läs nyheten: @n.Title"></a>

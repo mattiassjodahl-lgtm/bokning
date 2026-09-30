@@ -150,11 +150,25 @@ public class WebsiteService
     public EducationCard? GetEducation(string slug) =>
         Settings.EducationCards.FirstOrDefault(c => c.Slug == slug);
 
-    public IReadOnlyList<NewsItem> NewsByDate =>
-        Settings.News.OrderByDescending(n => n.Date).ToList();
+    /// <summary>Dagens datum i svensk tid. Servern går på UTC, men publiceringsdatum anges i svensk tid.</summary>
+    public static DateOnly Today =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTime.UtcNow, SwedishTime));
 
+    private static readonly TimeZoneInfo SwedishTime = FindSwedishTime();
+
+    private static TimeZoneInfo FindSwedishTime()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm"); }
+        catch (TimeZoneNotFoundException) { return TimeZoneInfo.Local; }
+    }
+
+    /// <summary>Publicerade nyheter, nyast först. Planerade och avpublicerade nyheter ingår inte.</summary>
+    public IReadOnlyList<NewsItem> NewsByDate =>
+        Settings.News.Where(n => n.IsPublishedOn(Today)).OrderByDescending(n => n.Date).ToList();
+
+    /// <summary>En nyhet som inte är publicerad ger null, precis som en nyhet som inte finns.</summary>
     public NewsItem? GetNews(string slug) =>
-        Settings.News.FirstOrDefault(n => n.Slug == slug);
+        Settings.News.FirstOrDefault(n => n.Slug == slug && n.IsPublishedOn(Today));
 
     // ── Prislista: webbflaggade produkter från affärssystemet ─────────────────
     public IEnumerable<Article> WebProducts =>
