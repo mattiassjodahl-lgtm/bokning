@@ -60,6 +60,9 @@ public class SchoolProfile
     [System.Text.Json.Serialization.JsonIgnore]
     public string ContactRecipient => (string.IsNullOrWhiteSpace(WebEmail) ? Email : WebEmail).Trim();
 
+    /// <summary>Länk till Körkortsboken i den övre listen. Valfri: tom = länken visas inte.</summary>
+    public string KorkortsbokenUrl { get; set; } = "https://korkortsboken.se";
+
     /// <summary>Länk till STR (visas i "Medlem i"-blocket och menyn).</summary>
     public string StrUrl  { get; set; } = "https://www.str.se";
     /// <summary>Uppladdad STR-logga under wwwroot. Tom = textmärke "STR".</summary>
@@ -204,6 +207,9 @@ public class WebsiteSettings
     /// <summary>Vilka sidor som är synliga i menyn. Start är alltid synlig.</summary>
     public Dictionary<WebPageKey, bool> PageVisibility { get; set; } = new();
 
+    /// <summary>Skolans integritetspolicy. Tom text = ingen sida och ingen länk i sidfoten.</summary>
+    public ContentPage Privacy { get; set; } = new();
+
     /// <summary>Statistik och marknadsföring (Analytics eller Tag Manager, samt Meta Pixel).</summary>
     public TrackingSettings Tracking { get; set; } = new();
 
@@ -240,6 +246,16 @@ public class WebsiteSettings
 
     public bool IsVisible(WebPageKey key) =>
         key == WebPageKey.Start || PageVisibility.GetValueOrDefault(key, false);
+}
+
+/// <summary>En fri innehållssida med rubrik och brödtext. Tom rad i texten ger nytt stycke.</summary>
+public class ContentPage
+{
+    public string Title { get; set; } = "Integritetspolicy";
+    public string Body  { get; set; } = "";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasContent => !string.IsNullOrWhiteSpace(Body);
 }
 
 /// <summary>

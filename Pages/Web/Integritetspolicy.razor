@@ -1,0 +1,32 @@
+@page "/webb/integritetspolicy"
+@layout PublicLayout
+@inject WebsiteService Web
+
+<PageTitle>@Policy.Title – @Web.School.Name</PageTitle>
+<SeoHead Title="@Policy.Title" Description="@Paragraphs.FirstOrDefault()" Path="/webb/integritetspolicy" NoIndex="@(!Policy.HasContent)" />
+
+<section class="ps-section">
+    <div class="ps-wrap" style="max-width: 760px">
+        @if (!Policy.HasContent)
+        {
+            <h1>Sidan hittades inte</h1>
+            <p class="ps-lead">Den här sidan finns inte. Gå till <a href="/webb/start">startsidan</a>.</p>
+        }
+        else
+        {
+            <h1>@Policy.Title</h1>
+            @foreach (var para in Paragraphs)
+            {
+                <p>@para</p>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    private ContentPage Policy => Web.Settings.Privacy;
+
+    // Delar upp texten i stycken på dubbla radbrytningar, som nyhetssidan.
+    private IEnumerable<string> Paragraphs =>
+        Policy.Body.Replace("\r\n", "\n").Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}

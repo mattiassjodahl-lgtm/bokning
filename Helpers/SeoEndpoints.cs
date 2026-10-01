@@ -46,6 +46,8 @@ public static class SeoEndpoints
             AddPage(WebPageKey.Nyheter,   "/webb/nyheter");
             AddPage(WebPageKey.Kontakt,   "/webb/kontakt");
 
+            if (s.Privacy.HasContent) urls.Add(Url(ns, b + "/webb/integritetspolicy", null));
+
             foreach (var edu in s.EducationCards.Where(c => c.HasPage))
                 urls.Add(Url(ns, b + "/webb/utbildning/" + edu.Slug, null));
 

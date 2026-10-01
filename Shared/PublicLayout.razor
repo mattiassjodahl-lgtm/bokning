@@ -40,7 +40,7 @@
             <div class="ps-wrap ps-wrap--full ps-utility__inner">
                 @foreach (var ext in ExternalLinks)
                 {
-                    <a href="@ext.Href" target="_blank" rel="noopener" title="Mockad länk – kopplas i affärssystemet">@ext.Label</a>
+                    <a href="@ext.Href" target="_blank" rel="noopener">@ext.Label</a>
                 }
             </div>
         </div>
@@ -182,7 +182,10 @@
                     {
                         <button type="button" class="ps-linkbtn" @onclick="@(() => Consent.Open(focus: true))">Cookieinställningar</button>
                     }
-                    <a href="#">Integritetspolicy</a>
+                    @if (Web.Settings.Privacy.HasContent)
+                    {
+                        <a href="/webb/integritetspolicy">@Web.Settings.Privacy.Title</a>
+                    }
                 </span>
             </div>
         </div>
@@ -211,13 +214,20 @@
         }
     }
 
-    // Externa länkar. Elev/Körkortsboken är mockade tills de kopplas; STR går till STR-sajten.
-    private IEnumerable<NavLinkItem> ExternalLinks => new[]
+    // Fast systemlänk. Samma för alla skolor, därför inte redigerbar i administrationen.
+    private const string ElevcentralenUrl = "https://elevcentralen.se";
+
+    // Externa länkar. Körkortsboken är valfri och döljs när adressen är tom.
+    private IEnumerable<NavLinkItem> ExternalLinks
     {
-        new NavLinkItem("Elev", "#"),
-        new NavLinkItem("Körkortsboken", "#"),
-        new NavLinkItem("STR", Web.School.StrUrl),
-    };
+        get
+        {
+            yield return new("Elev", ElevcentralenUrl);
+            if (UrlUtil.IsValid(Web.School.KorkortsbokenUrl))
+                yield return new("Körkortsboken", Web.School.KorkortsbokenUrl.Trim());
+            yield return new("STR", Web.School.StrUrl);
+        }
+    }
 
     private bool IsCurrent(string href)
     {

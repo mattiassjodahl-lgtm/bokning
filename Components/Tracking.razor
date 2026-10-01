@@ -20,6 +20,10 @@
         <p>
             Vi vill använda cookies för att se hur sidan används och för att nå fler som vill ta körkort.
             Det är du som väljer. Sidan fungerar lika bra utan.
+            @if (Web.Settings.Privacy.HasContent)
+            {
+                <a href="/webb/integritetspolicy">Läs mer i vår integritetspolicy</a>
+            }
         </p>
         <div class="ps-consent__actions">
             <button type="button" class="ps-btn ps-btn--primary" @onclick="Accept">Godkänn</button>

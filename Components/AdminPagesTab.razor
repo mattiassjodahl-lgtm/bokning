@@ -55,6 +55,26 @@
         }
     </MudItem>
 
+    @* ── Integritetspolicy (innehållssida) ─────────────────────────────────── *@
+    <MudItem xs="12">
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.h6" GutterBottom="true">Integritetspolicy</MudText>
+        <MudText Typo="Typo.caption" Style="color:#666">
+            Visas på <code>/webb/integritetspolicy</code> och länkas från sidfoten och cookiebannern.
+            Tom text = ingen sida och ingen länk. Tom rad i texten ger nytt stycke.
+        </MudText>
+        <MudTextField @bind-Value="Web.Settings.Privacy.Title" Label="Rubrik" Variant="Variant.Outlined" Class="mt-3" />
+        <MudTextField @bind-Value="Web.Settings.Privacy.Body" Label="Text" Variant="Variant.Outlined" Lines="12" Class="mt-3" />
+        <MudText Typo="Typo.body2" Color="@(Web.Settings.Privacy.HasContent ? Color.Success : Color.Default)" Class="mt-1" role="status">
+            @(Web.Settings.Privacy.HasContent ? "Publicerad. Länken visas i sidfoten." : "Ingen text. Sidan och länken visas inte.")
+        </MudText>
+        @if (Web.Settings.Privacy.HasContent)
+        {
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Href="/webb/integritetspolicy" Target="_blank"
+                       StartIcon="@Icons.Material.Filled.OpenInNew" Class="mt-1">Visa sidan</MudButton>
+        }
+    </MudItem>
+
     @* ── Sök och delning för de fasta sidorna ──────────────────────────────── *@
     <MudItem xs="12">
         <MudDivider Class="my-4" />
@@ -130,6 +150,19 @@
     </MudItem>
 
     @* ── STR (medlemskap) ──────────────────────────────────────────────────── *@
+    <MudItem xs="12">
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.subtitle1" GutterBottom="true">Länkar i övre listen</MudText>
+        <MudText Typo="Typo.caption" Style="color:#666">
+            "Elev" går alltid till elevcentralen (elevcentralen.se) och kan inte ändras här.
+        </MudText>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.School.KorkortsbokenUrl" @bind-Value:event="oninput" Immediate="true"
+                      Label="Körkortsboken (länk, valfri)" Variant="Variant.Outlined"
+                      HelperText="Tomt fält = länken visas inte på sidan."
+                      Error="@(KorkortsbokenError is not null)" ErrorText="@KorkortsbokenError" />
+    </MudItem>
     <MudItem xs="12">
         <MudDivider Class="my-2" />
         <MudText Typo="Typo.subtitle1" GutterBottom="true">STR-medlemskap (footer)</MudText>
@@ -242,8 +275,17 @@
 
     private string? WebEmailError => EmailUtil.Error(Web.School.WebEmail);
 
+    private string? KorkortsbokenError => UrlUtil.Error(Web.School.KorkortsbokenUrl);
+
     private void SaveAll()
     {
+        if (KorkortsbokenError is not null)
+        {
+            Snackbar.Add("Rätta länken till Körkortsboken innan du sparar.", Severity.Error);
+            return;
+        }
+        Web.School.KorkortsbokenUrl = Web.School.KorkortsbokenUrl.Trim();
+
         if (WebEmailError is not null)
         {
             Snackbar.Add("Rätta e-postadressen för webben innan du sparar.", Severity.Error);
