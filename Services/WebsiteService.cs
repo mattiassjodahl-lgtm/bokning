@@ -25,6 +25,11 @@ public class WebsiteService
 
     public WebsiteContent Content { get; private set; }
 
+    // Senast sparade version. Innehållet i Content ändras direkt när administratören redigerar,
+    // så förhandsgranskningen läser härifrån för att visa det som är sparat.
+    private string _savedJson = "";
+    private WebsiteContent? _savedContent;
+
     public WebsiteService(BookingService booking, IWebHostEnvironment env)
     {
         _booking   = booking;
@@ -33,6 +38,7 @@ public class WebsiteService
 
         Content = Load() ?? BuildDefaults(_booking);
         EnsureSeo();
+        _savedJson = JsonSerializer.Serialize(Content, JsonOpts);
     }
 
     // ── Bekväma accessorer (samma API som tidigare) ───────────────────────────
@@ -145,10 +151,13 @@ public class WebsiteService
     public void Save()
     {
         PruneRedirects();
+        _savedJson    = JsonSerializer.Serialize(Content, JsonOpts);
+        _savedContent = null;
+
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_storePath)!);
-            File.WriteAllText(_storePath, JsonSerializer.Serialize(Content, JsonOpts));
+            File.WriteAllText(_storePath, _savedJson);
         }
         catch
         {
@@ -244,9 +253,15 @@ public class WebsiteService
     public NewsItem? GetNews(string slug) =>
         Settings.News.FirstOrDefault(n => n.Slug == slug && n.IsPublishedOn(Today));
 
-    /// <summary>Nyhet oavsett publiceringsstatus. Bara för förhandsgranskning av inloggad administratör.</summary>
-    public NewsItem? FindNewsForPreview(string slug) =>
-        Settings.News.FirstOrDefault(n => n.Slug == slug);
+    /// <summary>
+    /// Den sparade versionen av en nyhet, oavsett publiceringsstatus. Osparade ändringar syns inte.
+    /// Bara för förhandsgranskning av inloggad administratör.
+    /// </summary>
+    public NewsItem? FindNewsForPreview(string slug)
+    {
+        _savedContent ??= JsonSerializer.Deserialize<WebsiteContent>(_savedJson, JsonOpts);
+        return _savedContent?.Settings.News.FirstOrDefault(n => n.Slug == slug);
+    }
 
     // ── Prislista: webbflaggade produkter från affärssystemet ─────────────────
     public IEnumerable<Article> WebProducts =>

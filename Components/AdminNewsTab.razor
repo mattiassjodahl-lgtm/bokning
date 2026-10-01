@@ -40,10 +40,11 @@
                     <MudText Typo="Typo.body2" Color="@StatusColor(n)" Style="padding-top:1rem" role="status">@StatusText(n)</MudText>
                     <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility"
                                Href="@PreviewHref(n)" Target="_blank" Disabled="@(!CanPreview(n))" Class="mt-1">Förhandsgranska</MudButton>
-                    @if (!CanPreview(n))
-                    {
-                        <MudText Typo="Typo.caption" Style="color:#666; display:block">Ange en giltig länk för att förhandsgranska.</MudText>
-                    }
+                    <MudText Typo="Typo.caption" Style="color:#666; display:block">
+                        @(CanPreview(n)
+                            ? "Visar den sparade versionen. Spara först om du ändrat något."
+                            : "Spara nyheten med en giltig länk för att förhandsgranska.")
+                    </MudText>
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField @bind-Value="n.Slug" @bind-Value:event="oninput" Immediate="true"
@@ -109,10 +110,11 @@
     private bool SlugChanged(NewsItem n) =>
         _savedSlugs.TryGetValue(n, out var saved) && !string.Equals(saved, n.Slug, StringComparison.Ordinal);
 
-    // Förhandsgranskning gäller alla statusar. Sidan öppnas i ny flik med ?preview=1 och
-    // visas bara för inloggad administratör.
-    private bool CanPreview(NewsItem n) => !string.IsNullOrWhiteSpace(n.Slug) && SlugError(n) is null;
-    private string? PreviewHref(NewsItem n) => CanPreview(n) ? NewsPath(n) + "?preview=1" : null;
+    // Förhandsgranskning gäller alla statusar och visar den sparade versionen, så den kräver att nyheten
+    // är sparad. Adressen är den sparade länken, inte den som just skrivits. Sidan öppnas i ny flik med
+    // ?preview=1 och visas bara för inloggad administratör.
+    private bool CanPreview(NewsItem n) => _savedSlugs.ContainsKey(n);
+    private string? PreviewHref(NewsItem n) => CanPreview(n) ? NewsPath(n, _savedSlugs[n]) + "?preview=1" : null;
 
     private void AddNews() =>
         Web.Settings.News.Add(new() { Title = "", Slug = "", Date = WebsiteService.Today });
