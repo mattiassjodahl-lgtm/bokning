@@ -207,6 +207,9 @@ public class WebsiteSettings
     /// <summary>Vilka sidor som är synliga i menyn. Start är alltid synlig.</summary>
     public Dictionary<WebPageKey, bool> PageVisibility { get; set; } = new();
 
+    /// <summary>Permanenta ompekningar (301) från gamla adresser till nya.</summary>
+    public List<RedirectRule> Redirects { get; set; } = new();
+
     /// <summary>Skolans integritetspolicy. Tom text = ingen sida och ingen länk i sidfoten.</summary>
     public ContentPage Privacy { get; set; } = new();
 
@@ -246,6 +249,16 @@ public class WebsiteSettings
 
     public bool IsVisible(WebPageKey key) =>
         key == WebPageKey.Start || PageVisibility.GetValueOrDefault(key, false);
+}
+
+/// <summary>En permanent ompekning (301) från en gammal sökväg till en ny, t.ex. när en länk byts eller en sida tas bort.</summary>
+public class RedirectRule
+{
+    /// <summary>Gammal sökväg, t.ex. "/webb/nyheter/sommarkurser".</summary>
+    public string From    { get; set; } = "";
+    /// <summary>Ny sökväg, t.ex. "/webb/nyheter/sommarkurser-2026".</summary>
+    public string To      { get; set; } = "";
+    public DateOnly Created { get; set; }
 }
 
 /// <summary>En fri innehållssida med rubrik och brödtext. Tom rad i texten ger nytt stycke.</summary>

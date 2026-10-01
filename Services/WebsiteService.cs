@@ -98,9 +98,53 @@ public class WebsiteService
         if (string.IsNullOrWhiteSpace(c.Settings.StepsHeading)) c.Settings.StepsHeading = d.StepsHeading;
     }
 
+    // ── Ompekningar (301) ─────────────────────────────────────────────────────
+    private static string NormalizePath(string path) => "/" + (path ?? "").Trim().Trim('/');
+
+    /// <summary>Sökvägen som gamla adressen ska peka om till, eller null.</summary>
+    public string? FindRedirect(string path)
+    {
+        var p = NormalizePath(path);
+        return Settings.Redirects.FirstOrDefault(r => string.Equals(r.From, p, StringComparison.OrdinalIgnoreCase))?.To;
+    }
+
+    /// <summary>
+    /// Pekar om en gammal adress. Tidigare ompekningar till den gamla adressen
+    /// flyttas vidare till den nya, så att ingen länk går via flera steg.
+    /// </summary>
+    public void AddRedirect(string from, string to)
+    {
+        from = NormalizePath(from);
+        to   = NormalizePath(to);
+        if (string.Equals(from, to, StringComparison.OrdinalIgnoreCase)) return;
+
+        Settings.Redirects.RemoveAll(r => string.Equals(r.From, from, StringComparison.OrdinalIgnoreCase));
+        foreach (var r in Settings.Redirects.Where(r => string.Equals(r.To, from, StringComparison.OrdinalIgnoreCase)))
+            r.To = to;
+        Settings.Redirects.Add(new RedirectRule { From = from, To = to, Created = Today });
+    }
+
+    public void RemoveRedirect(RedirectRule rule) => Settings.Redirects.Remove(rule);
+
+    /// <summary>
+    /// Tar bort ompekningar som skulle slå fel: de som pekar på sig själva, och de vars gamla
+    /// adress åter är en riktig sida (sidan vinner över ompekningen).
+    /// </summary>
+    private void PruneRedirects()
+    {
+        var live = Settings.News.Where(n => !string.IsNullOrWhiteSpace(n.Slug)).Select(n => "/webb/nyheter/" + n.Slug)
+            .Concat(Settings.EducationCards.Where(c => c.HasPage).Select(c => "/webb/utbildning/" + c.Slug))
+            .Select(NormalizePath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        Settings.Redirects.RemoveAll(r =>
+            string.Equals(r.From, r.To, StringComparison.OrdinalIgnoreCase) || live.Contains(r.From));
+    }
+
     /// <summary>Sparar all redigerbar data till JSON. Anropas av admin efter ändringar.</summary>
     public void Save()
     {
+        PruneRedirects();
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_storePath)!);

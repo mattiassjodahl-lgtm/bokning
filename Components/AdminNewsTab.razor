@@ -1,5 +1,6 @@
 @inject WebsiteService Web
 @inject ISnackbar Snackbar
+@inject IDialogService Dialogs
 
 <MudText Typo="Typo.h6" GutterBottom="true">Nyheter</MudText>
 <MudText Typo="Typo.caption" Style="color:#666">
@@ -54,8 +55,8 @@
                     @if (SlugChanged(n))
                     {
                         <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">
-                            Du ändrar länken från <code>@NewsPath(n, _savedSlugs[n])</code>. Den gamla adressen slutar fungera
-                            och delade eller indexerade länkar visar "Nyheten hittades inte".
+                            Du ändrar länken från <code>@NewsPath(n, _savedSlugs[n])</code>. Den gamla adressen
+                            pekas om till den nya (301) när du sparar, så att delade och indexerade länkar fortsätter fungera.
                         </MudAlert>
                     }
                 </MudItem>
@@ -76,7 +77,7 @@
                 </MudItem>
                 <MudItem xs="12">
                     <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
-                               OnClick="@(() => Web.Settings.News.Remove(n))">Ta bort nyhet</MudButton>
+                               OnClick="@(() => RemoveAsync(n))">Ta bort nyhet</MudButton>
                 </MudItem>
             </MudGrid>
         </MudExpansionPanel>
@@ -158,6 +159,21 @@
             Web.Settings.News.Where(o => !ReferenceEquals(o, news)).Select(o => o.Slug),
             allowEmpty: false);
 
+    // En sparad nyhet som tas bort lämnar en död adress efter sig. Fråga om den ska peka om.
+    private async Task RemoveAsync(NewsItem n)
+    {
+        if (_savedSlugs.TryGetValue(n, out var saved))
+        {
+            var from = NewsPath(n, saved);
+            var target = await RedirectDialog.AskAsync(Dialogs, from, "/webb/nyheter");
+            if (target is null) return; // avbrutet: nyheten ligger kvar
+            if (target.Length > 0) Web.AddRedirect(from, target);
+            _savedSlugs.Remove(n);
+        }
+
+        Web.Settings.News.Remove(n);
+    }
+
     private void Save()
     {
         var trasiga = Web.Settings.News.Count(n => SlugError(n) is not null || PeriodError(n) is not null);
@@ -167,8 +183,16 @@
             return;
         }
 
+        // Ändrad länk på en sparad nyhet: gamla adressen pekas om till den nya.
+        var omPekade = 0;
+        foreach (var n in Web.Settings.News.Where(SlugChanged))
+        {
+            Web.AddRedirect(NewsPath(n, _savedSlugs[n]), NewsPath(n));
+            omPekade++;
+        }
+
         Web.Save();
         RememberSlugs();
-        Snackbar.Add("Nyheter sparade", Severity.Success);
+        Snackbar.Add(omPekade > 0 ? $"Nyheter sparade. {omPekade} gammal(a) adress(er) pekas om (301)." : "Nyheter sparade", Severity.Success);
     }
 }

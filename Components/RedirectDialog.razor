@@ -1,0 +1,78 @@
+@inject WebsiteService Web
+
+@* ════════════════════════════════════════════════════════════════════════
+   Frågar om en borttagen sida ska peka om till en annan sida (301).
+   Resultatet är målets sökväg, eller tom sträng för "ingen ompekning".
+   Avbryt = sidan tas inte bort.
+   ════════════════════════════════════════════════════════════════════════ *@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Ta bort sidan?</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-3">
+            Sidan <code>@FromPath</code> tas bort. Utan ompekning får besökare och sökmotorer som har den gamla
+            adressen "hittades inte".
+        </MudText>
+        <MudSelect T="string" Label="Peka om den gamla adressen till" Variant="Variant.Outlined"
+                   @bind-Value="_target" Dense="true">
+            <MudSelectItem T="string" Value="@("")">Ingen ompekning</MudSelectItem>
+            @foreach (var (path, label) in Targets)
+            {
+                <MudSelectItem T="string" Value="@path">@label</MudSelectItem>
+            }
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Avbryt</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled"
+                   OnClick="@(() => MudDialog.Close(DialogResult.Ok(_target)))">Ta bort</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+
+    /// <summary>Sökvägen till sidan som tas bort.</summary>
+    [Parameter] public string FromPath { get; set; } = "";
+
+    /// <summary>Förvalt mål. Måste finnas bland alternativen, annars väljs "Ingen ompekning".</summary>
+    [Parameter] public string DefaultTarget { get; set; } = "";
+
+    private string _target = "";
+
+    protected override void OnInitialized() =>
+        _target = Targets.Any(t => t.Path == DefaultTarget) ? DefaultTarget : "";
+
+    // Alla sidor som finns och som visas publikt, utom den som tas bort.
+    private IEnumerable<(string Path, string Label)> Targets
+    {
+        get
+        {
+            var s = Web.Settings;
+            yield return ("/webb/start", "Startsidan");
+            if (s.IsVisible(WebPageKey.Nyheter))  yield return ("/webb/nyheter",  "Nyheter (listan)");
+            if (s.IsVisible(WebPageKey.Kontakt))  yield return ("/webb/kontakt",  "Kontakta oss");
+            if (s.IsVisible(WebPageKey.Prislista)) yield return ("/webb/prislista", "Prislista");
+            if (s.IsVisible(WebPageKey.Ehandel))  yield return ("/webb/ehandel",  "E-handel");
+
+            foreach (var c in s.EducationCards.Where(c => c.HasPage))
+                if (!SameAsRemoved("/webb/utbildning/" + c.Slug)) yield return ("/webb/utbildning/" + c.Slug, "Utbildning: " + c.Title);
+
+            foreach (var n in s.News.Where(n => !string.IsNullOrWhiteSpace(n.Slug) && n.IsPublishedOn(WebsiteService.Today)))
+                if (!SameAsRemoved("/webb/nyheter/" + n.Slug)) yield return ("/webb/nyheter/" + n.Slug, "Nyhet: " + n.Title);
+        }
+    }
+
+    private bool SameAsRemoved(string path) => string.Equals(path, FromPath, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Visar dialogen. Returnerar målets sökväg, tom sträng för ingen ompekning, eller null om användaren avbröt.</summary>
+    public static async Task<string?> AskAsync(IDialogService dialogs, string fromPath, string defaultTarget)
+    {
+        var parameters = new DialogParameters { ["FromPath"] = fromPath, ["DefaultTarget"] = defaultTarget };
+        var dialog = await dialogs.ShowAsync<RedirectDialog>("", parameters,
+            new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        return result is null || result.Canceled ? null : result.Data as string ?? "";
+    }
+}

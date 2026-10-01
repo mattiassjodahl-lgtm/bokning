@@ -59,6 +59,25 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
 
+// ── Permanenta ompekningar (301) för /webb när en länk bytts eller en sida tagits bort.
+// Körs före lösenordsgrinden eftersom /webb är publikt.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "/";
+    if (path.StartsWith("/webb/", StringComparison.OrdinalIgnoreCase)
+        && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)))
+    {
+        var target = context.RequestServices.GetRequiredService<WebsiteService>().FindRedirect(path);
+        if (target is not null)
+        {
+            context.Response.Redirect(target + context.Request.QueryString, permanent: true);
+            return;
+        }
+    }
+
+    await next(context);
+});
+
 // ── Simple password gate ───────────────────────────────────────────────────
 // Bypass for: /login, static assets, Blazor hub & framework files
 app.Use(async (context, next) =>

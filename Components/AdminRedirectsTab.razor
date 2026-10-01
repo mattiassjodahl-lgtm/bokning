@@ -1,0 +1,46 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Ompekningar</MudText>
+<MudText Typo="Typo.caption" Style="color:#666">
+    En ompekning skickar besökare och sökmotorer från en gammal adress till en ny (permanent, 301). De skapas
+    automatiskt när en länk ändras, och efter fråga när en sida tas bort. Ta bort en ompekning här om den inte längre behövs.
+</MudText>
+
+@if (Web.Settings.Redirects.Count == 0)
+{
+    <MudAlert Severity="Severity.Info" Dense="true" Class="mt-3">Inga ompekningar.</MudAlert>
+}
+else
+{
+    <MudSimpleTable Dense="true" Class="mt-3">
+        <thead>
+            <tr><th>Gammal adress</th><th>Pekar om till</th><th>Skapad</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Web.Settings.Redirects.OrderByDescending(r => r.Created).ToList())
+            {
+                var rule = r;
+                <tr>
+                    <td><code>@rule.From</code></td>
+                    <td><code>@rule.To</code></td>
+                    <td>@rule.Created.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       aria-label="@($"Ta bort ompekningen från {rule.From}")"
+                                       OnClick="@(() => Remove(rule))" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+@code {
+    private void Remove(RedirectRule rule)
+    {
+        Web.RemoveRedirect(rule);
+        Web.Save();
+        Snackbar.Add("Ompekningen togs bort", Severity.Success);
+    }
+}

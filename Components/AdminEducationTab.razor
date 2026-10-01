@@ -1,5 +1,6 @@
 @inject WebsiteService Web
 @inject ISnackbar Snackbar
+@inject IDialogService Dialogs
 
 <MudText Typo="Typo.h6" GutterBottom="true">Innehållssidor – utbildningar</MudText>
 <MudText Typo="Typo.caption" Style="color:#666">
@@ -24,9 +25,8 @@
                     {
                         <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">
                             @(string.IsNullOrWhiteSpace(c.Slug)
-                                ? "Du tar bort länken. Sidan försvinner och kortet på startsidan slutar vara klickbart."
-                                : $"Du ändrar länken från /webb/utbildning/{_savedSlugs[c]}.") 
-                            Den gamla adressen slutar fungera och delade eller indexerade länkar visar "Utbildningen hittades inte".
+                                ? $"Du tar bort länken. Sidan /webb/utbildning/{_savedSlugs[c]} försvinner och kortet på startsidan slutar vara klickbart. Du får välja om adressen ska peka om när du sparar."
+                                : $"Du ändrar länken från /webb/utbildning/{_savedSlugs[c]}. Den gamla adressen pekas om till den nya (301) när du sparar, så att delade och indexerade länkar fortsätter fungera.")
                         </MudAlert>
                     }
                 </MudItem>
@@ -62,7 +62,7 @@
                 </MudItem>
                 <MudItem xs="12">
                     <MudButton Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
-                               OnClick="@(() => Web.Settings.EducationCards.Remove(c))">Ta bort utbildning</MudButton>
+                               OnClick="@(() => RemoveAsync(c))">Ta bort utbildning</MudButton>
                 </MudItem>
             </MudGrid>
         </MudExpansionPanel>
@@ -103,7 +103,22 @@
             Web.Settings.EducationCards.Where(o => !ReferenceEquals(o, card)).Select(o => o.Slug),
             allowEmpty: true);
 
-    private void Save()
+    // En sparad utbildningssida som tas bort lämnar en död adress efter sig. Fråga om den ska peka om.
+    private async Task RemoveAsync(EducationCard c)
+    {
+        if (_savedSlugs.TryGetValue(c, out var saved))
+        {
+            var from = "/webb/utbildning/" + saved;
+            var target = await RedirectDialog.AskAsync(Dialogs, from, "/webb/start");
+            if (target is null) return; // avbrutet: utbildningen ligger kvar
+            if (target.Length > 0) Web.AddRedirect(from, target);
+            _savedSlugs.Remove(c);
+        }
+
+        Web.Settings.EducationCards.Remove(c);
+    }
+
+    private async Task Save()
     {
         var trasiga = Web.Settings.EducationCards.Count(c => SlugError(c) is not null);
         if (trasiga > 0)
@@ -112,8 +127,28 @@
             return;
         }
 
+        // Ändrad länk: gamla adressen pekas om till den nya. Tömd länk: sidan försvinner, fråga först.
+        var omPekade = 0;
+        var changed = Web.Settings.EducationCards.Where(SlugChanged).ToList();
+        foreach (var c in changed.Where(c => string.IsNullOrWhiteSpace(c.Slug)))
+        {
+            var from = "/webb/utbildning/" + _savedSlugs[c];
+            var target = await RedirectDialog.AskAsync(Dialogs, from, "/webb/start");
+            if (target is null)
+            {
+                Snackbar.Add("Sparningen avbröts. Inget sparades.", Severity.Info);
+                return;
+            }
+            if (target.Length > 0) { Web.AddRedirect(from, target); omPekade++; }
+        }
+        foreach (var c in changed.Where(c => !string.IsNullOrWhiteSpace(c.Slug)))
+        {
+            Web.AddRedirect("/webb/utbildning/" + _savedSlugs[c], EduPath(c));
+            omPekade++;
+        }
+
         Web.Save();
         RememberSlugs();
-        Snackbar.Add("Utbildningar sparade", Severity.Success);
+        Snackbar.Add(omPekade > 0 ? $"Utbildningar sparade. {omPekade} gammal(a) adress(er) pekas om (301)." : "Utbildningar sparade", Severity.Success);
     }
 }
