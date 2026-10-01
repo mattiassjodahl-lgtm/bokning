@@ -31,6 +31,8 @@
 @code {
     private bool _loaded;
 
+    private bool IsPreview => Nav.Uri.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
+
     private ActiveTags Tags => TrackingIds.Resolve(Web.Settings.Tracking);
 
     private object Config => new
@@ -48,7 +50,8 @@
         {
             Nav.LocationChanged += OnLocationChanged;
 
-            if (!Tags.Any) return;
+            // Förhandsgranskning ska varken visa cookiebanner eller räknas som besök.
+            if (IsPreview || !Tags.Any) return;
             var choice = await JS.InvokeAsync<string?>("psTracking.getConsent");
             if (choice == "granted") await Load();
             else if (choice is null) Consent.Open(focus: false);
@@ -85,7 +88,7 @@
 
     private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        if (!_loaded) return;
+        if (!_loaded || IsPreview) return;
         try { await JS.InvokeVoidAsync("psTracking.pageView"); }
         catch (JSDisconnectedException) { /* kretsen är nedkopplad */ }
     }

@@ -37,6 +37,12 @@
                 </MudItem>
                 <MudItem xs="12" md="4">
                     <MudText Typo="Typo.body2" Color="@StatusColor(n)" Style="padding-top:1rem" role="status">@StatusText(n)</MudText>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility"
+                               Href="@PreviewHref(n)" Target="_blank" Disabled="@(!CanPreview(n))" Class="mt-1">Förhandsgranska</MudButton>
+                    @if (!CanPreview(n))
+                    {
+                        <MudText Typo="Typo.caption" Style="color:#666; display:block">Ange en giltig länk för att förhandsgranska.</MudText>
+                    }
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField @bind-Value="n.Slug" @bind-Value:event="oninput" Immediate="true"
@@ -45,6 +51,13 @@
                                   Error="@(SlugError(n) is not null)" ErrorText="@SlugError(n)" />
                     <MudButton Size="Size.Small" StartIcon="@Icons.Material.Filled.AutoFixHigh"
                                OnClick="@(() => n.Slug = SlugUtil.From(n.Title))">Föreslå från rubrik</MudButton>
+                    @if (SlugChanged(n))
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">
+                            Du ändrar länken från <code>@NewsPath(n, _savedSlugs[n])</code>. Den gamla adressen slutar fungera
+                            och delade eller indexerade länkar visar "Nyheten hittades inte".
+                        </MudAlert>
+                    }
                 </MudItem>
                 <MudItem xs="12"><MudTextField @bind-Value="n.Summary" Label="Ingress (kort)" Variant="Variant.Outlined" Lines="2" /></MudItem>
                 <MudItem xs="12"><MudTextField @bind-Value="n.Body" Label="Brödtext (tom rad = nytt stycke)" Variant="Variant.Outlined" Lines="6" /></MudItem>
@@ -76,7 +89,29 @@
 </div>
 
 @code {
-    private static string NewsPath(NewsItem n) => "/webb/nyheter/" + n.Slug;
+    private static string NewsPath(NewsItem n) => NewsPath(n, n.Slug);
+    private static string NewsPath(NewsItem n, string slug) => "/webb/nyheter/" + slug;
+
+    // Länkar som redan var sparade när fliken öppnades. Används för att varna när en
+    // befintlig länk ändras. Nya nyheter saknas här och får ingen varning.
+    private readonly Dictionary<NewsItem, string> _savedSlugs = new(ReferenceEqualityComparer.Instance);
+
+    protected override void OnInitialized() => RememberSlugs();
+
+    private void RememberSlugs()
+    {
+        _savedSlugs.Clear();
+        foreach (var n in Web.Settings.News.Where(n => !string.IsNullOrWhiteSpace(n.Slug)))
+            _savedSlugs[n] = n.Slug;
+    }
+
+    private bool SlugChanged(NewsItem n) =>
+        _savedSlugs.TryGetValue(n, out var saved) && !string.Equals(saved, n.Slug, StringComparison.Ordinal);
+
+    // Förhandsgranskning gäller alla statusar. Sidan öppnas i ny flik med ?preview=1 och
+    // visas bara för inloggad administratör.
+    private bool CanPreview(NewsItem n) => !string.IsNullOrWhiteSpace(n.Slug) && SlugError(n) is null;
+    private string? PreviewHref(NewsItem n) => CanPreview(n) ? NewsPath(n) + "?preview=1" : null;
 
     private void AddNews() =>
         Web.Settings.News.Add(new() { Title = "", Slug = "", Date = WebsiteService.Today });
@@ -133,6 +168,7 @@
         }
 
         Web.Save();
+        RememberSlugs();
         Snackbar.Add("Nyheter sparade", Severity.Success);
     }
 }

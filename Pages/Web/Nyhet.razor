@@ -4,7 +4,16 @@
 @inject NavigationManager Nav
 
 <PageTitle>@(_news?.Title ?? "Nyhet") – @Web.School.Name</PageTitle>
-<SeoHead Title="@_news?.Title" Description="@_news?.Summary" Path="@SeoPath" Image="@_news?.Image" OverrideDescription="@_news?.SeoDescription" OverrideImage="@_news?.SeoImage" Type="article" NoIndex="@(_news is null)" />
+<SeoHead Title="@_news?.Title" Description="@_news?.Summary" Path="@SeoPath" Image="@_news?.Image" OverrideDescription="@_news?.SeoDescription" OverrideImage="@_news?.SeoImage" Type="article" NoIndex="@(_news is null || IsPreview)" />
+
+@if (IsPreview && _news is not null)
+{
+    <div class="ps-preview" role="status">
+        <strong>Förhandsgranskning.</strong>
+        @PreviewText
+        <a href="/admin/hemsida">Till administrationen</a>
+    </div>
+}
 
 @if (_news is null)
 {
@@ -44,8 +53,11 @@ else
 
             <p class="ps-mt"><a href="/webb/nyheter">← Alla nyheter</a></p>
 
-            <JsonLd Json="@ArticleJson" />
-            <JsonLd Json="@BreadcrumbJson" />
+            @if (!IsPreview)
+            {
+                <JsonLd Json="@ArticleJson" />
+                <JsonLd Json="@BreadcrumbJson" />
+            }
         </div>
     </article>
 }
@@ -57,9 +69,26 @@ else
 
     [Parameter] public string Slug { get; set; } = "";
 
+    /// <summary>"?preview=1" i adressen. Gäller bara för inloggad administratör.</summary>
+    [SupplyParameterFromQuery(Name = "preview")] public string? PreviewFlag { get; set; }
+
+    [CascadingParameter(Name = "IsAdmin")] public bool IsAdmin { get; set; }
+
     private NewsItem? _news;
 
-    protected override void OnParametersSet() => _news = Web.GetNews(Slug);
+    // Utan inloggning ignoreras preview-flaggan helt: en opublicerad nyhet ger
+    // då "hittades inte", precis som för alla andra besökare.
+    private bool IsPreview => IsAdmin && PreviewFlag == "1";
+
+    protected override void OnParametersSet() =>
+        _news = IsPreview ? Web.FindNewsForPreview(Slug) : Web.GetNews(Slug);
+
+    private string PreviewText => _news?.StatusOn(WebsiteService.Today) switch
+    {
+        NewsStatus.Scheduled => $"Nyheten är planerad och syns inte publikt förrän {_news.PublishFrom:yyyy-MM-dd}.",
+        NewsStatus.Expired   => $"Nyheten är avpublicerad sedan {_news.PublishTo:yyyy-MM-dd} och syns inte publikt.",
+        _                    => "Nyheten är publicerad och syns redan publikt.",
+    };
 
     // Byggs i kod i stället för i markup: strängargumenten innehåller
     // citattecken, som inte går att ha inuti ett Razor-attribut.

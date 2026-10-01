@@ -394,3 +394,12 @@ body:has(.ps-site) {
 .ps-consent h2 { font-size: 1.05rem; margin: 0 0 .4rem; }
 .ps-consent p { margin: 0 0 .9rem; font-size: .95rem; }
 .ps-consent__actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+/* Förhandsgranskning av opublicerat innehåll (bara för inloggad administratör) */
+.ps-preview {
+    position: sticky; top: 0; z-index: 60;
+    background: #fff4cf; color: #3d3000;
+    border-bottom: 2px solid #e0b100;
+    padding: .6rem 1rem; text-align: center; font-size: .95rem;
+}
+.ps-preview a { color: inherit; font-weight: 600; margin-left: .75rem; }

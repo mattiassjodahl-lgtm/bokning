@@ -1,9 +1,14 @@
 @page "/"
 @using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Http
 @namespace BookingDemo.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     Layout = "_Layout";
 }
 
-<component type="typeof(App)" render-mode="ServerPrerendered" />
+@* Inloggad administratör? Avgörs här, på det första anropet, eftersom sessionen inte når fram
+   till Blazor-kretsen. Används för förhandsgranskning av opublicerat innehåll. *@
+@{ var isAdmin = Context.Session.GetString("authenticated") == "true"; }
+
+<component type="typeof(App)" render-mode="ServerPrerendered" param-IsAdmin="isAdmin" />

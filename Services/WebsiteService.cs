@@ -200,6 +200,10 @@ public class WebsiteService
     public NewsItem? GetNews(string slug) =>
         Settings.News.FirstOrDefault(n => n.Slug == slug && n.IsPublishedOn(Today));
 
+    /// <summary>Nyhet oavsett publiceringsstatus. Bara för förhandsgranskning av inloggad administratör.</summary>
+    public NewsItem? FindNewsForPreview(string slug) =>
+        Settings.News.FirstOrDefault(n => n.Slug == slug);
+
     // ── Prislista: webbflaggade produkter från affärssystemet ─────────────────
     public IEnumerable<Article> WebProducts =>
         _booking.Articles.Where(a => Settings.WebFlaggedArticleIds.Contains(a.Id));
