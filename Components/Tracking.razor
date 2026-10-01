@@ -1,0 +1,100 @@
+@implements IDisposable
+@inject WebsiteService Web
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject ConsentService Consent
+
+@* ════════════════════════════════════════════════════════════════════════
+   Statistik och marknadsföring på den publika sidan.
+
+   Inget laddas förrän besökaren godkänt cookies. Bannern visas bara när något
+   verktyg är angivet i administrationen och besökaren inte redan valt.
+   Skripten laddas av wwwroot/js/tracking.js. Eftersom sajten byter sida utan
+   omladdning skickas även en sidvisning vid varje navigering.
+   ════════════════════════════════════════════════════════════════════════ *@
+
+@if (Consent.BannerOpen && Tags.Any)
+{
+    <section class="ps-consent" aria-labelledby="ps-consent-title">
+        <h2 id="ps-consent-title" tabindex="-1">Cookies för statistik och marknadsföring</h2>
+        <p>
+            Vi vill använda cookies för att se hur sidan används och för att nå fler som vill ta körkort.
+            Det är du som väljer. Sidan fungerar lika bra utan.
+        </p>
+        <div class="ps-consent__actions">
+            <button type="button" class="ps-btn ps-btn--primary" @onclick="Accept">Godkänn</button>
+            <button type="button" class="ps-btn ps-btn--primary" @onclick="Decline">Endast nödvändiga</button>
+        </div>
+    </section>
+}
+
+@code {
+    private bool _loaded;
+
+    private ActiveTags Tags => TrackingIds.Resolve(Web.Settings.Tracking);
+
+    private object Config => new
+    {
+        tagManagerId = Tags.TagManagerId,
+        analyticsId  = Tags.AnalyticsId,
+        metaPixelId  = Tags.MetaPixelId,
+    };
+
+    protected override void OnInitialized() => Consent.Changed += OnConsentChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Nav.LocationChanged += OnLocationChanged;
+
+            if (!Tags.Any) return;
+            var choice = await JS.InvokeAsync<string?>("psTracking.getConsent");
+            if (choice == "granted") await Load();
+            else if (choice is null) Consent.Open(focus: false);
+        }
+        else if (Consent.BannerOpen && Consent.FocusBanner)
+        {
+            await JS.InvokeVoidAsync("psTracking.focus", "ps-consent-title");
+        }
+    }
+
+    private async Task Load()
+    {
+        if (_loaded) return;
+        _loaded = true;
+        await JS.InvokeVoidAsync("psTracking.load", Config);
+    }
+
+    private async Task Accept()
+    {
+        await JS.InvokeVoidAsync("psTracking.setConsent", "granted");
+        Consent.Close();
+        await Load();
+    }
+
+    private async Task Decline()
+    {
+        var previous = await JS.InvokeAsync<string?>("psTracking.getConsent");
+        await JS.InvokeVoidAsync("psTracking.setConsent", "denied");
+        Consent.Close();
+
+        // Redan inladdade skript går inte att ta bort. Rensa cookies och ladda om sidan.
+        if (previous == "granted") await JS.InvokeVoidAsync("psTracking.reset");
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        try { await JS.InvokeVoidAsync("psTracking.pageView"); }
+        catch (JSDisconnectedException) { /* kretsen är nedkopplad */ }
+    }
+
+    private void OnConsentChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Consent.Changed -= OnConsentChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}

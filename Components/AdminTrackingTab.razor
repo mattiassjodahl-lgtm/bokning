@@ -1,0 +1,91 @@
+@inject WebsiteService Web
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h6" GutterBottom="true">Statistik och marknadsföring</MudText>
+<MudText Typo="Typo.body2" Style="color:#555; max-width:70ch" Class="mb-4">
+    Här kopplar ni sidan till era egna verktyg: besöksstatistik i Google Analytics eller Tag Manager, och
+    annonsmätning i Meta Pixel (Facebook och Instagram). Alla fält är valfria. Verktygen laddas först när
+    besökaren godkänt cookies. En cookiebanner visas automatiskt så snart något fält är ifyllt, och
+    besökaren kan ändra sitt val via "Cookieinställningar" i sidfoten. Nämn verktygen i skolans integritetspolicy.
+</MudText>
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Tracking.AnalyticsId" @bind-Value:event="oninput" Immediate="true"
+                      Label="Google Analytics 4 – mätnings-ID" Variant="Variant.Outlined" Placeholder="G-XXXXXXXXXX"
+                      HelperText="Finns i Analytics under Admin, Dataströmmar. Använd inte tillsammans med Tag Manager."
+                      Error="@(AnalyticsError is not null)" ErrorText="@AnalyticsError" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Tracking.TagManagerId" @bind-Value:event="oninput" Immediate="true"
+                      Label="Google Tag Manager – behållar-ID" Variant="Variant.Outlined" Placeholder="GTM-XXXXXXX"
+                      HelperText="Finns överst i Tag Manager. Välj det här om ni hanterar flera taggar där."
+                      Error="@(TagManagerError is not null)" ErrorText="@TagManagerError" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Tracking.MetaPixelId" @bind-Value:event="oninput" Immediate="true"
+                      Label="Meta Pixel – pixel-ID" Variant="Variant.Outlined" Placeholder="1234567890123456"
+                      HelperText="Finns i Meta Events Manager. Ange inte pixeln här om den redan ligger i Tag Manager."
+                      Error="@(PixelError is not null)" ErrorText="@PixelError" />
+    </MudItem>
+
+    <MudItem xs="12">
+        @if (Active.Any)
+        {
+            <MudText Typo="Typo.body2" role="status">
+                Aktivt efter samtycke: <strong>@ActiveText</strong>. Cookiebanner visas på sidan.
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Style="color:#666" role="status">
+                Ingen spårning är aktiv och ingen cookiebanner visas.
+            </MudText>
+        }
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudDivider Class="my-2" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="Save">Spara</MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private TrackingSettings Tracking => Web.Settings.Tracking;
+
+    private string? AnalyticsError  => TrackingIds.AnalyticsError(Tracking);
+    private string? TagManagerError => TrackingIds.TagManagerError(Tracking);
+    private string? PixelError      => TrackingIds.PixelError(Tracking);
+
+    private ActiveTags Active => TrackingIds.Resolve(Tracking);
+
+    private string ActiveText
+    {
+        get
+        {
+            var tags = new List<string>();
+            if (Active.TagManagerId is not null) tags.Add($"Google Tag Manager ({Active.TagManagerId})");
+            if (Active.AnalyticsId  is not null) tags.Add($"Google Analytics ({Active.AnalyticsId})");
+            if (Active.MetaPixelId  is not null) tags.Add($"Meta Pixel ({Active.MetaPixelId})");
+            return string.Join(", ", tags);
+        }
+    }
+
+    private void Save()
+    {
+        if (TrackingIds.HasErrors(Tracking))
+        {
+            Snackbar.Add("Rätta ID:na innan du sparar.", Severity.Error);
+            return;
+        }
+
+        // Versaler och inga blanksteg, så att det som sparas är det som laddas.
+        Tracking.AnalyticsId  = TrackingIds.Normalize(Tracking.AnalyticsId);
+        Tracking.TagManagerId = TrackingIds.Normalize(Tracking.TagManagerId);
+        Tracking.MetaPixelId  = TrackingIds.Normalize(Tracking.MetaPixelId);
+
+        Web.Save();
+        Snackbar.Add("Statistik sparad", Severity.Success);
+    }
+}

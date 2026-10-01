@@ -2,6 +2,7 @@
 @using BookingDemo.Helpers
 @inject WebsiteService Web
 @inject NavigationManager Nav
+@inject ConsentService Consent
 
 @* ════════════════════════════════════════════════════════════════════════
    Publik layout för körskolans hemsida (/webb). Semantisk, tillgänglig,
@@ -29,6 +30,9 @@
 <div class="ps-site">
 
     <a class="ps-skip" href="#ps-main">Hoppa till innehåll</a>
+
+    @* Cookiebanner och spårning (laddas först efter samtycke). *@
+    <Tracking />
 
     <header class="ps-header">
         @* Utility-list: mockade/externa länkar – ligger ovanför huvudmenyn, samma yta som headern *@
@@ -173,7 +177,13 @@
 
             <div class="ps-footer__bottom">
                 <span>© @DateTime.Now.Year @Web.School.Name</span>
-                <a href="#">Integritetspolicy</a>
+                <span class="ps-footer__links">
+                    @if (TrackingIds.Resolve(Web.Settings.Tracking).Any)
+                    {
+                        <button type="button" class="ps-linkbtn" @onclick="@(() => Consent.Open(focus: true))">Cookieinställningar</button>
+                    }
+                    <a href="#">Integritetspolicy</a>
+                </span>
             </div>
         </div>
     </footer>

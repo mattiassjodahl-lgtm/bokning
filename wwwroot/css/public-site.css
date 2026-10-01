@@ -380,3 +380,17 @@ body:has(.ps-site) {
 .ps-lead { font-size: 1.15rem; color: var(--ps-muted); max-width: 60ch; }
 .ps-center { text-align: center; }
 .ps-mt { margin-top: 1.5rem; }
+
+/* ── Cookiebanner och länkknapp ─────────────────────────────────────────── */
+.ps-footer__links { display: flex; flex-wrap: wrap; gap: 1rem; align-items: baseline; }
+.ps-linkbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+
+.ps-consent {
+    position: fixed; z-index: 1000; left: 1rem; right: 1rem; bottom: 1rem;
+    max-width: 640px; margin: 0 auto;
+    background: #fff; color: var(--ps-ink); border: 1px solid rgba(0,0,0,.2); border-radius: var(--ps-radius);
+    box-shadow: 0 8px 30px rgba(0,0,0,.25); padding: 1.1rem 1.25rem;
+}
+.ps-consent h2 { font-size: 1.05rem; margin: 0 0 .4rem; }
+.ps-consent p { margin: 0 0 .9rem; font-size: .95rem; }
+.ps-consent__actions { display: flex; flex-wrap: wrap; gap: .6rem; }

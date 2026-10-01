@@ -204,6 +204,9 @@ public class WebsiteSettings
     /// <summary>Vilka sidor som är synliga i menyn. Start är alltid synlig.</summary>
     public Dictionary<WebPageKey, bool> PageVisibility { get; set; } = new();
 
+    /// <summary>Statistik och marknadsföring (Analytics eller Tag Manager, samt Meta Pixel).</summary>
+    public TrackingSettings Tracking { get; set; } = new();
+
     /// <summary>Sök och delning per sida (startsidan och övriga fasta sidor). Utbildningar och nyheter har egna fält.</summary>
     public Dictionary<WebPageKey, PageSeo> PageSeoByKey { get; set; } = new();
 
@@ -237,6 +240,20 @@ public class WebsiteSettings
 
     public bool IsVisible(WebPageKey key) =>
         key == WebPageKey.Start || PageVisibility.GetValueOrDefault(key, false);
+}
+
+/// <summary>
+/// Spårning på den publika sidan. Allt är valfritt. Verktygen laddas först när besökaren
+/// godkänt cookies. Analytics och Tag Manager utesluter varandra.
+/// </summary>
+public class TrackingSettings
+{
+    /// <summary>Google Analytics 4, mätnings-ID på formen G-XXXXXXXXXX.</summary>
+    public string AnalyticsId  { get; set; } = "";
+    /// <summary>Google Tag Manager, behållar-ID på formen GTM-XXXXXXX.</summary>
+    public string TagManagerId { get; set; } = "";
+    /// <summary>Meta Pixel (Facebook och Instagram), ID med bara siffror.</summary>
+    public string MetaPixelId  { get; set; } = "";
 }
 
 /// <summary>Färgtema för hemsidan. Mappas till CSS-variabler i PublicLayout.</summary>
