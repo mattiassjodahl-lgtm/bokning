@@ -44,7 +44,10 @@ public class SchoolProfile
     public string LogoImage   { get; set; } = "";
     public string Tagline     { get; set; } = "";
     public string Phone       { get; set; } = "";
+    /// <summary>Skolans systemmail (kommer från affärssystemet). Visas på sidan och tar emot kontaktformuläret om ingen webbadress är angiven.</summary>
     public string Email       { get; set; } = "";
+    /// <summary>E-post för webben. Valfri. Trumfar systemmailet som mottagare för kontaktformuläret.</summary>
+    public string WebEmail    { get; set; } = "";
     public string VisitAddress { get; set; } = "";
     public string PostalAddress { get; set; } = "";
     public string OrgNumber   { get; set; } = "";
@@ -52,6 +55,10 @@ public class SchoolProfile
     public List<OpeningHour> OpeningHours { get; set; } = new();
     /// <summary>Sociala medier-länkar som visas i footern.</summary>
     public List<SocialLink> Social { get; set; } = new();
+
+    /// <summary>Dit kontaktformuläret skickas: e-post för webben om den är angiven, annars systemmailet.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string ContactRecipient => (string.IsNullOrWhiteSpace(WebEmail) ? Email : WebEmail).Trim();
 
     /// <summary>Länk till STR (visas i "Medlem i"-blocket och menyn).</summary>
     public string StrUrl  { get; set; } = "https://www.str.se";

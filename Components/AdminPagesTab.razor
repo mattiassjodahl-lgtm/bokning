@@ -88,7 +88,31 @@
     <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.OrgNumber" Label="Org.nummer" Variant="Variant.Outlined" /></MudItem>
     <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.Tagline" Label="Slogan" Variant="Variant.Outlined" /></MudItem>
     <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.Phone" Label="Telefon" Variant="Variant.Outlined" /></MudItem>
-    <MudItem xs="12" md="3"><MudTextField @bind-Value="Web.School.Email" Label="E-post" Variant="Variant.Outlined" /></MudItem>
+    <MudItem xs="12" md="3">
+        <MudTextField @bind-Value="Web.School.Email" Label="E-post (systemmail)" Variant="Variant.Outlined"
+                      HelperText="Skolans e-post i Optima. Visas på sidan." />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <MudTextField @bind-Value="Web.School.WebEmail" @bind-Value:event="oninput" Immediate="true"
+                      Label="E-post för webben (valfri)" Variant="Variant.Outlined" InputType="InputType.Email"
+                      HelperText="Ersätter systemmailet som mottagare för kontaktformuläret. Tomt = systemmailet används."
+                      Error="@(WebEmailError is not null)" ErrorText="@WebEmailError" />
+    </MudItem>
+    <MudItem xs="12" md="6">
+        @if (string.IsNullOrWhiteSpace(Web.School.ContactRecipient))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Warning" Style="padding-top:1rem" role="status">
+                Kontaktformuläret visas inte, eftersom varken systemmail eller e-post för webben är angiven.
+            </MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Style="padding-top:1rem" role="status">
+                Kontaktformuläret skickas till: <strong>@Web.School.ContactRecipient</strong>
+                (@(string.IsNullOrWhiteSpace(Web.School.WebEmail) ? "systemmailet" : "e-post för webben"))
+            </MudText>
+        }
+    </MudItem>
     <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.VisitAddress" Label="Besöksadress" Variant="Variant.Outlined" /></MudItem>
     <MudItem xs="12" md="6"><MudTextField @bind-Value="Web.School.PostalAddress" Label="Postadress" Variant="Variant.Outlined" /></MudItem>
 
@@ -216,8 +240,17 @@
         else list.Remove(id);
     }
 
+    private string? WebEmailError => EmailUtil.Error(Web.School.WebEmail);
+
     private void SaveAll()
     {
+        if (WebEmailError is not null)
+        {
+            Snackbar.Add("Rätta e-postadressen för webben innan du sparar.", Severity.Error);
+            return;
+        }
+        Web.School.WebEmail = Web.School.WebEmail.Trim();
+
         // Synka social-label med vald plattform.
         foreach (var s in Web.School.Social)
             s.Label = s.Platform switch { "facebook" => "Facebook", "instagram" => "Instagram", "youtube" => "YouTube", _ => s.Platform };

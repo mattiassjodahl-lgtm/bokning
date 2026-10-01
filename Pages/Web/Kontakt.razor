@@ -14,10 +14,18 @@
 
             @* ── Kontaktformulär (mock – skickar inget i prototypen) ──────── *@
             <div style="grid-column: span 2">
-                @if (_sent)
+                @if (string.IsNullOrWhiteSpace(Web.School.ContactRecipient))
+                {
+                    @* Ingen mottagare = inget formulär som lovar något det inte kan hålla. *@
+                    <div class="ps-note" role="status">
+                        Kontaktformuläret är inte tillgängligt just nu. Ring eller mejla oss enligt uppgifterna intill.
+                    </div>
+                }
+                else if (_sent)
                 {
                     <div class="ps-note" role="status">
-                        Tack @(_model.Name)! Ditt meddelande har tagits emot (demo – inget skickas i prototypen).
+                        Tack @(_model.Name)! Ditt meddelande har tagits emot (demo – inget skickas i prototypen.
+                        Det hade gått till @Web.School.ContactRecipient).
                     </div>
                 }
                 else
